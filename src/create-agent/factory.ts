@@ -530,6 +530,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                   messageSizeThreshold: 1500,
               }
             : undefined,
+        recorder: options.recorder,
     });
 
     return {

@@ -26,6 +26,7 @@ import type { z } from 'zod';
 import type { AgenticRunResult, AgenticLifecycleHooks } from '../agentic/index.js';
 import type { Logger } from '../observability/types.js';
 import type { MastermindConfig } from '../compression/mastermind/index.js';
+import type { EventRecorder } from '../core/runner/types.js';
 
 type AnyLightweightTool = LightweightTool<any, any>;
 
@@ -245,6 +246,19 @@ export interface CreateAgentOptions extends AgentContextOptions {
      * ```
      */
     mastermind?: MastermindConfig | boolean;
+    /**
+     * Durable event recorder. When provided, every run emits an append-only,
+     * deterministic, replayable event log (agentStart / llmResult / toolResult /
+     * agentEnd) to the recorder's store. Off by default — zero cost when absent.
+     *
+     * @example
+     * ```ts
+     * import { RunRecorder, InMemoryEventStore } from '@confused-ai/core';
+     * const store = new InMemoryEventStore();
+     * createAgent({ recorder: new RunRecorder(store), ... });
+     * ```
+     */
+    recorder?: EventRecorder;
 }
 
 export interface AgentRunOptions extends AgentContextOptions {

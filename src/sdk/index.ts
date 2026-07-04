@@ -34,7 +34,9 @@ export type {
     IEmbeddingProvider,
     IFullLLMProvider,
 } from '../core/index.js';
-export { createAgent, generateEntityId } from '../core/index.js';
+export { generateEntityId } from '../core/index.js';
+// createAgent now lives in the single factory (Mastermind + recorder wired).
+export { createAgent } from '../create-agent/index.js';
 // Tools
 export * from '../tools/index.js';
 // Planner, memory, execution — only unique members

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-import { createAgent } from '../src/core/agent.js';
+// Public factory createAgent — the single path, now wired with the recorder.
+import { createAgent } from '../src/create-agent/index.js';
 import { RunRecorder } from '../src/graph/run-recorder.js';
 import { InMemoryEventStore } from '../src/graph/event-store.js';
 import { GraphEventType } from '../src/graph/types.js';

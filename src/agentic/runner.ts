@@ -288,6 +288,11 @@ export class AgenticRunner {
         const startTime = Date.now();
         const deadline   = createDeadline(timeoutMs, 'agent.run');
 
+        // Durable event log — start of run. ponytail: emitted once the loop is
+        // reached; input-guardrail-blocked runs return earlier and log nothing,
+        // and an LLM error mid-loop throws before agentEnd (matches core runner).
+        await this.config.recorder?.agentStart({ agent: agentId, prompt });
+
         // ── ReAct loop ────────────────────────────────────────────────────────
         while (steps < maxSteps) {
             if (runConfig.signal?.aborted) { runAbort.abort(); finishReason = 'aborted'; break; }
@@ -339,6 +344,14 @@ export class AgenticRunner {
                 }
             }
 
+            await this.config.recorder?.llmResult({
+                step: steps,
+                text: result.text ?? '',
+                toolCalls: result.toolCalls?.map((tc) => ({ name: tc.name })),
+                finishReason: result.finishReason,
+                usage: result.usage,
+            });
+
             const hasToolCalls = !!result.toolCalls?.length;
 
             // Append a SINGLE assistant message carrying both text and toolCalls.
@@ -375,6 +388,21 @@ export class AgenticRunner {
             // (Assistant message with toolCalls was already appended above.)
             const toolMessages = await this._executeAllTools(result.toolCalls ?? [], { ...baseCtx, step: steps });
             messages.push(...toolMessages);
+
+            // Durable event log — one entry per tool call, paired to its result by id.
+            if (this.config.recorder) {
+                for (const tc of result.toolCalls ?? []) {
+                    const msg = toolMessages.find(
+                        (m) => (m as { toolCallId?: string }).toolCallId === tc.id,
+                    );
+                    await this.config.recorder.toolResult({
+                        step: steps,
+                        name: tc.name,
+                        args: tc.arguments,
+                        output: msg?.content,
+                    });
+                }
+            }
 
             // ── Auto context compression ───────────────────────────────────
             if (this.config.compression?.enabled) {
@@ -428,6 +456,9 @@ export class AgenticRunner {
         if (usage?.totalTokens !== undefined) {
             span.setAttribute('llm.usage.total_tokens', usage.totalTokens);
         }
+
+        // Durable event log — end of run.
+        await this.config.recorder?.agentEnd({ text: finalResult.text, steps, finishReason });
 
         return finalResult;
     }

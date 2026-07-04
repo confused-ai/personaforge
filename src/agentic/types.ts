@@ -158,6 +158,12 @@ export interface AgenticRunnerConfig {
     /** Full lifecycle hooks — intercept every stage of the loop */
     readonly hooks?: AgenticLifecycleHooks;
     /**
+     * Optional durable event recorder — emits an append-only, replayable run
+     * log (agentStart / llmResult / toolResult / agentEnd). Off by default;
+     * zero cost when absent.
+     */
+    readonly recorder?: import('../core/runner/types.js').EventRecorder;
+    /**
      * Durable checkpoint store — saves loop state after each step.
      */
     readonly checkpointStore?: import('../production/index.js').AgentCheckpointStore;
