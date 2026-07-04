@@ -21,22 +21,29 @@ import type { EventRecorder } from '../core/runner/types.js';
 
 export class RunRecorder implements EventRecorder {
   private seq = 0;
-  readonly executionId: ExecutionId;
+  private _executionId: ExecutionId;
+  private readonly pinned: boolean;
   readonly graphId: GraphId;
 
   constructor(
     private readonly store: EventStore,
     opts: { executionId?: ExecutionId; graphId?: GraphId } = {},
   ) {
-    this.executionId = opts.executionId ?? makeExecutionId();
+    this._executionId = opts.executionId ?? makeExecutionId();
+    this.pinned = opts.executionId != null;
     this.graphId = opts.graphId ?? makeGraphId();
+  }
+
+  /** Execution id of the current (or most recent) run. */
+  get executionId(): ExecutionId {
+    return this._executionId;
   }
 
   private emit(type: GraphEventType, data: Record<string, unknown>): Promise<void> {
     const event: GraphEvent = {
       id: uid('e'),
       type,
-      executionId: this.executionId,
+      executionId: this._executionId,
       graphId: this.graphId,
       timestamp: Date.now(),
       sequence: this.seq++,
@@ -46,6 +53,14 @@ export class RunRecorder implements EventRecorder {
   }
 
   agentStart(data: { agent: string; prompt: string }): Promise<void> {
+    // Mint a fresh execution per run so one recorder can be reused across
+    // sequential runs (each run() = one execution in the log).
+    // ponytail: single-flight — concurrent runs on one recorder interleave;
+    // use one recorder per run when running agents in parallel.
+    if (!this.pinned) {
+      this._executionId = makeExecutionId();
+      this.seq = 0;
+    }
     return this.emit(GraphEventType.AGENT_STARTED, { ...data });
   }
 

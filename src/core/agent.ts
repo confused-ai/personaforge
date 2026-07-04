@@ -27,7 +27,7 @@ import type {
     StreamChunk,
     MultiModalInput,
 } from './types.js';
-import type { RunnerConfig, Tool, RetryPolicy, LLMProvider } from './runner/types.js';
+import type { RunnerConfig, Tool, RetryPolicy, LLMProvider, EventRecorder } from './runner/types.js';
 import type { AgentDb } from '../db/index.js';
 import type { SessionStore, SessionData, SessionMessage } from '../contracts/index.js';
 
@@ -87,6 +87,19 @@ export interface CreateAgentOptions {
      * ```
      */
     db?: AgentDb;
+
+    /**
+     * Durable event recorder. When provided, every run emits an append-only,
+     * ordered event log (the same substrate the graph engine uses). Off by default.
+     *
+     * Use the graph layer's `RunRecorder` to record into any `EventStore`:
+     * ```ts
+     * import { RunRecorder, InMemoryEventStore } from '../graph/index.js';
+     * const store = new InMemoryEventStore();
+     * createAgent({ recorder: new RunRecorder(store), ... });
+     * ```
+     */
+    recorder?: EventRecorder;
 
     // ── Limits ────────────────────────────────────────────────────────────────
     maxSteps?:   number;
@@ -314,6 +327,7 @@ export function createAgent(options: CreateAgentOptions): Agent {
         ...(options.timeoutMs !== undefined && { timeoutMs: options.timeoutMs }),
         ...(options.retry !== undefined && { retry: options.retry }),
         ...(options.hooks !== undefined && { hooks: options.hooks }),
+        ...(options.recorder !== undefined && { recorder: options.recorder }),
     };
 
     const runner = new AgentRunner(runnerConfig);
