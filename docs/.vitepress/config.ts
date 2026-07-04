@@ -116,7 +116,7 @@ export default defineConfig({
                 ],
             },
             {
-                text: 'v2.3.0',
+                text: 'v2.4.2',
                 items: [
                     { text: '📋 Changelog', link: '/changelog' },
                     { text: '📦 npm package', link: 'https://www.npmjs.com/package/confused-ai' },

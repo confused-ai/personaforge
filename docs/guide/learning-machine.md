@@ -43,7 +43,8 @@ const agent = createAgent({
     },
     afterRun: async (result) => {
       // Extract and persist new learnings from this turn
-      await machine.process(result.messages, {
+      await machine.process({
+        messages:  result.messages,
         userId:    result.userId,
         sessionId: result.sessionId,
       });
@@ -85,15 +86,21 @@ const context = await machine.buildContext({
 const recalled = await machine.recall({ userId: 'user-42', sessionId: 'sess-xyz' });
 // recalled.userProfile, recalled.userMemory, recalled.sessionContext...
 
-// Process a completed turn and persist learnings
-await machine.process(messages, {
+// Process a completed turn and persist learnings.
+// `messages` is required. The base implementation is effectively a no-op —
+// extend it with custom stores to plug in LLM-based extraction.
+await machine.process({
+  messages,
   userId: 'user-42',
   sessionId: 'sess-xyz',
 });
 
-// Get callable tools the agent can use to update its own memory
-const tools = await machine.getTools({ userId: 'user-42' });
-// Returns: [save_user_memory, update_session_goal, remember_entity, ...]
+// Get callable tools the agent can use to update its own memory.
+// getTools() is synchronous and returns bare callables (LearningTool[]) —
+// plain functions, NOT framework Tools.
+const tools = machine.getTools({ userId: 'user-42' });
+// Returns: [addMemory, updateMemory, deleteMemory, updateContext, addEntityFact,
+//   addEntityEvent, saveKnowledge, searchKnowledge, logDecision, searchDecisions]
 ```
 
 ---
@@ -114,6 +121,8 @@ interface LearningMachineConfig {
   learnedKnowledge?: LearnedKnowledgeStore;
   /** Decision log store */
   decisionLog?: DecisionLogStore;
+  /** Curator for pruning and deduplicating memories */
+  curator?: Curator;
   /** Optional db backend — any unspecified store is auto-created */
   db?: AgentDb;
   /** Default namespace for entity/knowledge stores (default: 'global') */
@@ -129,16 +138,29 @@ interface LearningMachineConfig {
 Give the agent tools to update its own memory during a run:
 
 ```ts
+import { tool } from 'confused-ai';
+import { z } from 'zod';
+
 const machine = new LearningMachine({ db });
 
-const memoryTools = await machine.getTools({ userId: 'user-42' });
+// getTools() is synchronous and returns bare callables (LearningTool[]), not
+// framework Tools — wrap each with tool() before passing to createAgent.
+// (Most take a single string argument; widen the schema per tool as needed.)
+const memoryTools = machine.getTools({ userId: 'user-42' }).map((fn) =>
+  tool({
+    name: fn.name,                          // e.g. 'addMemory', 'saveKnowledge'
+    description: `Learning memory tool: ${fn.name}`,
+    parameters: z.object({ input: z.string() }),
+    execute: async ({ input }) => String(await fn(input)),
+  }),
+);
 
 const agent = createAgent({
   name: 'personal-assistant',
   instructions: 'Help the user. Use memory tools to save important facts.',
   model: 'gpt-4o',
   apiKey: process.env.OPENAI_API_KEY!,
-  tools: memoryTools,   // agent can call save_user_memory, remember_entity, etc.
+  tools: memoryTools,   // agent can call addMemory, addEntityFact, saveKnowledge, etc.
 });
 ```
 

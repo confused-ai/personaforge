@@ -18,6 +18,8 @@ import type {
     MastermindMessage,
     MastermindConfig,
     MastermindStats,
+    MastermindLifetimeStats,
+    RecentCompressionEvent,
     CompressionAlgorithm,
     ContentType,
 } from './types.js';
@@ -29,8 +31,18 @@ import { CacheAligner } from './cache-aligner.js';
 import { CCRStore, createRetrieveTool, annotateCCR } from './ccr.js';
 import type { MastermindRetrieveTool } from './ccr.js';
 
-export type { MastermindMessage, MastermindConfig, MastermindStats, MastermindRetrieveTool };
+export type {
+    MastermindMessage,
+    MastermindConfig,
+    MastermindStats,
+    MastermindLifetimeStats,
+    RecentCompressionEvent,
+    MastermindRetrieveTool,
+};
 export { CCRStore, createRetrieveTool };
+
+/** Recent-events ring buffer size for session stats. */
+const RECENT_EVENTS_LIMIT = 20;
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
 
@@ -44,6 +56,7 @@ const DEFAULTS: Required<Omit<MastermindConfig, 'generate'>> = {
     compressToolResults:         true,
     compressAssistantMessages:   true,
     minRatio:                   0.15,
+    costPer1kTokens:           0.003,
     debug:                     false,
 };
 
@@ -248,6 +261,17 @@ export class Mastermind {
     readonly ccrStore: CCRStore;
     readonly retrieveTool: MastermindRetrieveTool;
 
+    /** Cumulative session savings (cost computed on read in stats()). */
+    private readonly _lifetime = {
+        compressions: 0,
+        messagesCompressed: 0,
+        tokensBefore: 0,
+        tokensAfter: 0,
+        tokensSaved: 0,
+        algorithms: {} as Partial<Record<CompressionAlgorithm, number>>,
+        recent: [] as RecentCompressionEvent[],
+    };
+
     constructor(config: MastermindConfig = {}) {
         this.cfg = { ...DEFAULTS, ...config };
         this.aligner   = new CacheAligner({ normaliseWhitespace: true });
@@ -275,6 +299,14 @@ export class Mastermind {
         };
 
         if (messages.length === 0) return { messages, stats };
+
+        // Size on entry (compressed content already counts as its own cost),
+        // measured over the whole list so the lifetime saved is apples-to-apples
+        // with the whole-list total recomputed at the end.
+        const inputTokens = messages.reduce(
+            (s, m) => s + estimateTokens(m.compressedContent ?? (typeof m.content === 'string' ? m.content : '')),
+            0,
+        );
 
         // ── Step 1: CacheAligner ─────────────────────────────────────────
         let result: MastermindMessage[] = this.cfg.enableCacheAligner
@@ -367,7 +399,52 @@ export class Mastermind {
             0,
         );
 
+        // ── Fold into session lifetime stats ─────────────────────────────
+        const saved = Math.max(0, inputTokens - stats.totalTokensAfter);
+        if (stats.messagesCompressed > 0 || saved > 0) {
+            const life = this._lifetime;
+            life.compressions++;
+            life.messagesCompressed += stats.messagesCompressed;
+            life.tokensBefore += inputTokens;
+            life.tokensAfter += stats.totalTokensAfter;
+            life.tokensSaved += saved;
+            for (const [algo, n] of Object.entries(stats.algorithms)) {
+                const k = algo as CompressionAlgorithm;
+                life.algorithms[k] = (life.algorithms[k] ?? 0) + (n ?? 0);
+            }
+            life.recent.push({
+                at: Date.now(),
+                tokensBefore: inputTokens,
+                tokensAfter: stats.totalTokensAfter,
+                tokensSaved: saved,
+                messagesCompressed: stats.messagesCompressed,
+                algorithms: { ...stats.algorithms },
+            });
+            if (life.recent.length > RECENT_EVENTS_LIMIT) {
+                life.recent.splice(0, life.recent.length - RECENT_EVENTS_LIMIT);
+            }
+        }
+
         return { messages: result, stats };
+    }
+
+    /**
+     * Session-lifetime savings dashboard (headroom_stats parity).
+     * Aggregates every compress() call on this instance and prices the tokens
+     * saved via `costPer1kTokens`. Returns copies — safe to mutate/serialise.
+     */
+    stats(): MastermindLifetimeStats {
+        const l = this._lifetime;
+        return {
+            compressions: l.compressions,
+            messagesCompressed: l.messagesCompressed,
+            tokensBefore: l.tokensBefore,
+            tokensAfter: l.tokensAfter,
+            tokensSaved: l.tokensSaved,
+            costSavedUsd: (l.tokensSaved / 1000) * this.cfg.costPer1kTokens,
+            algorithms: { ...l.algorithms },
+            recent: l.recent.map(e => ({ ...e, algorithms: { ...e.algorithms } })),
+        };
     }
 
     /**

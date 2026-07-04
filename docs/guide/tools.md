@@ -65,22 +65,20 @@ const t3 = createTool({ name: 'add', description: '...', parameters: z.object({ 
 import { createTools } from 'confused-ai/tool';
 import { z } from 'zod';
 
-const tools = createTools([
-  {
-    name: 'search_orders',
+const tools = createTools({
+  search_orders: {
     description: 'Find a customer order by id.',
     parameters: z.object({ orderId: z.string() }),
     execute: async ({ orderId }) => ({ orderId, status: 'shipped', eta: '2026-05-14' }),
   },
-  {
-    name: 'cancel_order',
+  cancel_order: {
     description: 'Cancel an order. Only use if the customer explicitly requests cancellation.',
     parameters: z.object({ orderId: z.string(), reason: z.string() }),
     execute: async ({ orderId, reason }) => ({ cancelled: true, orderId, reason }),
   },
-]);
+});
 
-const agent = createAgent({ name: 'support', instructions: '...', model: 'gpt-4o-mini', apiKey: process.env.OPENAI_API_KEY!, tools });
+const agent = createAgent({ name: 'support', instructions: '...', model: 'gpt-4o-mini', apiKey: process.env.OPENAI_API_KEY!, tools: Object.values(tools) });
 ```
 
 ---
@@ -95,10 +93,9 @@ const auditTool = tool({
   description: 'Update a database record.',
   parameters: z.object({ id: z.string(), data: z.record(z.string()) }),
   execute: async ({ id, data }, ctx) => {
-    console.log('called by run:', ctx.runId);
-    console.log('user:', ctx.userId);
-    // ctx.signal — AbortSignal for cancellation
-    // ctx.logger — framework logger
+    console.log('agent:', ctx.agentId);
+    console.log('session:', ctx.sessionId);
+    // ctx.abortSignal — AbortSignal for cancellation
     return { updated: true };
   },
 });
@@ -121,11 +118,13 @@ const agent = createAgent({
   tools: [searchTool, dbTool],
   toolMiddleware: [
     // Logging middleware
-    async (ctx, next) => {
-      console.log(`[tool] ${ctx.tool.name} called`, ctx.input);
-      const result = await next();
-      console.log(`[tool] ${ctx.tool.name} returned`, result);
-      return result;
+    {
+      beforeExecute: (tool, params) => {
+        console.log(`[tool] ${tool.name} called`, params);
+      },
+      afterExecute: (tool, result) => {
+        console.log(`[tool] ${tool.name} returned`, result);
+      },
     },
   ],
 });
@@ -138,44 +137,52 @@ const agent = createAgent({
 ```ts
 import { extendTool, wrapTool, pipeTools } from 'confused-ai/tool';
 
-// Add retry and a cache layer around an existing tool
+// Normalise inputs and trim results around an existing tool
 const reliableSearch = extendTool(searchTool, {
-  retry: { maxAttempts: 3, delayMs: 500 },
-  cache: { ttlMs: 60_000 },
+  name: 'reliable_search',
+  transformInput: (params) => ({ ...params, query: params.query.trim() }),
+  transformOutput: (results) => (Array.isArray(results) ? results.slice(0, 3) : results),
+  timeoutMs: 10_000,
 });
 
-// Wrap with custom pre/post logic
-const wrappedSearch = wrapTool(searchTool, async (input, next) => {
-  const sanitised = { ...input, query: input.query.trim() };
-  const result = await next(sanitised);
-  return { ...result, source: 'search' };
-});
+// Wrap with a middleware pipeline: (params, ctx, next)
+const wrappedSearch = wrapTool(searchTool, [
+  async (params, ctx, next) => {
+    const sanitised = { ...params, query: params.query.trim() };
+    const result = await next(sanitised, ctx);
+    return { ...result, source: 'search' };
+  },
+]);
 
 // Chain tools: output of tool1 becomes input of tool2
-const pipeline = pipeTools(fetchPageTool, summariseTool);
+const pipeline = pipeTools(fetchPageTool, summariseTool, {
+  name: 'fetch_and_summarise',
+  description: 'Fetch a page then summarise it.',
+  adapter: (page) => ({ text: page.body }),
+});
 ```
 
 ---
 
 ## Built-in tools (100+)
 
-Import from `confused-ai/tool` or directly from the category path.
+Each provider-backed tool is imported from its category subpath (e.g. `confused-ai/tools/search`).
 
 ### Search
 
 ```ts
 import {
-  TavilySearchTool,    // AI-optimised web search
-  BraveSearchTool,     // privacy-first web search
-  ExaSearchTool,       // neural search
-  PerplexityTool,      // web-grounded LLM search
-  ArxivSearchTool,     // academic papers
-  PubMedSearchTool,    // biomedical papers
+  TavilySearchTool,       // AI-optimised web search
+  BraveSearchTool,        // privacy-first web search
+  ExaSearchTool,          // neural search
+  PerplexitySearchTool,   // web-grounded LLM search
+  ArxivSearchTool,        // academic papers
+  PubMedSearchTool,       // biomedical papers
   YouTubeSearchTool,
   RedditSearchTool,
-  WeatherTool,
-  GoogleMapsTool,
-} from 'confused-ai/tool';
+  OpenWeatherToolkit,
+  GoogleMapsToolkit,
+} from 'confused-ai/tools/search';
 
 const agent = createAgent({
   name: 'researcher',
@@ -190,63 +197,63 @@ const agent = createAgent({
 
 ```ts
 import {
-  SlackTool,
-  GmailTool,
-  EmailTool,
-  DiscordTool,
+  SlackToolkit,
+  GmailToolkit,
+  EmailToolkit,
+  DiscordToolkit,
   TelegramTool,
-  TwilioTool,
-  ZoomTool,
-  ResendTool,
-} from 'confused-ai/tool';
+  TwilioToolkit,
+  ZoomToolkit,
+  ResendToolkit,
+} from 'confused-ai/tools/communication';
 ```
 
 ### Productivity
 
 ```ts
 import {
-  JiraTool,
-  NotionTool,
-  ConfluenceTool,
-  LinearTool,
-  ClickUpTool,
-  GoogleDriveTool,
-  GoogleSheetsTool,
-  GoogleCalendarTool,
-} from 'confused-ai/tool';
+  JiraToolkit,
+  NotionToolkit,
+  ConfluenceToolkit,
+  LinearToolkit,
+  ClickUpToolkit,
+  GoogleDriveToolkit,
+  GoogleSheetsToolkit,
+  GoogleCalendarToolkit,
+} from 'confused-ai/tools/productivity';
 ```
 
 ### Developer tools
 
 ```ts
 import {
-  GitHubTool,
-  GitLabTool,
-  DockerTool,
-  E2BTool,           // sandboxed code execution
-  CodeExecTool,      // local code execution
-} from 'confused-ai/tool';
+  GitHubToolkit,
+  GitLabToolkit,
+  DockerToolkit,
+  E2BToolkit,        // sandboxed code execution
+  CodeExecToolkit,   // local code execution
+} from 'confused-ai/tools/devtools';
 ```
 
 ### Data
 
 ```ts
 import {
-  BigQueryTool,
-  CsvTool,
-  DatabaseTool,
-  Neo4jTool,
-  RedisTool,
-} from 'confused-ai/tool';
+  BigQueryToolkit,
+  CsvToolkit,
+  DatabaseToolkit,
+  Neo4jToolkit,
+  RedisToolkit,
+} from 'confused-ai/tools/data';
 ```
 
 ### Finance
 
 ```ts
 import {
-  StripeTool,
+  StripeToolkit,
   YFinanceTool,      // Yahoo Finance market data
-} from 'confused-ai/tool';
+} from 'confused-ai/tools/finance';
 ```
 
 ### Utilities
@@ -281,9 +288,9 @@ const agent = createAgent({
 Group tools into a typed registry for advanced use:
 
 ```ts
-import { ToolRegistry } from 'confused-ai/tool';
+import { ToolRegistryImpl } from 'confused-ai/tool';
 
-const registry = new ToolRegistry();
+const registry = new ToolRegistryImpl();
 registry.register(searchTool);
 registry.register(emailTool);
 registry.register(dbTool);

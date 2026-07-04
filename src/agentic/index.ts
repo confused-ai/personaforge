@@ -45,6 +45,8 @@ export function createAgenticAgent(config: {
         toolResultsLimit?: number;
         messageSizeThreshold?: number;
     };
+    /** Optional durable event recorder — append-only, replayable run log. */
+    recorder?: import('../core/runner/types.js').EventRecorder;
 }): {
     name: string;
     instructions: string;
@@ -84,6 +86,7 @@ export function createAgenticAgent(config: {
         temperature: config.temperature,
         maxTokens: config.maxTokens,
         compression: config.compression,
+        recorder: config.recorder,
     });
 
     if (config.humanInTheLoop) runner.setHumanInTheLoop(config.humanInTheLoop);

@@ -7,6 +7,8 @@ export type {
     MastermindMessage,
     MastermindConfig,
     MastermindStats,
+    MastermindLifetimeStats,
+    RecentCompressionEvent,
     MastermindRetrieveTool,
 } from './mastermind.js';
 export { CCRStore, createRetrieveTool } from './ccr.js';

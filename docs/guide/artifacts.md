@@ -16,7 +16,7 @@ import {
   createPlanArtifact,
   createReasoningArtifact,
   InMemoryArtifactStorage,
-} from 'confused-ai';
+} from 'confused-ai/artifacts';
 ```
 
 ---
@@ -50,7 +50,7 @@ import {
   createDataArtifact,
   createPlanArtifact,
   createReasoningArtifact,
-} from 'confused-ai';
+} from 'confused-ai/artifacts';
 
 // Plain text / code file
 const code = createTextArtifact({
@@ -123,15 +123,16 @@ interface ArtifactMetadata {
 ## Store artifacts
 
 ```ts
-import { InMemoryArtifactStorage } from 'confused-ai';
+import { InMemoryArtifactStorage } from 'confused-ai/artifacts';
 
 const storage = new InMemoryArtifactStorage({
-  maxArtifacts: 1000,
-  maxSizeBytes: 100 * 1024 * 1024,  // 100 MB total
+  maxSizeBytes: 100 * 1024 * 1024,  // 100 MB per artifact (default)
+  versioning: true,                 // keep a full version history (default: true)
+  // basePath?, ttlMs?, metrics? — see ArtifactStorageConfig
 });
 
-// Store
-const stored = await storage.store(report);
+// Save (creates version 1; id/createdAt/version are generated)
+const stored = await storage.save(report);
 
 // Retrieve
 const retrieved = await storage.get(stored.id);
@@ -157,7 +158,8 @@ await storage.delete(stored.id);
 Attach artifact creation to the `afterRun` hook to capture every run's output:
 
 ```ts
-import { createAgent, InMemoryArtifactStorage, createMarkdownArtifact } from 'confused-ai';
+import { createAgent } from 'confused-ai';
+import { InMemoryArtifactStorage, createMarkdownArtifact } from 'confused-ai/artifacts';
 
 const artifactStorage = new InMemoryArtifactStorage();
 
@@ -175,7 +177,7 @@ const agent = createAgent({
         createdBy: 'report-agent',
         metadata: { runId: result.runId, tokens: result.usage?.totalTokens },
       });
-      await artifactStorage.store(artifact);
+      await artifactStorage.save(artifact);
       return result;
     },
   },
@@ -190,12 +192,79 @@ Implement this to persist artifacts to S3, GCS, or any external store:
 
 ```ts
 interface ArtifactStorage {
-  store<T>(artifact: Artifact<T>): Promise<Artifact<T>>;
+  save<T>(artifact: Omit<Artifact<T>, 'id' | 'createdAt' | 'updatedAt' | 'version'>): Promise<Artifact<T>>;
   get<T>(id: string): Promise<Artifact<T> | null>;
-  list(filter?: ArtifactFilter): Promise<ArtifactMetadata[]>;
+  getVersion<T>(id: string, version: number): Promise<Artifact<T> | null>;
+  listVersions(id: string): Promise<ArtifactMetadata[]>;
+  update<T>(id: string, updates: Partial<Omit<Artifact<T>, 'id' | 'createdAt' | 'version'>>): Promise<Artifact<T>>;
   delete(id: string): Promise<boolean>;
-  search?(query: string): Promise<ArtifactMetadata[]>;
+  list(filters?: {
+    type?: ArtifactType;
+    tags?: string[];
+    createdBy?: string;
+    sessionId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ArtifactMetadata[]>;
+  search(query: string, limit?: number): Promise<ArtifactMetadata[]>;
 }
+```
+
+---
+
+## Versioning
+
+Storage keeps a full version history (toggle with `versioning` in
+`ArtifactStorageConfig`). `update()` creates a new version; `getVersion()` and
+`listVersions()` read the history:
+
+```ts
+const stored = await storage.save(report);   // version 1
+
+// update() records a new version (2, 3, …)
+const v2 = await storage.update(stored.id, {
+  content: '## Q4 Summary (revised)\n\nRevenue up 14% YoY...',
+});
+
+const history = await storage.listVersions(stored.id);   // ArtifactMetadata[]
+const original = await storage.getVersion(stored.id, 1);
+```
+
+---
+
+## Media artifacts
+
+Images, audio, and video are first-class artifact types. Build them with the
+media helpers, or manage them through `MediaManager` against any `ArtifactStorage`.
+
+```ts
+import {
+  MediaManager,
+  createImageFromUrl,
+  createImageFromBase64,
+  createAudioFromUrl,
+  createVideoFromUrl,
+  InMemoryArtifactStorage,
+} from 'confused-ai/artifacts';
+import type { ImageArtifact, AudioArtifact, VideoArtifact } from 'confused-ai/artifacts';
+
+// Build media artifacts directly (each returns an artifact ready for storage.save()):
+const image = createImageFromUrl('hero.png', 'https://cdn.example.com/hero.png', {
+  width: 1024, height: 768, prompt: 'a mountain at sunrise', model: 'dall-e-3',
+});
+const inline = createImageFromBase64('chart.png', base64Data, 'image/png');
+const speech = createAudioFromUrl('greeting.mp3', 'https://cdn.example.com/greeting.mp3', {
+  durationSeconds: 3.2, voiceId: 'alloy', transcript: 'Hello there.',
+});
+const clip = createVideoFromUrl('demo.mp4', 'https://cdn.example.com/demo.mp4', {
+  durationSeconds: 30, width: 1920, height: 1080, fps: 30,
+});
+
+// …or use MediaManager to save + retrieve in one call:
+const media = new MediaManager(new InMemoryArtifactStorage());
+const savedImage: ImageArtifact = await media.saveImage('hero.png', 'https://cdn.example.com/hero.png', { width: 1024, height: 768 });
+const savedAudio: AudioArtifact = await media.saveAudio('greeting.mp3', 'https://cdn.example.com/greeting.mp3');
+const savedVideo: VideoArtifact = await media.saveVideo('demo.mp4', 'https://cdn.example.com/demo.mp4');
 ```
 
 ---

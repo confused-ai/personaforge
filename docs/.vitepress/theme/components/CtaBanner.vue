@@ -73,7 +73,7 @@ function copy() {
   overflow: hidden;
   text-align: center;
   background: #08060f;
-  border-top: 1px solid rgba(139, 92, 246, 0.18);
+  border-top: 1px solid rgba(20, 184, 166, 0.18);
 }
 
 /* Ambient glow orbs */
@@ -88,7 +88,7 @@ function copy() {
 .ca-cta-orb-l {
   width: 480px;
   height: 480px;
-  background: radial-gradient(circle, #7c3aed, transparent 70%);
+  background: radial-gradient(circle, #0d9488, transparent 70%);
   top: -100px;
   left: -120px;
 }
@@ -96,7 +96,7 @@ function copy() {
 .ca-cta-orb-r {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, #0891b2, transparent 70%);
+  background: radial-gradient(circle, #3b82f6, transparent 70%);
   bottom: -80px;
   right: -100px;
 }
@@ -115,7 +115,7 @@ function copy() {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #a78bfa;
+  color: #2dd4bf;
   margin-bottom: 20px;
 }
 
@@ -132,7 +132,7 @@ function copy() {
 }
 
 .ca-cta-grad {
-  background: linear-gradient(135deg, #a855f7 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -153,8 +153,8 @@ function copy() {
   gap: 10px;
   padding: 13px 20px 13px 24px;
   border-radius: 12px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  background: rgba(20, 184, 166, 0.08);
   margin-bottom: 36px;
   cursor: text;
 }
@@ -162,7 +162,7 @@ function copy() {
 .ca-cta-dollar {
   font-family: ui-monospace, 'Fira Code', monospace;
   font-size: 15px;
-  color: rgba(167, 139, 250, 0.5);
+  color: rgba(45, 212, 191, 0.5);
   user-select: none;
 }
 
@@ -183,18 +183,18 @@ function copy() {
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  background: rgba(139, 92, 246, 0.1);
-  color: rgba(167, 139, 250, 0.7);
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  background: rgba(20, 184, 166, 0.1);
+  color: rgba(45, 212, 191, 0.7);
   cursor: pointer;
   transition: all 0.18s ease;
   flex-shrink: 0;
 }
 
 .ca-cta-copy:hover {
-  border-color: rgba(139, 92, 246, 0.5);
-  background: rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
+  border-color: rgba(20, 184, 166, 0.5);
+  background: rgba(20, 184, 166, 0.2);
+  color: #2dd4bf;
 }
 
 /* ── Action buttons ─────────────────────────────────────── */
@@ -213,20 +213,20 @@ function copy() {
   gap: 6px;
   padding: 13px 30px;
   border-radius: 11px;
-  background: linear-gradient(135deg, #a855f7 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%);
   color: #fff;
   font-weight: 700;
   font-size: 15px;
   text-decoration: none;
   letter-spacing: 0.01em;
   transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
+  box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
 }
 
 .ca-btn-primary:hover {
   opacity: 0.9;
   transform: translateY(-2px);
-  box-shadow: 0 10px 36px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 10px 36px rgba(20, 184, 166, 0.5);
 }
 
 .ca-btn-ghost {
@@ -245,8 +245,8 @@ function copy() {
 }
 
 .ca-btn-ghost:hover {
-  border-color: rgba(167, 139, 250, 0.45);
-  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(45, 212, 191, 0.45);
+  background: rgba(20, 184, 166, 0.1);
   color: #e2d9ff;
 }
 

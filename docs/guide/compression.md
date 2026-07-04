@@ -18,32 +18,26 @@ import { CompressionManager } from 'confused-ai';
 
 ```ts
 import { createAgent } from 'confused-ai';
-import { CompressionManager } from 'confused-ai';
-import { OpenAIProvider } from 'confused-ai';
 
-const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
-
-const compression = new CompressionManager({
-  // Provide an LLM callable for summarisation
-  generate: async (msgs) => {
-    const response = await provider.generateText({
-      messages: msgs,
-      model: 'gpt-4o-mini',
-    });
-    return response.text;
-  },
-  compressToolResults: true,
-  compressToolResultsLimit: 3,   // compress after 3+ tool messages
-  compressTokenLimit: 4096,      // also compress any message > ~4096 tokens
-});
-
+// Mastermind context compression is built into createAgent and ON by default.
+// It compresses tool outputs, logs, code, and history before they reach the LLM.
 const agent = createAgent({
   name: 'research-agent',
   instructions: 'Research topics in depth using multiple searches.',
   model: 'gpt-4o-mini',
   apiKey: process.env.OPENAI_API_KEY!,
-  compression,
+  // Pass a MastermindConfig to tune it — or `mastermind: false` to disable.
+  mastermind: {
+    contextTokenBudget: 16_000,    // keep history under ~16k tokens
+    messageTokenThreshold: 2_000,  // compress messages larger than ~2k tokens
+    compressToolResults: true,
+  },
 });
+
+// Inspect cumulative savings after runs:
+await agent.run('Research the history of TypeScript.');
+const stats = agent.getCompressionStats();
+console.log(`saved ${stats?.tokensSaved} tokens (~$${stats?.costSavedUsd.toFixed(4)})`);
 ```
 
 ---
@@ -202,8 +196,30 @@ When history exceeds the budget, Mastermind drops the oldest messages. However, 
 ### Stage 4: Code & Context Reduction (CCR)
 For highly detailed inputs, compression can lose crucial bits. Under CCR:
 1. Mastermind compresses the message and stashes the raw string in an in-memory `CCRStore`.
-2. The message is annotated with a handle: e.g., `[CCR_REF: ccr-89f41] (Compressed JSON)`.
-3. If the agent notices this reference and needs the exact values, it invokes the built-in `retrieveTool` (e.g. `retrieve_uncompressed_context({ handle: "ccr-89f41" })`) to fetch the uncompressed original.
+2. The message is annotated with a handle, e.g. `[ccr_0001 — call mastermind_retrieve("ccr_0001") for full content]`.
+3. If the agent needs the exact values, it invokes the built-in `mastermind_retrieve` tool — `execute({ handle, query? })`. Pass a `query` to get back only the original lines matching it (case-insensitive); omit it to get the full original.
+
+### Session stats & inspection
+
+Every `Mastermind` instance tracks cumulative savings and exposes budget / CCR inspection:
+
+```ts
+// Cumulative savings across every compress() call on this instance
+const life = mastermind.stats();
+console.log(life.tokensSaved, life.costSavedUsd);  // plus life.recent[] ring buffer
+
+// Is the current message list over the token budget?
+mastermind.isOverBudget(messages);
+
+// CCR store occupancy
+mastermind.ccrStats();  // { size, maxEntries }
+```
+
+Attached to an agent via the `mastermind` option, the same lifetime dashboard is available through `agent.getCompressionStats()`.
+
+### Also in the compression module
+
+Beyond `CompressionManager` and `Mastermind`, `confused-ai/compression` also exports standalone utilities: `HuffmanCodec` (+ `compressContext` / `decompressContext`), `SummaryBufferMemory`, `createSlidingWindow` / `applyWindow`, `EntityExtractionMemory`, `createTokenCounter` / `countTokens` / `contextBudget`, the structural crushers (`crushJsonText`, `compressCode`, `crushLog`, `crushXml`, `crushCsv`), and the CCR primitives `CCRStore` / `createRetrieveTool`.
 
 ---
 

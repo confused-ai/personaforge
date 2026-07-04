@@ -38,7 +38,7 @@ const planner = new LLMPlanner(
   },
   {
     generateText: async (prompt) => {
-      const result = await llm.generate([{ role: 'user', content: prompt }]);
+      const result = await llm.generateText([{ role: 'user', content: prompt }]);
       return result.text;
     },
   },
@@ -97,13 +97,11 @@ import { PlanValidator } from 'confused-ai';
 
 const validator = new PlanValidator();
 
-const validation = await validator.validate(plan, {
-  availableTools: ['search_web', 'write_content', 'publish_post'],
-});
+const validation = validator.validate(plan);
 
 if (!validation.valid) {
   console.error('Plan is invalid:', validation.errors);
-  // ['Task task-3 depends on task-99 which does not exist']
+  // [{ taskId: 'task-3', message: 'Missing dependency: task-99 does not exist in the plan', severity: 'error' }]
 } else {
   console.log('Plan is valid. Executing...');
 }
@@ -151,19 +149,21 @@ console.log('Done!', taskResults);
 ## `ClassicalPlanner` — deterministic rules
 
 ```ts
-import { ClassicalPlanner } from 'confused-ai';
+import { ClassicalPlanner, PlanningAlgorithm, TaskPriority } from 'confused-ai';
 
+// `algorithm` is required: A_STAR | BFS | DFS | GREEDY | HIERARCHICAL
 const planner = new ClassicalPlanner({
-  // Register rule-based decompositions
-  rules: [
-    {
-      match: (goal) => goal.includes('report'),
-      decompose: (goal) => [
-        { name: 'Gather data',     description: 'Collect raw data.',  priority: TaskPriority.HIGH },
-        { name: 'Analyse data',    description: 'Run analysis.',       priority: TaskPriority.MEDIUM },
-        { name: 'Write report',    description: 'Write the report.',   priority: TaskPriority.LOW },
-      ],
-    },
+  algorithm: PlanningAlgorithm.HIERARCHICAL,
+});
+
+// Register rule-based decompositions as task patterns
+planner.registerPattern({
+  name: 'report',
+  matches: (goal) => goal.includes('report'),
+  generateTasks: (goal) => [
+    { id: 'gather',  name: 'Gather data',  description: 'Collect raw data.', dependencies: [], priority: TaskPriority.HIGH,   metadata: {} },
+    { id: 'analyse', name: 'Analyse data', description: 'Run analysis.',      dependencies: [], priority: TaskPriority.MEDIUM, metadata: {} },
+    { id: 'write',   name: 'Write report', description: 'Write the report.',  dependencies: [], priority: TaskPriority.LOW,    metadata: {} },
   ],
 });
 

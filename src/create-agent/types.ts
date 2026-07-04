@@ -26,6 +26,7 @@ import type { z } from 'zod';
 import type { AgenticRunResult, AgenticLifecycleHooks } from '../agentic/index.js';
 import type { Logger } from '../observability/types.js';
 import type { MastermindConfig } from '../compression/mastermind/index.js';
+import type { EventRecorder } from '../core/runner/types.js';
 
 type AnyLightweightTool = LightweightTool<any, any>;
 
@@ -245,6 +246,19 @@ export interface CreateAgentOptions extends AgentContextOptions {
      * ```
      */
     mastermind?: MastermindConfig | boolean;
+    /**
+     * Durable event recorder. When provided, every run emits an append-only,
+     * deterministic, replayable event log (agentStart / llmResult / toolResult /
+     * agentEnd) to the recorder's store. Off by default — zero cost when absent.
+     *
+     * @example
+     * ```ts
+     * import { RunRecorder, InMemoryEventStore } from '@confused-ai/core';
+     * const store = new InMemoryEventStore();
+     * createAgent({ recorder: new RunRecorder(store), ... });
+     * ```
+     */
+    recorder?: EventRecorder;
 }
 
 export interface AgentRunOptions extends AgentContextOptions {
@@ -335,6 +349,19 @@ export interface CreateAgentResult {
      * ```
      */
     streamEvents(prompt: string | MultiModalInput, options?: Omit<AgentRunOptions, 'onChunk'>): AsyncIterable<StreamChunk>;
+    /**
+     * Session-lifetime context-compression savings (headroom-style dashboard):
+     * cumulative tokens saved, estimated USD, per-algorithm counts, and recent
+     * events. Returns `undefined` when compression is disabled (`mastermind: false`).
+     *
+     * @example
+     * ```ts
+     * await bot.run('summarise these logs');
+     * const s = bot.getCompressionStats();
+     * console.log(`saved ${s?.tokensSaved} tokens (~$${s?.costSavedUsd.toFixed(4)})`);
+     * ```
+     */
+    getCompressionStats(): import('../compression/mastermind/index.js').MastermindLifetimeStats | undefined;
     createSession(userId?: string): Promise<string>;
     getSessionMessages(sessionId: string): Promise<Message[]>;
     /**

@@ -15,7 +15,7 @@ import {
   createSqliteApprovalStore,
   waitForApproval,
   ApprovalRejectedError,
-} from 'confused-ai';
+} from 'confused-ai/production';
 ```
 
 ---
@@ -24,7 +24,7 @@ import {
 
 ```ts
 import { createAgent, tool } from 'confused-ai';
-import { createSqliteApprovalStore, waitForApproval, ApprovalRejectedError } from 'confused-ai';
+import { createSqliteApprovalStore, waitForApproval, ApprovalRejectedError } from 'confused-ai/production';
 import { z } from 'zod';
 
 const approvalStore = createSqliteApprovalStore('./agent.db');
@@ -33,17 +33,20 @@ const approvalStore = createSqliteApprovalStore('./agent.db');
 const sendInvoice = tool({
   name: 'send_invoice',
   description: 'Send an invoice email to a customer.',
-  schema: z.object({ customerId: z.string(), amount: z.number() }),
+  parameters: z.object({ customerId: z.string(), amount: z.number() }),
   execute: async ({ customerId, amount }, ctx) => {
-    // Gate: pause here until a human approves
-    await waitForApproval(approvalStore, {
+    // Gate: create a pending approval, then block until a human decides
+    const req = await approvalStore.create({
       runId: ctx.runId!,
       agentName: 'billing-agent',
       toolName: 'send_invoice',
       toolArguments: { customerId, amount },
       riskLevel: 'high',
       description: `Send a $${amount} invoice to customer ${customerId}`,
-      timeoutMs: 24 * 60 * 60 * 1000,  // 24 hours
+      ttlMs: 24 * 60 * 60 * 1000,  // request expires after 24 hours
+    });
+    await waitForApproval(approvalStore, req.id, {
+      timeoutMs: 24 * 60 * 60 * 1000,  // wait up to 24 hours
     });
 
     // Only runs after approval
@@ -76,7 +79,7 @@ try {
 ### InMemoryApprovalStore (testing)
 
 ```ts
-import { InMemoryApprovalStore } from 'confused-ai';
+import { InMemoryApprovalStore } from 'confused-ai/production';
 
 const store = new InMemoryApprovalStore();
 ```
@@ -84,7 +87,7 @@ const store = new InMemoryApprovalStore();
 ### SqliteApprovalStore (production)
 
 ```ts
-import { createSqliteApprovalStore } from 'confused-ai';
+import { createSqliteApprovalStore } from 'confused-ai/production';
 
 const store = createSqliteApprovalStore('./agent.db');
 ```
@@ -95,12 +98,12 @@ const store = createSqliteApprovalStore('./agent.db');
 
 ```ts
 interface ApprovalStore {
-  create(request: Omit<HitlRequest, 'id' | 'status' | 'createdAt' | 'expiresAt'>): Promise<HitlRequest>;
+  create(request: Omit<HitlRequest, 'id' | 'status' | 'createdAt' | 'expiresAt'> & { ttlMs?: number }): Promise<HitlRequest>;
   get(id: string): Promise<HitlRequest | null>;
-  getByRunId(runId: string): Promise<HitlRequest[]>;
+  getByRunId(runId: string): Promise<HitlRequest | null>;
   decide(id: string, decision: ApprovalDecision): Promise<HitlRequest>;
-  listPending(): Promise<HitlRequest[]>;
-  cleanup(olderThanMs: number): Promise<number>;
+  listPending(agentName?: string): Promise<HitlRequest[]>;
+  expireStale?(): Promise<number>;
 }
 ```
 
@@ -132,12 +135,12 @@ interface HitlRequest {
 When you serve your agent with `createHttpService()`, pass an `approvalStore` to expose a built-in REST endpoint:
 
 ```ts
-import { createHttpService } from 'confused-ai';
-import { createSqliteApprovalStore } from 'confused-ai';
+import { createHttpService } from 'confused-ai/runtime';
+import { createSqliteApprovalStore } from 'confused-ai/production';
 
 const approvalStore = createSqliteApprovalStore('./agent.db');
 
-const app = createHttpService({ agent, approvalStore });
+const app = createHttpService({ agents: { agent }, approvalStore });
 app.listen(3000);
 ```
 
@@ -150,7 +153,7 @@ GET /v1/approvals?status=pending
 ```
 POST /v1/approvals/:id
 Content-Type: application/json
-{ "decision": "approved", "comment": "Looks good to me" }
+{ "approved": true, "comment": "Looks good to me" }
 ```
 
 ---
@@ -162,7 +165,7 @@ Content-Type: application/json
 const pending = await approvalStore.listPending();
 for (const req of pending) {
   await approvalStore.decide(req.id, {
-    decision: 'approved',
+    approved: true,
     comment: 'Reviewed and approved.',
   });
 }
@@ -175,7 +178,7 @@ for (const req of pending) {
 When a human rejects a request, `waitForApproval` throws `ApprovalRejectedError`:
 
 ```ts
-import { ApprovalRejectedError } from 'confused-ai';
+import { ApprovalRejectedError } from 'confused-ai/production';
 
 try {
   const result = await agent.run(prompt, { runId: 'run-abc' });

@@ -136,6 +136,14 @@ export interface MastermindConfig {
      */
     minRatio?: number;
 
+    /**
+     * Blended USD price per 1K tokens, used only to estimate cost saved in
+     * `stats()`. Default: 0.003.
+     * ponytail: single blended rate, not per-model input/output split — good
+     * enough for a savings dashboard; pass your model's rate to sharpen it.
+     */
+    costPer1kTokens?: number;
+
     debug?: boolean;
 }
 
@@ -147,4 +155,37 @@ export interface MastermindStats {
     messagesCompressed: number;
     ccrEntries: number;
     algorithms: Partial<Record<CompressionAlgorithm, number>>;
+}
+
+// ── Session-lifetime stats (headroom_stats parity) ───────────────────────────
+
+/** One compress() call that saved tokens; newest-last ring-buffer entry. */
+export interface RecentCompressionEvent {
+    /** ms epoch when this compress() call completed */
+    at: number;
+    tokensBefore: number;
+    tokensAfter: number;
+    tokensSaved: number;
+    messagesCompressed: number;
+    algorithms: Partial<Record<CompressionAlgorithm, number>>;
+}
+
+/**
+ * Cumulative savings across every compress() call on a Mastermind instance —
+ * the session dashboard returned by `Mastermind.stats()`.
+ */
+export interface MastermindLifetimeStats {
+    /** Number of compress() calls that saved tokens. */
+    compressions: number;
+    /** Total messages compressed across the session. */
+    messagesCompressed: number;
+    tokensBefore: number;
+    tokensAfter: number;
+    tokensSaved: number;
+    /** tokensSaved / 1000 * costPer1kTokens. */
+    costSavedUsd: number;
+    /** Compressions per algorithm across the session. */
+    algorithms: Partial<Record<CompressionAlgorithm, number>>;
+    /** Most recent events, newest last (bounded). */
+    recent: RecentCompressionEvent[];
 }

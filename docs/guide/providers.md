@@ -449,7 +449,6 @@ Any object that satisfies this interface works:
 interface LLMProvider {
   generateText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult>;
   streamText?(messages: Message[], options?: StreamOptions): Promise<GenerateResult>;
-  getName?(): string;
 }
 ```
 

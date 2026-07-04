@@ -24,7 +24,7 @@ import { z } from 'zod';
 const getOrder = tool({
   name: 'get_order',
   description: 'Retrieve an order by ID. Returns status, items, and shipping info.',
-  schema: z.object({
+  parameters: z.object({
     orderId: z.string().describe('The order ID to look up'),
   }),
   execute: async ({ orderId }, ctx) => {
@@ -53,15 +53,15 @@ The second argument to `execute` is a `ToolContext` with request-scoped metadata
 const auditedTool = tool({
   name: 'update_record',
   description: 'Update a database record.',
-  schema: z.object({
+  parameters: z.object({
     id: z.string(),
     patch: z.record(z.unknown()),
   }),
   execute: async ({ id, patch }, ctx) => {
-    ctx.logger?.info('Updating record', { id, userId: ctx.userId, runId: ctx.runId });
+    console.log('Updating record', { id, sessionId: ctx.sessionId, agentId: ctx.agentId });
 
     // Abort early if the run was cancelled
-    if (ctx.signal?.aborted) {
+    if (ctx.abortSignal?.aborted) {
       return { error: 'Run cancelled.' };
     }
 
@@ -70,13 +70,10 @@ const auditedTool = tool({
   },
 });
 
-// ToolContext fields:
-// ctx.runId      — current run ID
-// ctx.userId     — user who triggered the run
-// ctx.sessionId  — current session ID
-// ctx.signal     — AbortSignal (fires when agent is cancelled/timed out)
-// ctx.logger     — framework logger
-// ctx.metadata   — arbitrary key-value from agent.run() options
+// Tool context fields:
+// ctx.agentId     — ID of the agent executing the tool
+// ctx.sessionId   — current session ID
+// ctx.abortSignal — AbortSignal (fires when the run is cancelled/timed out)
 ```
 
 ---
@@ -89,7 +86,7 @@ Set `needsApproval: true` to require human approval before the tool runs:
 const sendEmail = tool({
   name: 'send_email',
   description: 'Send an email to a customer.',
-  schema: z.object({ to: z.string().email(), subject: z.string(), body: z.string() }),
+  parameters: z.object({ to: z.string().email(), subject: z.string(), body: z.string() }),
   needsApproval: true,   // agent will pause and wait for human approval
   execute: async ({ to, subject, body }) => {
     await mailer.send({ to, subject, body });
@@ -101,7 +98,7 @@ const sendEmail = tool({
 const chargeCard = tool({
   name: 'charge_card',
   description: 'Charge a customer credit card.',
-  schema: z.object({ customerId: z.string(), amount: z.number() }),
+  parameters: z.object({ customerId: z.string(), amount: z.number() }),
   needsApproval: ({ amount }) => amount > 100,  // only require approval for large charges
   execute: async ({ customerId, amount }) => {
     await payments.charge(customerId, amount);
@@ -118,7 +115,7 @@ const chargeCard = tool({
 const slowTool = tool({
   name: 'run_report',
   description: 'Generate a complex report (can take up to 2 minutes).',
-  schema: z.object({ reportId: z.string() }),
+  parameters: z.object({ reportId: z.string() }),
   timeoutMs: 120_000,   // 2 minutes
   execute: async ({ reportId }) => {
     return await reportEngine.generate(reportId);
@@ -131,12 +128,12 @@ const slowTool = tool({
 ## Tool categories and tags
 
 ```ts
-import { ToolCategory } from 'confused-ai';
+import { ToolCategory } from 'confused-ai/tool';
 
 const myTool = tool({
   name: 'search_products',
   description: 'Search the product catalogue.',
-  schema: z.object({ query: z.string() }),
+  parameters: z.object({ query: z.string() }),
   category: ToolCategory.DATA,
   tags: ['search', 'products', 'catalogue'],
   execute: async ({ query }) => searchProducts(query),
@@ -154,7 +151,7 @@ import { defineTool } from 'confused-ai';
 const myTool = defineTool({
   name: 'hello',
   description: 'Say hello.',
-  schema: z.object({ name: z.string() }),
+  parameters: z.object({ name: z.string() }),
   execute: async ({ name }) => `Hello, ${name}!`,
 });
 ```
@@ -166,27 +163,24 @@ const myTool = defineTool({
 ```ts
 import { createTools } from 'confused-ai';
 
-const [getProduct, updateInventory, checkStock] = createTools([
-  {
-    name: 'get_product',
+const { get_product, update_inventory, check_stock } = createTools({
+  get_product: {
     description: 'Get product details by SKU.',
-    schema: z.object({ sku: z.string() }),
+    parameters: z.object({ sku: z.string() }),
     execute: async ({ sku }) => getProductBySku(sku),
   },
-  {
-    name: 'update_inventory',
+  update_inventory: {
     description: 'Update inventory count for a product.',
-    schema: z.object({ sku: z.string(), delta: z.number() }),
+    parameters: z.object({ sku: z.string(), delta: z.number() }),
     needsApproval: true,
     execute: async ({ sku, delta }) => adjustInventory(sku, delta),
   },
-  {
-    name: 'check_stock',
+  check_stock: {
     description: 'Check if a product is in stock.',
-    schema: z.object({ sku: z.string() }),
+    parameters: z.object({ sku: z.string() }),
     execute: async ({ sku }) => checkProductStock(sku),
   },
-]);
+});
 ```
 
 ---
@@ -197,11 +191,11 @@ const [getProduct, updateInventory, checkStock] = createTools([
 const streamingTool = tool({
   name: 'process_large_file',
   description: 'Process a large file and stream progress.',
-  schema: z.object({ fileUrl: z.string() }),
+  parameters: z.object({ fileUrl: z.string() }),
   execute: async ({ fileUrl }, ctx) => {
     const lines: string[] = [];
     for await (const line of streamFile(fileUrl)) {
-      if (ctx.signal?.aborted) break;
+      if (ctx.abortSignal?.aborted) break;
       lines.push(processLine(line));
     }
     return { lines: lines.length, sample: lines.slice(0, 5) };

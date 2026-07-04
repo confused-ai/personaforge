@@ -14,7 +14,7 @@ import {
   createLoggingPlugin,
   createRateLimitPlugin,
   createTelemetryPlugin,
-} from 'confused-ai';
+} from 'confused-ai/plugins';
 ```
 
 ---
@@ -22,25 +22,37 @@ import {
 ## Quick start
 
 ```ts
+import { createAgent } from 'confused-ai';
 import {
   createPluginRegistry,
   createLoggingPlugin,
   createRateLimitPlugin,
-} from 'confused-ai';
+} from 'confused-ai/plugins';
 
 const plugins = createPluginRegistry();
 
 plugins.register(createLoggingPlugin());
 plugins.register(createRateLimitPlugin({ maxRpm: 60 }));
 
-// Then attach the registry to your agent(s)
 const agent = createAgent({
   name: 'my-agent',
   instructions: '...',
   model: 'gpt-4o-mini',
   apiKey: process.env.OPENAI_API_KEY!,
-  plugins,
 });
+
+// There is no `plugins` option on createAgent — a registry is applied
+// manually around each run. `runBeforeHooks` folds every plugin's beforeRun
+// over the input (in registration order) and may transform it:
+const context = { agentId: 'my-agent', logger: console, metadata: {} };
+const input = await plugins.runBeforeHooks({ prompt: 'Summarize the latest report.' }, context);
+
+const result = await agent.run(input.prompt);
+
+// Collect the combined tool middleware from every plugin. Run the after /
+// error hooks with `plugins.runAfterHooks(output, context)` and
+// `plugins.runErrorHooks(error, context)`.
+const toolMiddleware = plugins.getToolMiddleware();
 ```
 
 ---
@@ -52,7 +64,7 @@ const agent = createAgent({
 Logs every agent invocation, tool call, and error:
 
 ```ts
-import { createLoggingPlugin } from 'confused-ai';
+import { createLoggingPlugin } from 'confused-ai/plugins';
 
 plugins.register(createLoggingPlugin(myLogger));  // optional custom logger
 ```
@@ -62,7 +74,7 @@ plugins.register(createLoggingPlugin(myLogger));  // optional custom logger
 Rejects or queues requests that exceed a per-minute request rate:
 
 ```ts
-import { createRateLimitPlugin } from 'confused-ai';
+import { createRateLimitPlugin } from 'confused-ai/plugins';
 
 plugins.register(createRateLimitPlugin({
   maxRpm:    60,    // max requests per minute (default: 60)
@@ -75,7 +87,7 @@ plugins.register(createRateLimitPlugin({
 Emits metrics counters and histograms to any `MetricsCollector`:
 
 ```ts
-import { createTelemetryPlugin } from 'confused-ai';
+import { createTelemetryPlugin } from 'confused-ai/plugins';
 
 plugins.register(createTelemetryPlugin(metricsCollector));
 ```
@@ -90,6 +102,15 @@ interface PluginRegistry {
   unregister(pluginId: string): boolean;
   get(pluginId: string): Plugin | undefined;
   list(): Plugin[];
+
+  /** Run every plugin's beforeRun in order — may transform the input. */
+  runBeforeHooks(input: AgentInput, context: PluginContext): Promise<AgentInput>;
+  /** Run every plugin's afterRun in order — may transform the output. */
+  runAfterHooks(output: AgentOutput, context: PluginContext): Promise<AgentOutput>;
+  /** Combined tool middleware contributed by all plugins. */
+  getToolMiddleware(): (ToolMiddleware | ToolMiddlewareObject)[];
+  /** Fan an error out to every plugin's onError. */
+  runErrorHooks(error: Error, context: PluginContext): Promise<void>;
 }
 ```
 
@@ -98,7 +119,7 @@ interface PluginRegistry {
 ## Author a custom plugin
 
 ```ts
-import type { Plugin } from 'confused-ai';
+import type { Plugin } from 'confused-ai/plugins';
 
 const auditPlugin: Plugin = {
   id: 'audit-logger',
@@ -164,7 +185,7 @@ interface Plugin {
 If you already have `AgentLifecycleHooks`, use `hooksToPlugin` to register them as a plugin:
 
 ```ts
-import { hooksToPlugin } from 'confused-ai';
+import { hooksToPlugin } from 'confused-ai/plugins';
 
 const myPlugin = hooksToPlugin('my-hooks', {
   beforeRun: async (input) => { console.log('run started'); return input; },

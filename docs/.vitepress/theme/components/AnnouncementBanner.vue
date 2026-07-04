@@ -4,7 +4,7 @@
   <div class="ca-announce-wrap">
     <a href="/changelog" class="ca-announce">
       <span class="ca-ann-badge">NEW</span>
-      <span class="ca-ann-text">v1.1.2 — Smart LLM Router · MCP Server · Voice Pipeline</span>
+      <span class="ca-ann-text">v2.4 — Durable graph engine · Mastermind compression · MCP server</span>
       <svg class="ca-ann-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
         <path d="M1 6.5h11M7.5 2l4.5 4.5L7.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -27,8 +27,8 @@
   gap: 9px;
   padding: 6px 16px 6px 6px;
   border-radius: 100px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.07);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  background: rgba(20, 184, 166, 0.07);
   color: var(--vp-c-text-2);
   font-size: 13px;
   font-weight: 500;
@@ -40,10 +40,10 @@
 }
 
 .ca-announce:hover {
-  border-color: rgba(139, 92, 246, 0.65);
+  border-color: rgba(20, 184, 166, 0.65);
   color: var(--vp-c-brand-1);
-  background: rgba(139, 92, 246, 0.13);
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.12);
+  background: rgba(20, 184, 166, 0.13);
+  box-shadow: 0 0 24px rgba(20, 184, 166, 0.12);
 }
 
 .ca-ann-badge {
@@ -51,7 +51,7 @@
   align-items: center;
   padding: 2px 10px;
   border-radius: 100px;
-  background: linear-gradient(135deg, #a855f7 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%);
   color: #fff;
   font-size: 10px;
   font-weight: 700;

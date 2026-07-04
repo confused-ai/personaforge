@@ -298,6 +298,12 @@ export enum GraphEventType {
   CHECKPOINT_SAVED = 'checkpoint.saved',
   CHECKPOINT_LOADED = 'checkpoint.loaded',
   SIGNAL_RECEIVED = 'signal.received',
+
+  // Agent-level (the single-agent runner emits these into the same log)
+  AGENT_STARTED = 'agent.started',
+  AGENT_COMPLETED = 'agent.completed',
+  LLM_CALL = 'llm.call',
+  TOOL_CALL = 'tool.call',
 }
 
 export interface GraphEvent {
@@ -327,6 +333,12 @@ export interface EventStore {
   getCheckpoint(executionId: ExecutionId): Promise<Checkpoint | null>;
   /** Save a checkpoint */
   saveCheckpoint(checkpoint: Checkpoint): Promise<void>;
+  /**
+   * Permanently erase all events and checkpoints for an execution
+   * (right-to-erasure / GDPR / DPDP). Optional — stores that cannot delete
+   * omit it. Breaks the append-only guarantee by design, for compliance.
+   */
+  purge?(executionId: ExecutionId): Promise<void>;
 }
 
 export interface Checkpoint {

@@ -31,15 +31,15 @@ console.log(text);`,
     label: 'Custom Tools',
     desc: 'Zod-validated, fully typed tools. Drop them into any agent with zero boilerplate.',
     filename: 'weather-agent.ts',
-    code: `import { agent, defineTool } from 'confused-ai';
-import { z } from 'zod';
+    code: `import { agent, tool } from 'confused-ai';
+import { z } from 'zod/v3';
 
-const getWeather = defineTool()
-  .name('getWeather')
-  .description('Get current weather for a city')
-  .parameters(z.object({ city: z.string() }))
-  .execute(async ({ city }) => ({ city, temp: 22, unit: 'C' }))
-  .build();
+const getWeather = tool({
+  name: 'get_weather',
+  description: 'Get the current weather for a city.',
+  parameters: z.object({ city: z.string() }),
+  execute: async ({ city }) => ({ city, temp: 22, unit: 'C' }),
+});
 
 const ai = agent({
   instructions: 'Help with weather queries.',
@@ -51,9 +51,9 @@ const { text } = await ai.run('Is it warm in Tokyo right now?');`,
   {
     icon: '🔀',
     label: 'Multi-Agent',
-    desc: 'compose(), pipe(), supervisor, swarm. Any topology — no lock-in.',
+    desc: 'compose(), pipe(), supervisors, and swarms. Any topology — no lock-in.',
     filename: 'pipeline.ts',
-    code: `import { agent, compose, createSupervisor } from 'confused-ai';
+    code: `import { agent, compose } from 'confused-ai';
 
 const researcher = agent('Research topics thoroughly.');
 const writer     = agent('Turn research into polished prose.');
@@ -72,44 +72,49 @@ const { text } = await pipeline.run(
     desc: 'Circuit breakers, retries, rate limits, and USD budget caps — all composable.',
     filename: 'production.ts',
     code: `import { createAgent } from 'confused-ai';
-import { withResilience } from 'confused-ai/guard';
-import { createSqliteSessionStore } from 'confused-ai/session';
+import { withResilience } from 'confused-ai/production';
+import { createSqliteStore } from 'confused-ai/session';
 
 const base = createAgent({
   name:         'SupportBot',
+  model:        'gpt-4o-mini',
   instructions: 'You are a helpful support agent.',
-  budget:       { maxUsdPerRun: 0.05, maxUsdPerUser: 5.0 },
-  guardrails:   true,
-  sessionStore: createSqliteSessionStore('./sessions.db'),
+  budget:       { maxUsd: 5.0 },
+  sessionStore: createSqliteStore('./sessions.db'),
 });
 
+// Wrap once — circuit breaker, rate limit, and retry all compose
 export default withResilience(base, {
-  circuitBreaker: { threshold: 5, timeout: 30_000 },
-  rateLimit:      { maxRequests: 100, windowMs: 60_000 },
-  retry:          { maxAttempts: 3, backoff: 'exponential' },
+  circuitBreaker: { failureThreshold: 5, resetTimeoutMs: 30_000 },
+  rateLimit:      { maxRpm: 100 },
+  retry:          { maxRetries: 3, backoffMs: 500 },
 });`,
   },
   {
     icon: '🧠',
     label: 'RAG in One Call',
-    desc: 'KnowledgeEngine + loaders + vector store. Full semantic retrieval, zero wiring.',
+    desc: 'Knowledge engine + loaders + vector store. Full semantic retrieval, zero wiring.',
     filename: 'rag-agent.ts',
-    code: `import { createAgent } from 'confused-ai';
-import { KnowledgeEngine, TextLoader } from 'confused-ai/knowledge';
-import { InMemoryVectorStore } from 'confused-ai/knowledge';
-import { OpenAIEmbeddingProvider } from 'confused-ai/memory';
+    code: `import {
+  createAgent,
+  createKnowledgeEngine,
+  OpenAIEmbeddingProvider,
+  loadUrl,
+} from 'confused-ai';
 
-const knowledge = new KnowledgeEngine({
-  embeddingProvider: new OpenAIEmbeddingProvider(),
-  vectorStore:       new InMemoryVectorStore(),
-});
+const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
 
-// Ingest your docs once at startup
-await knowledge.ingest(await new TextLoader('./docs/policy.md').load());
+// Default store is in-memory cosine similarity
+const kb = createKnowledgeEngine({ embed: (text) => embedder.embed(text) });
 
+// Ingest sources once at startup
+await kb.addDocuments(await loadUrl('https://docs.example.com/policy'));
+
+// Retrieval runs automatically when a knowledgebase is attached
 const ai = createAgent({
-  instructions: 'Answer using the company knowledge base.',
-  ragEngine:    knowledge,
+  instructions:  'Answer using the company knowledge base.',
+  model:         'gpt-4o-mini',
+  knowledgebase: kb,
 });
 
 const { text } = await ai.run('What is the refund policy?');`,
@@ -384,7 +389,7 @@ const lineCount   = computed(() => tabs[active.value].code.split('\n').length);
 
 .ca-stab.is-active {
   background: var(--vp-c-brand-soft);
-  border-color: rgba(139, 92, 246, 0.25);
+  border-color: rgba(20, 184, 166, 0.25);
 }
 
 .ca-stab.is-active::before {
@@ -454,9 +459,9 @@ const lineCount   = computed(() => tabs[active.value].code.split('\n').length);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #0d0d14;
   box-shadow:
-    0 0 0 1px rgba(139, 92, 246, 0.12),
+    0 0 0 1px rgba(20, 184, 166, 0.12),
     0 32px 80px rgba(0, 0, 0, 0.5),
-    0 0 60px rgba(139, 92, 246, 0.06) inset;
+    0 0 60px rgba(20, 184, 166, 0.06) inset;
 }
 
 /* macOS titlebar */
@@ -498,11 +503,11 @@ const lineCount   = computed(() => tabs[active.value].code.split('\n').length);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(139, 92, 246, 0.7);
+  color: rgba(20, 184, 166, 0.7);
   padding: 3px 9px;
   border-radius: 5px;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(20, 184, 166, 0.1);
+  border: 1px solid rgba(20, 184, 166, 0.2);
 }
 
 /* Code + line numbers */
@@ -511,7 +516,7 @@ const lineCount   = computed(() => tabs[active.value].code.split('\n').length);
   overflow-x: auto;
   padding: 22px 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(139,92,246,0.2) transparent;
+  scrollbar-color: rgba(20, 184, 166,0.2) transparent;
 }
 
 .ca-line-nums {

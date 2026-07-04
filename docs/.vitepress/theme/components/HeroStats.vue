@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const stats = [
   { value: '100+', label: 'Built-in Tools' },
-  { value: '18', label: 'Example Apps' },
-  { value: '6', label: 'LLM Providers' },
+  { value: '20+', label: 'Vector Stores' },
+  { value: '30+', label: 'LLM Providers' },
   { value: 'MIT', label: 'Open Source' },
 ];
 </script>
@@ -64,7 +64,7 @@ const stats = [
   font-size: 1.65rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #a855f7 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

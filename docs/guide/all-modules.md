@@ -46,7 +46,7 @@ import { agent, defineAgent, compose, pipe, tool } from 'confused-ai';
 
 ```ts
 import { agent } from 'confused-ai';
-import { TavilySearchTool } from 'confused-ai/tools';
+import { TavilySearchTool } from 'confused-ai/tools/search';
 import { createSqliteStore } from 'confused-ai/session';
 import { GuardrailValidator } from 'confused-ai/guardrails';
 import { withResilience } from 'confused-ai/production';

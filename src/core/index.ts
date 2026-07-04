@@ -12,8 +12,9 @@
  */
 
 // ── Primary API ───────────────────────────────────────────────────────────────
-export { createAgent }         from './agent.js';
-export type { CreateAgentOptions } from './agent.js';
+// createAgent + CreateAgentOptions live in ../create-agent — the single factory
+// wired with both Mastermind compression and the durable EventRecorder. The
+// package root exports them explicitly; this barrel no longer duplicates them.
 export type { SessionStore } from '../contracts/index.js';
 
 // ── Database (AgentDb re-exported so users import from one place) ─────────────

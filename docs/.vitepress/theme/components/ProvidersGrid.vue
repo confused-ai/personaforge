@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const providers = [
-  { name: 'OpenAI', badge: 'GPT-4o', env: 'OPENAI_API_KEY', color: '#10a37f' },
-  { name: 'Anthropic', badge: 'Claude 3.5', env: 'ANTHROPIC_API_KEY', color: '#d97706' },
-  { name: 'Google', badge: 'Gemini 1.5', env: 'GOOGLE_API_KEY', color: '#4285f4' },
-  { name: 'OpenRouter', badge: '100+ models', env: 'OPENROUTER_API_KEY', color: '#8b5cf6' },
+  { name: 'OpenAI', badge: 'GPT & o-series', env: 'OPENAI_API_KEY', color: '#10a37f' },
+  { name: 'Anthropic', badge: 'Claude family', env: 'ANTHROPIC_API_KEY', color: '#d97706' },
+  { name: 'Google', badge: 'Gemini family', env: 'GOOGLE_API_KEY', color: '#4285f4' },
+  { name: 'OpenRouter', badge: '100+ models', env: 'OPENROUTER_API_KEY', color: '#14b8a6' },
   { name: 'Azure OpenAI', badge: 'Enterprise', env: 'OPENAI_BASE_URL', color: '#0078d4' },
   { name: 'AWS Bedrock', badge: 'Peer dep', env: '@aws-sdk/...', color: '#f59e0b' },
   { name: 'Any OpenAI-compat', badge: 'Custom URL', env: 'apiKey + baseURL', color: '#22c55e' },
@@ -17,7 +17,7 @@ const providers = [
       <div class="ca-section-label">LLM PROVIDERS</div>
       <h2 class="ca-section-title">One framework, every model</h2>
       <p class="ca-section-sub">
-        Swap providers with a single import. Same agent code runs on all of them.
+        30+ providers built-in. Swap with one import — the same agent code runs on every model.
       </p>
 
       <div class="ca-providers-grid">
@@ -101,7 +101,7 @@ const providers = [
 .ca-provider-card:hover {
   transform: translateY(-3px);
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.1);
 }
 
 .ca-provider-dot {

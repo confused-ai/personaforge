@@ -57,7 +57,7 @@ const pillars = [
       'MockLLMProvider for deterministic tests',
       'MockToolRegistry + fixture helpers',
       'Vitest-compatible test utilities',
-      '99 passing tests out of the box',
+      'Deterministic tests — no live API calls',
     ],
   },
 ];
@@ -81,8 +81,8 @@ const pillars = [
           <ul class="ca-ent-list">
             <li v-for="item in pillar.items" :key="item">
               <svg class="ca-check" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="7" fill="rgba(139,92,246,0.15)"/>
-                <path d="M4 7l2.2 2.2L10 5" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="7" cy="7" r="7" fill="rgba(20, 184, 166,0.15)"/>
+                <path d="M4 7l2.2 2.2L10 5" stroke="#14b8a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               {{ item }}
             </li>
@@ -163,7 +163,7 @@ const pillars = [
 .ca-ent-card:hover {
   transform: translateY(-3px);
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.12);
+  box-shadow: 0 8px 28px rgba(20, 184, 166, 0.12);
 }
 
 .ca-ent-card-head {

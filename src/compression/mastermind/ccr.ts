@@ -71,10 +71,16 @@ export interface MastermindRetrieveTool {
         type: 'object';
         properties: {
             handle: { type: 'string'; description: string };
+            query: { type: 'string'; description: string };
         };
         required: ['handle'];
     };
-    execute(args: { handle: string }): Promise<{ content: string; found: boolean }>;
+    execute(args: { handle: string; query?: string }): Promise<{
+        content: string;
+        found: boolean;
+        /** Number of matching lines when a `query` was supplied. */
+        matches?: number;
+    }>;
 }
 
 export function createRetrieveTool(store: CCRStore): MastermindRetrieveTool {
@@ -83,7 +89,9 @@ export function createRetrieveTool(store: CCRStore): MastermindRetrieveTool {
         description:
             'Retrieve the original (uncompressed) content for a compressed block. ' +
             'Pass the `handle` value shown in brackets after a compressed section ' +
-            '(e.g. `[ccr_0001]`). Returns the full original text.',
+            '(e.g. `[ccr_0001]`). Returns the full original text, or — if you pass ' +
+            'an optional `query` — only the lines matching it (case-insensitive), ' +
+            'so you can pull just the relevant slice of a large original.',
         parameters: {
             type: 'object',
             properties: {
@@ -91,13 +99,26 @@ export function createRetrieveTool(store: CCRStore): MastermindRetrieveTool {
                     type: 'string',
                     description: 'The CCR handle printed next to the compressed block, e.g. "ccr_0001".',
                 },
+                query: {
+                    type: 'string',
+                    description: 'Optional substring; returns only original lines containing it (case-insensitive).',
+                },
             },
             required: ['handle'],
         },
-        async execute({ handle }) {
+        async execute({ handle, query }) {
             const entry = store.retrieve(handle);
             if (!entry) {
                 return { content: `[CCR: handle "${handle}" not found — may have been evicted]`, found: false };
+            }
+            const q = query?.trim();
+            if (q) {
+                const needle = q.toLowerCase();
+                const matches = entry.original.split('\n').filter(line => line.toLowerCase().includes(needle));
+                if (matches.length === 0) {
+                    return { content: `[CCR: no lines in "${handle}" match query "${q}"]`, found: true, matches: 0 };
+                }
+                return { content: matches.join('\n'), found: true, matches: matches.length };
             }
             return { content: entry.original, found: true };
         },

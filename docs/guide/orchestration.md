@@ -64,12 +64,12 @@ const docsAgent   = createAgent({ name: 'docs',     instructions: 'Write API doc
 
 const engineeringTeam = new Team({
   name: 'engineering',
-  members: [codeAgent, reviewAgent, docsAgent],
-  coordinator: 'round-robin',  // 'round-robin' | 'least-loaded' | 'capability'
+  agents: [codeAgent, reviewAgent, docsAgent],
+  strategy: 'parallel',  // 'parallel' | 'sequential' | 'hierarchical'
 });
 
 const result = await engineeringTeam.run('Implement a rate-limiter class with tests and docs.');
-console.log(result.text);
+console.log(result.synthesis);
 ```
 
 ---
@@ -79,27 +79,24 @@ console.log(result.text);
 A supervisor agent decides which specialist to delegate each task to:
 
 ```ts
-import { createSupervisor, createAgent } from 'confused-ai';
+import { createSupervisor, createRole } from 'confused-ai/orchestration';
+import { createAgent } from 'confused-ai';
 
 const supervisor = createSupervisor({
   name: 'triage',
-  instructions: `
-    You are a triage coordinator. Route each request to the right specialist:
-    - billing questions → billing agent
-    - technical issues → tech support agent
-    - general questions → general agent
-  `,
-  llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o-mini' }),
-  agents: {
-    billing: createAgent({ name: 'billing', instructions: 'Handle billing and payment questions.', model: 'gpt-4o-mini', apiKey: '...' }),
-    tech:    createAgent({ name: 'tech',    instructions: 'Solve technical product issues.', model: 'gpt-4o', apiKey: '...' }),
-    general: createAgent({ name: 'general', instructions: 'Answer general questions.', model: 'gpt-4o-mini', apiKey: '...' }),
-  },
+  description: 'Coordinates specialist agents to resolve each request.',
+  // Each sub-agent is paired with a role describing its responsibilities.
+  subAgents: [
+    { agent: createAgent({ name: 'billing', instructions: 'Handle billing and payment questions.', model: 'gpt-4o-mini', apiKey: '...' }), role: createRole('billing', ['Handle billing and payment questions']) },
+    { agent: createAgent({ name: 'tech',    instructions: 'Solve technical product issues.',        model: 'gpt-4o',      apiKey: '...' }), role: createRole('tech',    ['Solve technical product issues']) },
+    { agent: createAgent({ name: 'general', instructions: 'Answer general questions.',               model: 'gpt-4o-mini', apiKey: '...' }), role: createRole('general', ['Answer general questions']) },
+  ],
+  guidelines: ['Assign each request to the most relevant specialist.'],
+  // coordinationType?: 'sequential' (default) | 'parallel'
 });
 
 const result = await supervisor.run('My invoice shows the wrong amount.');
-// Supervisor routes this to the billing agent automatically
-console.log(result.text);
+console.log(result);
 ```
 
 ---
@@ -126,14 +123,16 @@ const specialistAgent = createAgent({
 });
 
 const handoff = createHandoff({
-  source: triageAgent,
-  targets: { specialist: specialistAgent },
-  condition: (result) => result.text.includes('[ESCALATE]'),
-  // or: condition: 'always'
+  from: triageAgent,
+  to: { specialist: specialistAgent },
+  // The router receives a HandoffContext ({ prompt, fromAgent, ... }) and
+  // returns the key of the target agent to hand off to.
+  router: () => 'specialist',
+  maxDepth: 5,
 });
 
-const result = await handoff.run('My database is returning corrupted data after the migration.');
-console.log(result.text);  // answered by the specialist if escalated
+const result = await handoff.execute('My database is returning corrupted data after the migration.');
+console.log(result.finalOutput.result);  // answered by the specialist
 ```
 
 ---
@@ -146,15 +145,15 @@ Route requests to agents based on declared capabilities:
 import { createAgentRouter, createAgent } from 'confused-ai';
 
 const router = createAgentRouter({
-  strategy: 'capability',  // 'capability' | 'round-robin' | 'least-loaded'
-  agents: [
-    { agent: createAgent({ name: 'code-agent', instructions: '...', model: 'gpt-4o', apiKey: '...' }), capabilities: ['coding', 'debugging'] },
-    { agent: createAgent({ name: 'data-agent', instructions: '...', model: 'gpt-4o', apiKey: '...' }), capabilities: ['data-analysis', 'sql'] },
-    { agent: createAgent({ name: 'write-agent', instructions: '...', model: 'gpt-4o-mini', apiKey: '...' }), capabilities: ['writing', 'editing'] },
-  ],
+  strategy: 'capability-match',  // 'capability-match' | 'round-robin' | 'least-loaded'
+  agents: {
+    code:  { agent: createAgent({ name: 'code-agent',  instructions: '...', model: 'gpt-4o',      apiKey: '...' }), capabilities: ['coding', 'debugging'] },
+    data:  { agent: createAgent({ name: 'data-agent',  instructions: '...', model: 'gpt-4o',      apiKey: '...' }), capabilities: ['data-analysis', 'sql'] },
+    write: { agent: createAgent({ name: 'write-agent', instructions: '...', model: 'gpt-4o-mini', apiKey: '...' }), capabilities: ['writing', 'editing'] },
+  },
 });
 
-const result = await router.run({ prompt: 'Fix the SQL query performance issue.', capability: 'sql' });
+const result = await router.route('Fix the SQL query performance issue.');
 ```
 
 ---
@@ -167,17 +166,18 @@ Run multiple agents on the same prompt and pick the best answer by consensus:
 import { createConsensus, createAgent } from 'confused-ai';
 
 const consensus = createConsensus({
-  agents: [
-    createAgent({ name: 'agent-a', instructions: 'Answer carefully.', model: 'gpt-4o', apiKey: '...' }),
-    createAgent({ name: 'agent-b', instructions: 'Answer carefully.', model: 'claude-sonnet-4-20250514', apiKey: '...' }),
-    createAgent({ name: 'agent-c', instructions: 'Answer carefully.', model: 'gpt-4o-mini', apiKey: '...' }),
-  ],
-  strategy: 'majority',  // 'majority' | 'best-of' | 'synthesise'
-  judge: createAgent({ name: 'judge', instructions: 'Pick the most accurate answer.', model: 'gpt-4o', apiKey: '...' }),
+  agents: {
+    a: createAgent({ name: 'agent-a', instructions: 'Answer carefully.', model: 'gpt-4o', apiKey: '...' }),
+    b: createAgent({ name: 'agent-b', instructions: 'Answer carefully.', model: 'claude-sonnet-4-20250514', apiKey: '...' }),
+    c: createAgent({ name: 'agent-c', instructions: 'Answer carefully.', model: 'gpt-4o-mini', apiKey: '...' }),
+  },
+  strategy: 'majority-vote',  // 'majority-vote' | 'unanimous' | 'weighted' | 'best-of-n'
+  quorum: 2,                  // minimum agents that must agree (default: ceil(n/2))
 });
 
-const result = await consensus.run('What is the most efficient sorting algorithm for nearly-sorted data?');
-console.log(result.text);
+const result = await consensus.decide('What is the most efficient sorting algorithm for nearly-sorted data?');
+console.log(result.decision);    // winning answer
+console.log(result.confidence);  // 0-1 agreement score
 ```
 
 ---
@@ -186,20 +186,30 @@ console.log(result.text);
 
 A self-organising swarm where agents spawn sub-agents and hand off dynamically:
 
-```ts
-import { SwarmOrchestrator, createRunnableAgent } from 'confused-ai';
+The swarm decomposes the task into parallelizable subtasks and dynamically
+instantiates specialist subagents (driven by the configured LLM) — you configure
+limits and the model, not a fixed agent list. Use the `createSwarm` factory or the
+`SwarmOrchestrator` class directly:
 
-const swarm = new SwarmOrchestrator({
-  agents: [
-    createRunnableAgent(plannerAgent),
-    createRunnableAgent(researchAgent),
-    createRunnableAgent(writerAgent),
-  ],
-  entryAgent: 'planner',
-  maxHandoffs: 10,
+```ts
+import { createSwarm } from 'confused-ai';
+
+const swarm = createSwarm({
+  maxSubagents: 12,
+  concurrency: 8,
+  subtaskTimeoutMs: 30_000,
+  llm: {
+    // A model string, a provider instance, or explicit fields — see SwarmLLMConfig.
+    provider: 'openrouter:meta-llama/llama-3.3-70b-instruct',
+    openRouterApiKey: process.env.OPENROUTER_API_KEY,
+  },
 });
 
-const result = await swarm.run('Produce a detailed market analysis report for the EV charging industry.');
+const result = await swarm.execute({
+  prompt: 'Produce a detailed market analysis report for the EV charging industry.',
+});
+console.log(result.status);            // 'success' | 'partial' | 'failed'
+console.log(result.aggregatedOutput);  // collated subtask results
 ```
 
 ---
@@ -211,11 +221,11 @@ Chain agents with typed input/output contracts:
 ```ts
 import { createPipeline } from 'confused-ai';
 
-const pipeline = createPipeline([
-  { agent: extractAgent, transform: (r) => ({ rawData: r.text }) },
-  { agent: enrichAgent,  transform: (r) => ({ enriched: r.text }) },
-  { agent: reportAgent,  transform: (r) => r.text },
-]);
+// Agents run in order; each agent receives the previous agent's output as its input.
+const pipeline = createPipeline({
+  name: 'etl',
+  agents: [extractAgent, enrichAgent, reportAgent],
+});
 
 const report = await pipeline.run('Extract, enrich, and report on the sales data.');
 ```
@@ -265,7 +275,7 @@ The **GSD (Get Shit Done) Protocol** is a spec-driven multi-agent pattern that s
 State is kept aligned by writing to a `.planning` workspace folder containing `REQUIREMENTS.md`, `ROADMAP.md`, and `STATE.md`.
 
 ```ts
-import { createGSDCoordinator, FilesystemGSDStorage } from 'confused-ai';
+import { createGSDCoordinator, FilesystemGSDStorage } from 'confused-ai/workflow';
 
 const gsd = createGSDCoordinator({
   projectDir: './my-project',
@@ -297,7 +307,7 @@ if (verification.success) {
 The **Ralph / RALF Loop Protocol** (Read-Act-Loop-Finish) runs a single agent in an iterative loop to solve complex tasks. To avoid context bloat and performance degradation, it creates a fresh session instance for each cycle while propagating concise summaries of preceding cycles in the prompt.
 
 ```ts
-import { createRalphLoop } from 'confused-ai';
+import { createRalphLoop } from 'confused-ai/workflow';
 
 const loop = createRalphLoop({
   agent: codingAgent,

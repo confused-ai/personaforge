@@ -1,16 +1,16 @@
 ---
 title: Hooks
-description: Tap into every phase of an agent run — prompt rewriting, step observation, tool call interception, and error handling — with AgentLifecycleHooks.
+description: Tap into every phase of an agent run — prompt rewriting, step observation, tool call interception, and error handling — with AgenticLifecycleHooks.
 outline: [2, 3]
 ---
 
 # Hooks
 
-`AgentLifecycleHooks` let you attach behavior at key lifecycle points without touching core agent logic. Pass a `hooks` object to `createAgent()`.
+`AgenticLifecycleHooks` let you attach behavior at key lifecycle points without touching core agent logic. Pass a `hooks` object to `createAgent()`.
 
 ```ts
 import { createAgent } from 'confused-ai';
-import type { AgentLifecycleHooks } from 'confused-ai';
+import type { AgenticLifecycleHooks } from 'confused-ai';
 ```
 
 ---
@@ -18,7 +18,7 @@ import type { AgentLifecycleHooks } from 'confused-ai';
 ## All hooks
 
 ```ts
-interface AgentLifecycleHooks {
+interface AgenticLifecycleHooks {
   // Called before the run starts. Return a modified prompt to rewrite it.
   beforeRun?(prompt: string, config: unknown): Promise<string> | string;
 

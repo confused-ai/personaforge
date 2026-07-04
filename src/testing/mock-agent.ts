@@ -138,6 +138,10 @@ export function createMockAgent(options: MockAgentOptions): MockAgentHandle {
             return Promise.resolve([]);
         },
 
+        getCompressionStats() {
+            return undefined; // mock agent runs no compression pipeline
+        },
+
         resume(sessionId: string) {
             return {
                 run: (prompt: string, opts?: Record<string, unknown>) => agent.run(prompt, { ...opts, sessionId }),

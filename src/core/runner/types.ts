@@ -96,6 +96,22 @@ export interface RunnerConfig {
     readonly retry?: RetryPolicy;
     readonly hooks?: AgentLifecycleHooks;
     readonly toolTimeoutMs?: number;
+    /** Optional durable event recorder. Off by default — zero cost when absent. */
+    readonly recorder?: EventRecorder;
+}
+
+// ── Event recorder (durable-log seam; core stays decoupled from the graph engine) ──
+
+/**
+ * Narrow seam the runner calls to record a run as a durable event log.
+ * The concrete implementation (RunRecorder) lives in the graph layer and owns
+ * the GraphEvent schema + EventStore; the core runner only knows this interface.
+ */
+export interface EventRecorder {
+    agentStart(data: { agent: string; prompt: string }): void | Promise<void>;
+    llmResult(data: { step: number; text: string; toolCalls?: readonly { name: string }[]; finishReason?: string; usage?: unknown }): void | Promise<void>;
+    toolResult(data: { step: number; name: string; args: unknown; output: unknown; error?: boolean }): void | Promise<void>;
+    agentEnd(data: { text: string; steps: number; finishReason: string }): void | Promise<void>;
 }
 
 // ── Internal run result (aliased to public AgentRunResult) ───────────────────

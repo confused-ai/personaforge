@@ -91,6 +91,21 @@ export {
   SqliteEventStore,
 } from './event-store.js';
 
+// Buffer + batch appends off the hot path (slow/remote backends).
+export { BatchingEventStore } from './batching-store.js';
+export type { BatchingOptions } from './batching-store.js';
+
+// Records an ordinary agent.run() into the same durable event log.
+export { RunRecorder, redactSecrets, redactPII, combineRedactors } from './run-recorder.js';
+export type { RunRecorderOptions } from './run-recorder.js';
+
+// Deterministic replay of a recorded execution (zero external calls).
+export { replay, buildReplayProvider, buildReplayTools } from './replay.js';
+
+// Tamper-evident audit: verify the hash chain of a recorded execution.
+export { verifyChain } from './audit.js';
+export type { ChainVerification } from './audit.js';
+
 // ── Scheduler & Workers ─────────────────────────────────────────────────────
 
 export {
