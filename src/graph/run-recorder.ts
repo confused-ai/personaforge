@@ -140,3 +140,45 @@ function deepRedact(value: unknown): unknown {
   }
   return value;
 }
+
+// ── Free-text PII redaction (scrub secrets embedded inside string values) ─────
+
+const PII_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, '[EMAIL]'],
+  [/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]'],
+  [/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[JWT]'],
+  [/\b\d{13,19}\b/g, '[CARD]'], // 13–19 contiguous digits (card-like)
+];
+
+function scrubString(s: string): string {
+  let out = s;
+  for (const [re, tag] of PII_PATTERNS) out = out.replace(re, tag);
+  return out;
+}
+
+/**
+ * Redact PII/secrets embedded in free-text string *values* (email, SSN, JWT,
+ * card-like digit runs). Complements `redactSecrets` (which is key-based) —
+ * combine both to cover structured fields and inline text.
+ */
+export function redactPII(data: Record<string, unknown>): Record<string, unknown> {
+  return deepScrub(data) as Record<string, unknown>;
+}
+
+function deepScrub(value: unknown): unknown {
+  if (typeof value === 'string') return scrubString(value);
+  if (Array.isArray(value)) return value.map(deepScrub);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = deepScrub(v);
+    return out;
+  }
+  return value;
+}
+
+/** Compose redactors left-to-right into one. */
+export function combineRedactors(
+  ...fns: ((d: Record<string, unknown>) => Record<string, unknown>)[]
+): (d: Record<string, unknown>) => Record<string, unknown> {
+  return (data) => fns.reduce((acc, fn) => fn(acc), data);
+}
