@@ -333,6 +333,12 @@ export interface EventStore {
   getCheckpoint(executionId: ExecutionId): Promise<Checkpoint | null>;
   /** Save a checkpoint */
   saveCheckpoint(checkpoint: Checkpoint): Promise<void>;
+  /**
+   * Permanently erase all events and checkpoints for an execution
+   * (right-to-erasure / GDPR / DPDP). Optional — stores that cannot delete
+   * omit it. Breaks the append-only guarantee by design, for compliance.
+   */
+  purge?(executionId: ExecutionId): Promise<void>;
 }
 
 export interface Checkpoint {

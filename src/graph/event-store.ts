@@ -71,6 +71,15 @@ export class InMemoryEventStore implements EventStore {
     this.checkpoints.set(checkpoint.executionId, checkpoint);
   }
 
+  async purge(executionId: ExecutionId): Promise<void> {
+    const events = this.events.get(executionId);
+    if (events) {
+      for (const e of events) this.eventIds.delete(e.id);
+    }
+    this.events.delete(executionId);
+    this.checkpoints.delete(executionId);
+  }
+
   /** Test helper: get all events across all executions */
   getAllEvents(): GraphEvent[] {
     const all: GraphEvent[] = [];
@@ -250,6 +259,15 @@ export class SqliteEventStore implements EventStore {
       checkpoint.sequence,
       checkpoint.timestamp
     );
+  }
+
+  async purge(executionId: ExecutionId): Promise<void> {
+    this._ensureInit();
+    const tx = this.db.transaction((id: string) => {
+      this.db.prepare('DELETE FROM graph_events WHERE execution_id = ?').run(id);
+      this.db.prepare('DELETE FROM graph_checkpoints WHERE execution_id = ?').run(id);
+    });
+    tx(executionId);
   }
 
   close(): void {
