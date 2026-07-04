@@ -73,6 +73,8 @@ export type {
     MastermindMessage,
     MastermindConfig,
     MastermindStats,
+    MastermindLifetimeStats,
+    RecentCompressionEvent,
     MastermindRetrieveTool,
     ContentType,
     CompressionAlgorithm,

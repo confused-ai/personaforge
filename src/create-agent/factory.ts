@@ -247,13 +247,17 @@ function createFrameworkMemoryTools(memoryStore: MemoryStore): AgentTool[] {
 // not per-agent (zodToJsonSchema is the second-largest per-call cost after Mastermind).
 const CCR_RETRIEVE_SCHEMA = z.object({
     handle: z.string().describe('The CCR handle printed next to a compressed block, e.g. "ccr_0001".'),
+    query: z.string().optional().describe(
+        'Optional substring; returns only original lines containing it (case-insensitive).',
+    ),
 });
 const CCR_RETRIEVE_JSON_SCHEMA = zodToJsonSchema(CCR_RETRIEVE_SCHEMA as any);
 const CCR_RETRIEVE_NAME = 'mastermind_retrieve';
 const CCR_RETRIEVE_DESCRIPTION =
     'Retrieve the original (uncompressed) content for a compressed block. ' +
     'Pass the `handle` value shown in brackets after a compressed section ' +
-    '(e.g. `[ccr_0001]`). Returns the full original text.';
+    '(e.g. `[ccr_0001]`). Returns the full original text, or — with an optional ' +
+    '`query` — only the matching lines, to pull just the relevant slice.';
 
 // Takes a lazy getter so the Mastermind instance is not constructed until the
 // tool is actually invoked by the LLM (which only happens after compression
@@ -932,6 +936,11 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     return iter;
                 },
             };
+        },
+        getCompressionStats() {
+            // Reads the same lazy Mastermind instance the run loop compresses with,
+            // so totals reflect every run so far. undefined when mastermind: false.
+            return getMastermind()?.stats();
         },
     };
 }

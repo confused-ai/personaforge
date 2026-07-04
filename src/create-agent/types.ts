@@ -335,6 +335,19 @@ export interface CreateAgentResult {
      * ```
      */
     streamEvents(prompt: string | MultiModalInput, options?: Omit<AgentRunOptions, 'onChunk'>): AsyncIterable<StreamChunk>;
+    /**
+     * Session-lifetime context-compression savings (headroom-style dashboard):
+     * cumulative tokens saved, estimated USD, per-algorithm counts, and recent
+     * events. Returns `undefined` when compression is disabled (`mastermind: false`).
+     *
+     * @example
+     * ```ts
+     * await bot.run('summarise these logs');
+     * const s = bot.getCompressionStats();
+     * console.log(`saved ${s?.tokensSaved} tokens (~$${s?.costSavedUsd.toFixed(4)})`);
+     * ```
+     */
+    getCompressionStats(): import('../compression/mastermind/index.js').MastermindLifetimeStats | undefined;
     createSession(userId?: string): Promise<string>;
     getSessionMessages(sessionId: string): Promise<Message[]>;
     /**
