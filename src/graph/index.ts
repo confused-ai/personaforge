@@ -98,6 +98,10 @@ export type { RunRecorderOptions } from './run-recorder.js';
 // Deterministic replay of a recorded execution (zero external calls).
 export { replay, buildReplayProvider, buildReplayTools } from './replay.js';
 
+// Tamper-evident audit: verify the hash chain of a recorded execution.
+export { verifyChain } from './audit.js';
+export type { ChainVerification } from './audit.js';
+
 // ── Scheduler & Workers ─────────────────────────────────────────────────────
 
 export {

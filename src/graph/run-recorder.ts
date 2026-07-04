@@ -18,6 +18,7 @@ import {
   executionId as makeExecutionId,
 } from './types.js';
 import type { EventRecorder } from '../core/runner/types.js';
+import { createHash } from 'node:crypto';
 
 export interface RunRecorderOptions {
   executionId?: ExecutionId;
@@ -28,6 +29,11 @@ export interface RunRecorderOptions {
   tenantId?: string;
   /** Recording failures are routed here and never thrown — recording must not break the run. */
   onError?: (err: unknown) => void;
+  /**
+   * Tamper-evident audit: hash-chain every event (`data.__audit = { prev, hash }`).
+   * Verify later with `verifyChain`. Off by default.
+   */
+  hashChain?: boolean;
 }
 
 export class RunRecorder implements EventRecorder {
@@ -38,6 +44,8 @@ export class RunRecorder implements EventRecorder {
   private readonly redact?: (data: Record<string, unknown>) => Record<string, unknown>;
   private readonly tenantId?: string;
   private readonly onError?: (err: unknown) => void;
+  private readonly hashChain: boolean;
+  private lastHash = '';
 
   constructor(
     private readonly store: EventStore,
@@ -49,6 +57,7 @@ export class RunRecorder implements EventRecorder {
     this.redact = opts.redact;
     this.tenantId = opts.tenantId;
     this.onError = opts.onError;
+    this.hashChain = opts.hashChain ?? false;
   }
 
   /** Execution id of the current (or most recent) run. */
@@ -61,14 +70,26 @@ export class RunRecorder implements EventRecorder {
     // and swallow any store failure (routed to onError).
     try {
       const redacted = this.redact ? this.redact(data) : data;
-      const payload = this.tenantId ? { ...redacted, tenantId: this.tenantId } : redacted;
+      const base = this.tenantId ? { ...redacted, tenantId: this.tenantId } : redacted;
+      const seq = this.seq++;
+
+      let payload: Record<string, unknown> = base;
+      if (this.hashChain) {
+        const prev = this.lastHash;
+        const hash = createHash('sha256')
+          .update(`${prev}|${type}|${seq}|${JSON.stringify(base)}`)
+          .digest('hex');
+        payload = { ...base, __audit: { prev, hash } };
+        this.lastHash = hash;
+      }
+
       const event: GraphEvent = {
         id: uid('e'),
         type,
         executionId: this._executionId,
         graphId: this.graphId,
         timestamp: Date.now(),
-        sequence: this.seq++,
+        sequence: seq,
         data: payload,
       };
       await this.store.append([event]);
@@ -85,6 +106,7 @@ export class RunRecorder implements EventRecorder {
     if (!this.pinned) {
       this._executionId = makeExecutionId();
       this.seq = 0;
+      this.lastHash = '';
     }
     return this.emit(GraphEventType.AGENT_STARTED, { ...data });
   }
