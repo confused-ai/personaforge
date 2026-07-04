@@ -91,6 +91,10 @@ export {
   SqliteEventStore,
 } from './event-store.js';
 
+// Buffer + batch appends off the hot path (slow/remote backends).
+export { BatchingEventStore } from './batching-store.js';
+export type { BatchingOptions } from './batching-store.js';
+
 // Records an ordinary agent.run() into the same durable event log.
 export { RunRecorder, redactSecrets, redactPII, combineRedactors } from './run-recorder.js';
 export type { RunRecorderOptions } from './run-recorder.js';
