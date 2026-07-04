@@ -247,6 +247,9 @@ export class AgentRunner {
         let finishReason: AgentRunResult['finishReason'] = 'stop';
         let finalText      = '';
 
+        // Durable log: record run start (no-op when no recorder configured).
+        await this.config.recorder?.agentStart({ agent: this.config.name, prompt: runConfig.prompt });
+
         // ── ReAct loop ─────────────────────────────────────────────────────
         while (steps < effectiveMaxSteps) {
             if (runConfig.signal?.aborted) { finishReason = 'aborted'; break; }
@@ -281,6 +284,9 @@ export class AgentRunner {
 
             accumulateUsage(usage, result.usage);
             finalText = result.text ?? '';
+
+            // Durable log: record this LLM turn (no-op without a recorder).
+            await this.config.recorder?.llmResult({ step: steps, text: finalText, toolCalls: result.toolCalls, usage: result.usage });
 
             // Push assistant message — O(1)
             messages.push({
@@ -329,6 +335,9 @@ export class AgentRunner {
             ...(usage.totalTokens > 0 && { usage }),
             ...(runConfig.runId && { runId: runConfig.runId }),
         };
+
+        // Durable log: record run completion before returning (no-op without a recorder).
+        await this.config.recorder?.agentEnd({ text: finalText, steps, finishReason });
 
         return lifecycle.afterRun
             ? ((await lifecycle.afterRun(runResult)))
@@ -426,6 +435,9 @@ export class AgentRunner {
             }
 
             streamHooks?.onToolResult?.(tc.name, output);
+
+            // Durable log: record this tool call (no-op without a recorder).
+            await this.config.recorder?.toolResult({ step, name: tc.name, args, output });
 
             messages.push({                                        // O(1)
                 role:         'tool',

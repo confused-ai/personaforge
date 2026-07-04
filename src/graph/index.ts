@@ -91,6 +91,9 @@ export {
   SqliteEventStore,
 } from './event-store.js';
 
+// Records an ordinary agent.run() into the same durable event log.
+export { RunRecorder } from './run-recorder.js';
+
 // ── Scheduler & Workers ─────────────────────────────────────────────────────
 
 export {

@@ -298,6 +298,12 @@ export enum GraphEventType {
   CHECKPOINT_SAVED = 'checkpoint.saved',
   CHECKPOINT_LOADED = 'checkpoint.loaded',
   SIGNAL_RECEIVED = 'signal.received',
+
+  // Agent-level (the single-agent runner emits these into the same log)
+  AGENT_STARTED = 'agent.started',
+  AGENT_COMPLETED = 'agent.completed',
+  LLM_CALL = 'llm.call',
+  TOOL_CALL = 'tool.call',
 }
 
 export interface GraphEvent {
