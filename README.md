@@ -107,6 +107,9 @@ Each layer is optional. Most real projects only need a subset.
 | Scheduler | time-based execution for reports, digests, and automation |
 | Observe | traces, metrics, and evaluation workflows |
 | Guardrails and HITL | validation, approvals, and policy-driven runtime control |
+| Graph | durable, replayable execution with tamper-evident audit |
+| Compression | keep long-running contexts within model token limits |
+| Learning | simulate runs and improve behavior from recorded outcomes |
 
 ## Recommended reading order
 
