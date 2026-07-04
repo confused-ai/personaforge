@@ -94,6 +94,9 @@ export {
 // Records an ordinary agent.run() into the same durable event log.
 export { RunRecorder } from './run-recorder.js';
 
+// Deterministic replay of a recorded execution (zero external calls).
+export { replay, buildReplayProvider, buildReplayTools } from './replay.js';
+
 // ── Scheduler & Workers ─────────────────────────────────────────────────────
 
 export {

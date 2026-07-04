@@ -68,6 +68,7 @@ export class RunRecorder implements EventRecorder {
     step: number;
     text: string;
     toolCalls?: readonly { name: string }[];
+    finishReason?: string;
     usage?: unknown;
   }): Promise<void> {
     return this.emit(GraphEventType.LLM_CALL, { ...data });

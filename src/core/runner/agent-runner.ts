@@ -286,7 +286,7 @@ export class AgentRunner {
             finalText = result.text ?? '';
 
             // Durable log: record this LLM turn (no-op without a recorder).
-            await this.config.recorder?.llmResult({ step: steps, text: finalText, toolCalls: result.toolCalls, usage: result.usage });
+            await this.config.recorder?.llmResult({ step: steps, text: finalText, toolCalls: result.toolCalls, finishReason: result.finishReason, usage: result.usage });
 
             // Push assistant message — O(1)
             messages.push({

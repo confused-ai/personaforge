@@ -109,7 +109,7 @@ export interface RunnerConfig {
  */
 export interface EventRecorder {
     agentStart(data: { agent: string; prompt: string }): void | Promise<void>;
-    llmResult(data: { step: number; text: string; toolCalls?: readonly { name: string }[]; usage?: unknown }): void | Promise<void>;
+    llmResult(data: { step: number; text: string; toolCalls?: readonly { name: string }[]; finishReason?: string; usage?: unknown }): void | Promise<void>;
     toolResult(data: { step: number; name: string; args: unknown; output: unknown; error?: boolean }): void | Promise<void>;
     agentEnd(data: { text: string; steps: number; finishReason: string }): void | Promise<void>;
 }
