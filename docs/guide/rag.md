@@ -26,15 +26,16 @@ import { createAgent } from 'confused-ai';
 import { createKnowledgeEngine, loadUrl } from 'confused-ai';
 import { OpenAIEmbeddingProvider } from 'confused-ai';
 
-// 1. Build the engine
+// 1. Build the engine — `embed` is an EmbeddingFn: (text) => Promise<number[]>
+const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
 const kb = createKnowledgeEngine({
-  embedding: new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! }),
+  embed: (text) => embedder.embed(text),
   // default: InMemoryVectorStore (cosine similarity)
 });
 
 // 2. Ingest documents
 const docs = await loadUrl('https://docs.example.com/api-reference', { recursive: true, maxPages: 20 });
-await kb.ingest(docs);
+await kb.addDocuments(docs);
 
 // 3. Attach to agent
 const agent = createAgent({
@@ -43,8 +44,7 @@ const agent = createAgent({
   model: 'gpt-4o-mini',
   apiKey: process.env.OPENAI_API_KEY!,
   knowledgebase: kb,
-  addKnowledgeToContext: true,   // automatically prepends retrieved chunks to system prompt
-  // numKnowledgeChunks: 5,      // how many top-k chunks to retrieve (default: 5)
+  addKnowledgeToContext: true,   // automatically prepends retrieved chunks to system prompt (default: true when a knowledgebase is set)
 });
 
 const result = await agent.run('How do I authenticate API requests?');
@@ -113,8 +113,9 @@ await kb.addDocuments(docs);
 Good for development and up to ~10 000 documents. Data is lost on process restart.
 
 ```ts
+const embedder = new OpenAIEmbeddingProvider({ apiKey: '...' });
 const kb = createKnowledgeEngine({
-  embedding: new OpenAIEmbeddingProvider({ apiKey: '...' }),
+  embed: (text) => embedder.embed(text),
   // InMemoryVectorStore is the default; no extra config needed
 });
 ```
@@ -132,7 +133,7 @@ const adapter = new PgvectorKnowledgeAdapter({
   dimensions: 1536,  // match your embedding model
 });
 
-const kb = createKnowledgeEngine({ embedding: myEmbed, vectorStore: adapter });
+const kb = createKnowledgeEngine({ embed: myEmbed, store: adapter });
 ```
 
 ### ChromaKnowledgeAdapter
@@ -141,8 +142,9 @@ const kb = createKnowledgeEngine({ embedding: myEmbed, vectorStore: adapter });
 import { ChromaKnowledgeAdapter } from 'confused-ai';
 
 const adapter = new ChromaKnowledgeAdapter({
-  host: 'http://localhost:8000',
+  url: 'http://localhost:8000',
   collectionName: 'my-docs',
+  embed: myEmbed,   // EmbeddingFn used to embed docs and queries
 });
 ```
 
@@ -163,10 +165,10 @@ const adapter = new Neo4jKnowledgeAdapter({
 
 ```ts
 import { createDbKnowledgeEngine } from 'confused-ai';
-import { SqliteAgentDb } from 'confused-ai';
+import { SqliteAgentDb } from 'confused-ai/db';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
-const kb = createDbKnowledgeEngine({ db, embedding: myEmbed });
+const kb = createDbKnowledgeEngine({ db, embed: myEmbed });
 ```
 
 ---
@@ -174,18 +176,12 @@ const kb = createDbKnowledgeEngine({ db, embedding: myEmbed });
 ## Retrieval options
 
 ```ts
-// Manual retrieve — get chunks without running an agent
-const results = await kb.retrieve('How do I reset my password?', {
-  limit: 5,
-  threshold: 0.75,   // minimum cosine similarity score
-  filter: { source: 'help-center' },  // metadata filter
-  rerank: true,       // cross-encoder reranking (if supported)
-  hybrid: true,       // BM25 + vector hybrid search (if supported)
-});
-
-for (const chunk of results.chunks) {
-  console.log(chunk.score, chunk.content);
-}
+// When the engine is attached to an agent via `knowledgebase`, retrieval runs
+// automatically before each run. To build the retrieved context manually,
+// call buildContext(query, topK?) — it returns the top-k chunks joined into a
+// single string, ready to inject into a prompt.
+const context = await kb.buildContext('How do I reset my password?', 5);
+console.log(context);
 ```
 
 ---
@@ -193,10 +189,9 @@ for (const chunk of results.chunks) {
 ## Embedding providers
 
 ```ts
-import { OpenAIEmbeddingProvider, CohereEmbeddingProvider } from 'confused-ai';
+import { OpenAIEmbeddingProvider } from 'confused-ai';
 
-const openaiEmbed  = new OpenAIEmbeddingProvider({ apiKey: '...', model: 'text-embedding-3-small' });
-const cohereEmbed  = new CohereEmbeddingProvider({ apiKey: '...', model: 'embed-multilingual-v3.0' });
+const openaiEmbed = new OpenAIEmbeddingProvider({ apiKey: '...', model: 'text-embedding-3-small' });
 ```
 
 ### Custom embedding function
@@ -220,15 +215,15 @@ const myEmbed: EmbeddingFn = async (text) => {
 
 ## Embedding cache
 
-Avoid re-embedding the same content on restarts:
+Avoid re-embedding identical text within a process. `withEmbeddingCache` wraps an
+`EmbeddingFn` with an in-process LRU cache — it keeps up to `maxSize` most-recent
+embeddings in memory (no external store, no TTL). The cache is cleared on restart.
 
 ```ts
 import { withEmbeddingCache } from 'confused-ai';
 
-const cachedEmbed = withEmbeddingCache(myEmbeddingFn, {
-  store: myRedisStore,  // any Storage adapter
-  ttlSeconds: 86_400,   // 24 hours
-});
+// Second arg is the max number of cached entries (default: 500).
+const cachedEmbed = withEmbeddingCache(myEmbeddingFn, 500);
 ```
 
 ---

@@ -108,12 +108,12 @@ const memoryStore = new VectorMemoryStore({
 Persists to the framework's built-in SQLite/Postgres AgentDb:
 
 ```ts
-import { createDbMemoryStore } from 'confused-ai';
+import { createDbMemoryStore } from 'confused-ai/memory';
+import { SqliteAgentDb } from 'confused-ai/db';
 
-const memoryStore = await createDbMemoryStore({
-  connectionString: process.env.DATABASE_URL!,
-  tableName: 'agent_memories',
-});
+// Pass an AgentDb instance positionally; options are optional.
+const db = new SqliteAgentDb({ path: './agent.db' });
+const memoryStore = createDbMemoryStore(db, { agentId: 'my-agent' });
 ```
 
 ---
@@ -150,22 +150,29 @@ const agent = createAgent({
 Compress conversation history into concise summaries to prevent context overflow:
 
 ```ts
-import { MemoryDistiller, summariseMemories, summariseConversation } from 'confused-ai';
+import { MemoryDistiller, summariseMemories, summariseConversation } from 'confused-ai/memory';
+import { InMemoryStore } from 'confused-ai';
 import { OpenAIProvider } from 'confused-ai';
 
+const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
+const store = new InMemoryStore();
+
 const distiller = new MemoryDistiller({
-  llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! }),
-  model: 'gpt-4o-mini',
-  maxSummaryLength: 500,
+  store,                 // the MemoryStore to read short-term entries from and write summaries to
+  llm,
+  agentId: 'agent-123',  // optional: scope distillation to one agent
+  triggerThreshold: 20,  // auto-distill once this many short-term entries accumulate (default: 20)
+  batchSize: 30,         // max entries consumed per pass (default: 30)
+  // intervalMs: 60_000, // optional background polling; omit to distill manually
 });
 
-// Summarise a list of stored memories into one compact string
-const summary = await distiller.distill(existingMemories);
-console.log(summary.summary);
+// Run a distillation pass now. Returns DistillationResult { consumed, summary, skipped }.
+const result = await distiller.distillNow(true);  // force = true ignores the threshold
+if (result.summary) console.log(result.consumed, result.summary.content);
 
-// One-shot helpers
-const memorySummary = await summariseMemories(llm, memories);
-const conversationSummary = await summariseConversation(llm, messages);
+// One-shot helpers (entries/messages first, llm second; each returns a string)
+const memorySummary = await summariseMemories(memories, llm);
+const conversationSummary = await summariseConversation(messages, llm);
 ```
 
 ---
@@ -176,13 +183,15 @@ Automatically compress conversation history when it grows too long:
 
 ```ts
 import { createAgent } from 'confused-ai';
-import { createSummaryBufferHook } from 'confused-ai';
+import { createSummaryBufferHook } from 'confused-ai/memory';
 import { OpenAIProvider } from 'confused-ai';
 
 const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
-const summaryHook = createSummaryBufferHook(llm, {
-  maxMessages: 20,       // compress when history exceeds this
-  keepRecentMessages: 5, // always keep the last N messages intact
+const summaryHook = createSummaryBufferHook({
+  llm,
+  maxMessages: 20,   // compress when history exceeds this many messages (default: 30)
+  keepLastN: 5,      // always keep the last N messages verbatim (default: 10)
+  // summarizePrompt: '...' // optional: override the summarisation system prompt
 });
 
 const agent = createAgent({
@@ -200,19 +209,108 @@ const agent = createAgent({
 You can read and write the memory store directly without an agent:
 
 ```ts
-import { InMemoryStore } from 'confused-ai';
+import { InMemoryStore, MemoryType } from 'confused-ai';
 
 const store = new InMemoryStore();
 
-// Write
-await store.save({ id: 'mem-1', userId: 'alice', content: 'Prefers TypeScript', createdAt: new Date() });
+// Write — store(entry), where entry is { type, content, metadata }.
+// The id and createdAt are assigned for you and returned on the entry.
+const entry = await store.store({
+  type: MemoryType.LONG_TERM,
+  content: 'Prefers TypeScript',
+  metadata: { agentId: 'alice', tags: ['user-pref'] },
+});
 
-// Search (semantic stores support similarity; InMemoryStore does substring match)
-const results = await store.search({ userId: 'alice', query: 'programming language', limit: 5 });
-console.log(results);
+// Retrieve — retrieve(query) with { query, type?, limit?, threshold?, filter? }.
+// Scope with `filter` (agentId, sessionId, tags, …). Semantic stores rank by
+// similarity; InMemoryStore uses keyword/substring matching.
+const results = await store.retrieve({
+  query: 'programming language',
+  limit: 5,
+  filter: { agentId: 'alice' },
+});
+console.log(results);  // MemorySearchResult[] — each { entry, score }
 
-// Delete
-await store.delete('mem-1');
+// Delete by id
+await store.delete(entry.id);
+```
+
+---
+
+## Self-editing tiered memory (MemGPT / Letta style)
+
+`TieredMemory` gives an agent two tiers it manages itself:
+
+- **Core memory** — small labelled blocks (`persona`, `human`, …) always rendered into the prompt via `renderCore()`. Each block is character-limited; the default ceiling is `DEFAULT_BLOCK_LIMIT` (2 000 chars).
+- **Archival memory** — an unbounded `MemoryStore` searched on demand.
+
+`createTieredMemoryTools(memory)` returns the four LLM-callable tools (`core_memory_append`, `core_memory_replace`, `archival_memory_insert`, `archival_memory_search`) so the agent edits both tiers on its own.
+
+```ts
+import { createAgent, TieredMemory, createTieredMemoryTools, InMemoryStore, DEFAULT_BLOCK_LIMIT } from 'confused-ai';
+
+const tiered = new TieredMemory({
+  blocks: [
+    { label: 'persona', value: 'I am a helpful research assistant.' },
+    { label: 'human',   value: '' },
+    { label: 'scratchpad', value: '', limit: DEFAULT_BLOCK_LIMIT },
+  ],
+  archival: new InMemoryStore(),   // backs the archival_memory_* tools
+});
+
+const agent = createAgent({
+  name: 'Letta',
+  instructions: `You are an assistant.\n\n${tiered.renderCore()}`,
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: Object.values(createTieredMemoryTools(tiered)),
+});
+```
+
+---
+
+## Graph (entity) memory
+
+`GraphMemory` stores typed entities and labelled relations the agent can traverse ("who works where", "what depends on what") instead of only fuzzy-matching by embedding. `createGraphMemoryTools(graph)` exposes `add_entity`, `add_relation`, and `search_graph` so the agent builds and queries the graph itself.
+
+```ts
+import { createAgent, GraphMemory, createGraphMemoryTools } from 'confused-ai';
+
+const graph = new GraphMemory();
+graph.addRelation('Jordan', 'works_at', 'AcmeCorp');
+graph.addRelation('Jordan', 'lives_in', 'Lisbon');
+
+graph.search('Jordan');  // → ['Jordan works_at AcmeCorp', 'Jordan lives_in Lisbon']
+graph.toFacts();         // every relation as a fact line — handy for dumping into a prompt
+
+const agent = createAgent({
+  name: 'graph-agent',
+  instructions: 'Track facts about people and organisations.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: Object.values(createGraphMemoryTools(graph)),
+});
+```
+
+---
+
+## `remember` / `recall` tools
+
+`createAgentMemoryTools({ store })` returns two ready-to-register tools — `remember(fact, tags?)` and `recall(query, limit?)` — backed by any `MemoryStore`. This is the explicit, tool-based alternative to the `enableAgenticMemory` shortcut used in the quick start.
+
+```ts
+import { createAgent, InMemoryStore } from 'confused-ai';
+import { createAgentMemoryTools } from 'confused-ai/memory';
+
+const { remember, recall } = createAgentMemoryTools({ store: new InMemoryStore() });
+
+const agent = createAgent({
+  name: 'ResearchBot',
+  instructions: 'Remember useful facts and recall them when relevant.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: [remember, recall],
+});
 ```
 
 ---

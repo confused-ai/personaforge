@@ -15,7 +15,7 @@
 - Modify `src/graph/types.ts` — add 4 members to `GraphEventType` (agent/llm/tool lifecycle).
 - Modify `src/core/runner/types.ts` — add `EventRecorder` interface + `recorder?` field on `RunnerConfig`.
 - Modify `src/core/runner/agent-runner.ts` — call `recorder` at 4 seams.
-- Create `src/runtime/run-recorder.ts` — `RunRecorder implements EventRecorder`.
+- Create `src/graph/run-recorder.ts` — `RunRecorder implements EventRecorder`.
 - Modify `src/runtime/index.ts` — export `RunRecorder`.
 - Create `tests/run-recorder.test.ts` — unit + integration tests.
 
@@ -69,7 +69,7 @@ export interface EventRecorder {
 
 ### Task 3: RunRecorder (write failing test first)
 
-**Files:** Create `tests/run-recorder.test.ts`; create `src/runtime/run-recorder.ts`.
+**Files:** Create `tests/run-recorder.test.ts`; create `src/graph/run-recorder.ts`.
 
 - [ ] **Step 1 — failing unit test** (`tests/run-recorder.test.ts`):
 
@@ -105,7 +105,7 @@ describe('RunRecorder', () => {
 
 - [ ] **Step 2:** `npm test -- run-recorder` — expect FAIL (`RunRecorder` not found).
 
-- [ ] **Step 3 — implement** (`src/runtime/run-recorder.ts`):
+- [ ] **Step 3 — implement** (`src/graph/run-recorder.ts`):
 
 ```ts
 import {
@@ -224,7 +224,7 @@ describe('AgentRunner emits events via recorder', () => {
 - [ ] **Step 6 — commit:**
 
 ```bash
-git add src/graph/types.ts src/core/runner/types.ts src/core/runner/agent-runner.ts src/runtime/run-recorder.ts src/runtime/index.ts tests/run-recorder.test.ts docs/superpowers/
+git add src/graph/types.ts src/core/runner/types.ts src/core/runner/agent-runner.ts src/graph/run-recorder.ts src/runtime/index.ts tests/run-recorder.test.ts docs/superpowers/
 git commit -m "feat(runtime): universal durable event log for agent runs (L1-D1)"
 ```
 

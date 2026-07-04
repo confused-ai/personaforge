@@ -19,10 +19,10 @@ import { createTenantContext, TenantRegistry } from 'confused-ai/production';
 ```ts
 import { createAgent } from 'confused-ai';
 import { createTenantContext } from 'confused-ai/production';
-import { createSqliteSessionStore } from 'confused-ai/session';
+import { createSqliteStore } from 'confused-ai/session';
 
 // Single shared session store
-const sessionStore = await createSqliteSessionStore('./agent.db');
+const sessionStore = createSqliteStore({ path: './agent.db' });
 
 // In your request handler, scope to the authenticated tenant:
 async function handleRequest(req: Request) {

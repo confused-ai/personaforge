@@ -17,7 +17,7 @@ import {
   RedisPubSubBackgroundQueue,
   SQSBackgroundQueue,
   queueHook,
-} from 'confused-ai';
+} from 'confused-ai/background';
 ```
 
 ---
@@ -26,7 +26,7 @@ import {
 
 ```ts
 import { createAgent } from 'confused-ai';
-import { InMemoryBackgroundQueue, queueHook } from 'confused-ai';
+import { InMemoryBackgroundQueue, queueHook } from 'confused-ai/background';
 
 // In-memory queue — no dependencies, good for dev/test
 const queue = new InMemoryBackgroundQueue({ concurrency: 5 });
@@ -62,7 +62,7 @@ const result = await agent.run('Help me track my order.');
 ### `InMemoryBackgroundQueue` (development / testing)
 
 ```ts
-import { InMemoryBackgroundQueue } from 'confused-ai';
+import { InMemoryBackgroundQueue } from 'confused-ai/background';
 
 const queue = new InMemoryBackgroundQueue({ concurrency: 3 });
 ```
@@ -74,7 +74,7 @@ bun add bullmq
 ```
 
 ```ts
-import { BullMQBackgroundQueue } from 'confused-ai';
+import { BullMQBackgroundQueue } from 'confused-ai/background';
 
 const queue = new BullMQBackgroundQueue({
   queueName: 'agent-hooks',
@@ -100,7 +100,7 @@ bun add kafkajs
 ```
 
 ```ts
-import { KafkaBackgroundQueue } from 'confused-ai';
+import { KafkaBackgroundQueue } from 'confused-ai/background';
 
 const queue = new KafkaBackgroundQueue({
   brokers: ['kafka:9092'],
@@ -117,7 +117,7 @@ bun add amqplib
 ```
 
 ```ts
-import { RabbitMQBackgroundQueue } from 'confused-ai';
+import { RabbitMQBackgroundQueue } from 'confused-ai/background';
 
 const queue = new RabbitMQBackgroundQueue({
   url: process.env.RABBITMQ_URL!,
@@ -130,7 +130,7 @@ const queue = new RabbitMQBackgroundQueue({
 ### `RedisPubSubBackgroundQueue` — lightweight fanout
 
 ```ts
-import { RedisPubSubBackgroundQueue } from 'confused-ai';
+import { RedisPubSubBackgroundQueue } from 'confused-ai/background';
 
 const queue = new RedisPubSubBackgroundQueue({
   redis: process.env.REDIS_URL!,
@@ -145,7 +145,7 @@ bun add @aws-sdk/client-sqs
 ```
 
 ```ts
-import { SQSBackgroundQueue } from 'confused-ai';
+import { SQSBackgroundQueue } from 'confused-ai/background';
 
 const queue = new SQSBackgroundQueue({
   queueUrl: process.env.SQS_QUEUE_URL!,
@@ -163,15 +163,15 @@ Implement this to add any backend:
 interface BackgroundQueue {
   readonly name: string;
 
-  enqueue<T>(type: string, payload: T, options?: EnqueueOptions): Promise<BackgroundTask<T>>;
+  enqueue<T>(task: Omit<BackgroundTask<T>, 'id' | 'enqueuedAt'>, options?: EnqueueOptions): Promise<void>;
 
   consume<T>(
     type: string,
     handler: (task: BackgroundTask<T>) => Promise<void> | void,
     options?: WorkerOptions,
-  ): Promise<void>;
+  ): Promise<() => Promise<void>>;
 
-  close?(): Promise<void>;
+  close(): Promise<void>;
 }
 ```
 
@@ -182,7 +182,7 @@ interface BackgroundQueue {
 `queueHook` turns any agent lifecycle hook into a fire-and-forget queue dispatch:
 
 ```ts
-import { queueHook } from 'confused-ai';
+import { queueHook } from 'confused-ai/background';
 
 const hooks = {
   afterRun:     queueHook(queue, 'run-complete',   (result) => ({ text: result.text, tokens: result.usage?.totalTokens })),
@@ -196,9 +196,12 @@ const hooks = {
 
 ```ts
 // Fire a background task directly (without a hook)
-const task = await queue.enqueue('send-report', {
-  userId: 'user-42',
-  reportType: 'weekly',
+await queue.enqueue({
+  type: 'send-report',
+  payload: {
+    userId: 'user-42',
+    reportType: 'weekly',
+  },
 }, {
   delay: 5_000,     // delay 5 seconds (BullMQ, Kafka support this)
   retries: 3,

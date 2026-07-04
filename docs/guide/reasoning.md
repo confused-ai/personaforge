@@ -8,6 +8,8 @@ outline: [2, 3]
 
 The reasoning module gives agents explicit, inspectable multi-step thinking. Use `ReasoningManager` for Chain-of-Thought (CoT) and `TreeOfThoughtEngine` for Tree-of-Thought (ToT) reasoning.
 
+> **Experimental.** This subsystem is newer and not yet semver-stable — its CoT/ToT engines and config shapes may change in a minor release.
+
 ```ts
 import {
   ReasoningManager,
@@ -64,6 +66,8 @@ for await (const event of manager.reason(messages)) {
 }
 ```
 
+Prefer a single result over the event stream? `await manager.run(messages)` collects every step and returns a `ReasoningResult` (`{ steps, success, error? }`). The default CoT system prompt is exported as `REASONING_SYSTEM_PROMPT` if you want to extend rather than replace it.
+
 ---
 
 ## `ReasoningStep` fields
@@ -118,17 +122,23 @@ import { TreeOfThoughtEngine } from 'confused-ai';
 
 const tot = new TreeOfThoughtEngine({
   generate: async (messages) => llm.generate(messages),
-  branchingFactor: 3,    // expand 3 branches per node
+  beamWidth: 3,          // branches to expand and keep per BFS level
   maxDepth: 4,           // max tree depth
-  pruningThreshold: 0.4, // prune branches below this confidence
-  evaluator: async (step) => step.confidence ?? 0,
+  // Optional separate evaluator. Receives a messages array and returns a score
+  // as a string — either a plain float ('0.0'–'1.0') or JSON `{ "score": 0.8 }`.
+  // Defaults to `generate` when omitted.
+  evaluate: async (messages) => llm.generate(messages),
 });
 
-const result = await tot.reason(messages);
+// solve(goal, context?) runs beam search and returns the best branch.
+const result = await tot.solve(
+  'What is the optimal strategy for the knapsack problem?',
+);
 
-console.log(result.bestPath);   // array of ReasoningStep along the winning path
-console.log(result.finalAnswer);
-console.log(result.treeSummary); // full exploration tree (useful for debugging)
+console.log(result.bestThought); // best final thought text
+console.log(result.score);       // cumulative score of the winning branch (0–1)
+console.log(result.nodes);       // full beam tree (TotNode[], for inspection)
+console.log(result.depth);       // number of BFS levels traversed
 ```
 
 ---

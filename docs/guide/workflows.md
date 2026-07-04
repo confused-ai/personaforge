@@ -14,25 +14,34 @@ The graph workflow engine lets you build typed, durable DAG workflows with expli
 import { createGraph, DAGEngine } from 'confused-ai/workflow';
 
 const graph = createGraph('data-pipeline')
-  .task('fetch', async (ctx) => {
-    const data = await fetchData(ctx.input.url);
-    return { data };
+  .addNode('fetch', {
+    kind: 'task',
+    execute: async (ctx) => {
+      const url = ctx.state.variables.url as string;
+      return { data: await fetchData(url) };
+    },
   })
-  .task('transform', async (ctx) => {
-    const transformed = transform(ctx.state.fetch.data);
-    return { transformed };
+  .addNode('transform', {
+    kind: 'task',
+    execute: async (ctx) => {
+      const { data } = ctx.state.results['fetch'] as { data: unknown };
+      return { transformed: transform(data) };
+    },
   })
-  .task('save', async (ctx) => {
-    await saveToDatabase(ctx.state.transform.transformed);
-    return { saved: true };
+  .addNode('save', {
+    kind: 'task',
+    execute: async (ctx) => {
+      const { transformed } = ctx.state.results['transform'] as { transformed: unknown };
+      await saveToDatabase(transformed);
+      return { saved: true };
+    },
   })
-  .edge('fetch', 'transform')
-  .edge('transform', 'save')
+  .chain('fetch', 'transform', 'save')  // linear shorthand for addEdge
   .build();
 
 const engine = new DAGEngine(graph);
-const result = await engine.run({ url: 'https://api.example.com/data' });
-console.log(result.state);
+const result = await engine.execute({ variables: { url: 'https://api.example.com/data' } });
+console.log(result.state.results);
 ```
 
 ---
@@ -57,86 +66,81 @@ All graph types are created through the `GraphBuilder` or the `createGraph` help
 ```ts
 import { GraphBuilder } from 'confused-ai/workflow';
 
-const builder = new GraphBuilder({ id: 'my-graph' });
+const builder = new GraphBuilder('my-graph');
 
-builder.addNode({
-  id: 'classify',
+builder.addNode('classify', {
   kind: 'task',
   execute: async (ctx) => {
-    const label = await classifyText(ctx.input.text);
+    const label = await classifyText(ctx.state.variables.text as string);
     return { label };
   },
-  retry: { maxAttempts: 3, delayMs: 1_000, backoffMultiplier: 2 },
-  timeout: { ms: 10_000 },
+  retry: { maxRetries: 3, backoffMs: 1_000, exponentialBase: 2 },
+  timeout: { timeoutMs: 10_000 },
 });
 ```
 
 ### `agent` node
 
 ```ts
-import { createAgent } from 'confused-ai';
-
-const researchAgent = createAgent({
-  name: 'researcher',
+// An `agent` node is configured inline — the engine builds the agent from this
+// config (instructions, model, provider, tools by name, maxSteps, temperature).
+builder.addNode('research', {
+  kind: 'agent',
   instructions: 'Research the given topic thoroughly.',
   model: 'gpt-4o',
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-builder.addNode({
-  id: 'research',
-  kind: 'agent',
-  agent: researchAgent,
-  inputMapper: (ctx) => ctx.state.classify.label,
-  outputMapper: (result) => ({ research: result.text }),
+  maxSteps: 5,
 });
 ```
 
 ### `router` node — conditional branching
 
 ```ts
-builder.addNode({
-  id: 'route',
+builder.addNode('route', {
   kind: 'router',
-  route: (ctx) => {
-    if (ctx.state.classify.label === 'technical') return 'tech-handler';
-    if (ctx.state.classify.label === 'billing')   return 'billing-handler';
+  route: async (ctx) => {
+    const label = ctx.state.results['classify'] as string;
+    if (label === 'technical') return 'tech-handler';
+    if (label === 'billing')   return 'billing-handler';
     return 'general-handler';
   },
 });
 
+// The router follows the outgoing edge whose `label` matches its return value.
 builder
-  .addEdge({ from: 'route', to: 'tech-handler' })
-  .addEdge({ from: 'route', to: 'billing-handler' })
-  .addEdge({ from: 'route', to: 'general-handler' });
+  .addEdge('route', 'tech-handler',    { label: 'tech-handler' })
+  .addEdge('route', 'billing-handler', { label: 'billing-handler' })
+  .addEdge('route', 'general-handler', { label: 'general-handler' });
 ```
 
 ### `parallel` node — fan out
 
 ```ts
-builder.addNode({
-  id: 'gather',
-  kind: 'parallel',
-  branches: ['search-web', 'search-db', 'search-docs'],
+// A `parallel` node fans out to its outgoing edges; a `join` node waits for the
+// incoming branches, then merges their results (keyed by node name).
+builder.addNode('gather', { kind: 'parallel' });
+builder.addNode('merge', {
+  kind: 'join',
+  strategy: 'all',
+  merge: async (results) => ({
+    combined: ['search-web', 'search-db', 'search-docs']
+      .map((k) => String(results[k] ?? ''))
+      .join('\n\n'),
+  }),
 });
 
-builder.addNode({
-  id: 'merge',
-  kind: 'join',
-  waitFor: ['search-web', 'search-db', 'search-docs'],
-  merge: (results) => ({ combined: results.map(r => r.text).join('\n\n') }),
-});
+builder
+  .fanOut('gather', ['search-web', 'search-db', 'search-docs'])
+  .fanIn(['search-web', 'search-db', 'search-docs'], 'merge');
 ```
 
 ### `wait` node — HITL and webhooks
 
 ```ts
-builder.addNode({
-  id: 'await-approval',
+builder.addNode('await-approval', {
   kind: 'wait',
-  event: 'human-approval',
-  timeoutMs: 86_400_000,  // 24 hours
-  onTimeout: 'auto-approve',  // or 'fail'
+  type: 'human',           // 'human' | 'webhook' | 'timer' | 'signal'
+  signalName: 'human-approval',
+  timeoutMs: 86_400_000,   // 24 hours
 });
 ```
 
@@ -146,36 +150,37 @@ builder.addNode({
 
 ```ts
 import { createGraph, DAGEngine } from 'confused-ai/workflow';
-import { createAgent } from 'confused-ai';
-
-const outline  = createAgent({ name: 'outliner', instructions: 'Create a detailed outline.',          model: 'gpt-4o-mini', apiKey: '...' });
-const sections = createAgent({ name: 'writer',   instructions: 'Write a section from the outline.',   model: 'gpt-4o',      apiKey: '...' });
-const review   = createAgent({ name: 'reviewer', instructions: 'Review for accuracy and readability.',model: 'gpt-4o-mini', apiKey: '...' });
-const seo      = createAgent({ name: 'seo',      instructions: 'Add SEO keywords and meta tags.',     model: 'gpt-4o-mini', apiKey: '...' });
 
 const graph = createGraph('content-pipeline')
-  .agent('plan',   outline,  { inputMapper: (ctx) => ctx.input.topic })
-  .parallel('write-sections', ['section-intro', 'section-body', 'section-conclusion'])
-  .agent('section-intro',       sections, { inputMapper: (ctx) => `Intro: ${ctx.state.plan.text}` })
-  .agent('section-body',        sections, { inputMapper: (ctx) => `Body: ${ctx.state.plan.text}` })
-  .agent('section-conclusion',  sections, { inputMapper: (ctx) => `Conclusion: ${ctx.state.plan.text}` })
-  .join('assemble', ['section-intro', 'section-body', 'section-conclusion'])
-  .agent('review', review, { inputMapper: (ctx) => ctx.state.assemble.combined })
-  .agent('seo',    seo,    { inputMapper: (ctx) => ctx.state.review.text })
-  .edge('plan',          'write-sections')
-  .edge('write-sections','section-intro')
-  .edge('write-sections','section-body')
-  .edge('write-sections','section-conclusion')
-  .edge('section-intro', 'assemble')
-  .edge('section-body',  'assemble')
-  .edge('section-conclusion', 'assemble')
-  .edge('assemble', 'review')
-  .edge('review',   'seo')
+  .addNode('plan', {
+    kind: 'agent',
+    instructions: 'Create a detailed outline for the given topic.',
+    model: 'gpt-4o-mini',
+  })
+  .addNode('write-sections', { kind: 'parallel' })
+  .addNode('section-intro',      { kind: 'agent', instructions: 'Write the introduction from the outline.', model: 'gpt-4o' })
+  .addNode('section-body',       { kind: 'agent', instructions: 'Write the body from the outline.',         model: 'gpt-4o' })
+  .addNode('section-conclusion', { kind: 'agent', instructions: 'Write the conclusion from the outline.',   model: 'gpt-4o' })
+  .addNode('assemble', {
+    kind: 'join',
+    strategy: 'all',
+    merge: async (results) => ({
+      combined: ['section-intro', 'section-body', 'section-conclusion']
+        .map((k) => String(results[k] ?? ''))
+        .join('\n\n'),
+    }),
+  })
+  .addNode('review', { kind: 'agent', instructions: 'Review for accuracy and readability.', model: 'gpt-4o-mini' })
+  .addNode('seo',    { kind: 'agent', instructions: 'Add SEO keywords and meta tags.',      model: 'gpt-4o-mini' })
+  .addEdge('plan', 'write-sections')
+  .fanOut('write-sections', ['section-intro', 'section-body', 'section-conclusion'])
+  .fanIn(['section-intro', 'section-body', 'section-conclusion'], 'assemble')
+  .chain('assemble', 'review', 'seo')
   .build();
 
 const engine = new DAGEngine(graph);
-const result = await engine.run({ topic: 'The future of TypeScript in 2027' });
-console.log(result.state.seo.text);
+const result = await engine.execute({ variables: { topic: 'The future of TypeScript in 2027' } });
+console.log(result.state.results['seo']);
 ```
 
 ---
@@ -206,16 +211,15 @@ const final = await process('Rust async runtimes');
 ## Retry policies
 
 ```ts
-builder.addNode({
-  id: 'call-external-api',
+builder.addNode('call-external-api', {
   kind: 'task',
   execute: async (ctx) => callApi(ctx.input),
   retry: {
-    maxAttempts: 5,
-    delayMs: 500,
-    backoffMultiplier: 2,   // exponential backoff
-    maxDelayMs: 10_000,
-    retryOn: (err) => err.message.includes('rate limit') || err.message.includes('timeout'),
+    maxRetries: 5,
+    backoffMs: 500,
+    exponentialBase: 2,     // exponential backoff
+    maxBackoffMs: 10_000,
+    retryOn: (err) => err instanceof Error && (err.message.includes('rate limit') || err.message.includes('timeout')),
   },
 });
 ```
@@ -230,13 +234,15 @@ The graph engine emits `GraphEvent`s. Plug in an `EventStore` to replay interrup
 import { DAGEngine } from 'confused-ai/workflow';
 import { SqliteEventStore } from 'confused-ai';
 
-const engine = new DAGEngine(graph, {
-  eventStore: new SqliteEventStore({ path: './workflow-events.db' }),
-  checkpointInterval: 'every-node',
+// The event store and checkpoint cadence are passed to execute(), not the constructor.
+const engine = new DAGEngine(graph);
+const result = await engine.execute({
+  eventStore: new SqliteEventStore('./workflow-events.db'),
+  checkpointInterval: 10,   // persist a checkpoint every N node completions
 });
 
-// On crash/restart, replay from last checkpoint:
-const result = await engine.resume(executionId);
+// A paused or suspended run resumes on the same engine (optionally injecting variables):
+const resumed = await engine.resume({ variables: { approved: true } });
 ```
 
 ---

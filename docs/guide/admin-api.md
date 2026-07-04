@@ -1,6 +1,6 @@
 ---
 title: Admin API
-description: Mount operational endpoints for health, agent listing, audit logs, approvals, and stats via createHttpService({ adminApi }). Bearer-token secured. Eight read-only endpoints.
+description: Mount operational endpoints for health, agent listing, audit logs, approvals, and stats via createHttpService({ adminApi }). Bearer-token secured. Seven read-only endpoints.
 outline: [2, 3]
 ---
 
@@ -129,7 +129,7 @@ const svc = createHttpService({
   auth: { strategy: 'api-key', keys: [process.env.API_KEY!] },
 
   // Rate limiting
-  rateLimit: createOpenAIRateLimiter({ maxRequests: 60, intervalMs: 60_000 }),
+  rateLimit: createOpenAIRateLimiter('tier1'),
 
   // Idempotency
   idempotency: {

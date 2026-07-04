@@ -79,6 +79,8 @@ interface CreateAgentOptions {
   // ── Reliability ───────────────────────────────────────────────────────────
   maxSteps?: number;                        // max tool-call iterations (default: 10)
   timeoutMs?: number;                       // request timeout in ms
+  temperature?: number;                     // default sampling temperature 0–2 (default: 0.7)
+  maxTokens?: number;                       // default max output tokens (default: 4096)
   retry?: { maxRetries?: number; backoffMs?: number; maxBackoffMs?: number };
 
   // ── Storage & observability ───────────────────────────────────────────────
@@ -88,6 +90,9 @@ interface CreateAgentOptions {
   // ── Follow-ups ────────────────────────────────────────────────────────────
   followUps?: boolean;                      // generate follow-up suggestions
   numFollowups?: number;                    // max follow-ups (default: 3)
+
+  // ── Lifecycle hooks ───────────────────────────────────────────────────────
+  hooks?: AgenticLifecycleHooks;            // intercept every stage of the run — see the Hooks guide
 
   // ── Dev ───────────────────────────────────────────────────────────────────
   debugMode?: boolean;                      // console visibility for runs

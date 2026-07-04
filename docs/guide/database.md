@@ -17,9 +17,10 @@ import {
   MysqlAgentDb,
   DynamoDbAgentDb,
   TursoAgentDb,
+  JsonFileAgentDb,
   InMemoryAgentDb,
   createAgentDb,
-} from 'confused-ai';
+} from 'confused-ai/db';
 ```
 
 ---
@@ -29,7 +30,7 @@ import {
 ### SQLite (zero-config local)
 
 ```ts
-import { SqliteAgentDb } from 'confused-ai';
+import { SqliteAgentDb } from 'confused-ai/db';
 
 const db = new SqliteAgentDb({ path: './data/agent.db' });
 ```
@@ -37,7 +38,7 @@ const db = new SqliteAgentDb({ path: './data/agent.db' });
 ### PostgreSQL
 
 ```ts
-import { PostgresAgentDb } from 'confused-ai';
+import { PostgresAgentDb } from 'confused-ai/db';
 
 const db = new PostgresAgentDb({
   connectionString: process.env.DATABASE_URL!,
@@ -48,10 +49,10 @@ const db = new PostgresAgentDb({
 ### MongoDB
 
 ```ts
-import { MongoAgentDb } from 'confused-ai';
+import { MongoAgentDb } from 'confused-ai/db';
 
 const db = new MongoAgentDb({
-  uri: process.env.MONGODB_URI!,
+  url: process.env.MONGODB_URI!,
   database: 'myapp',
 });
 ```
@@ -59,18 +60,18 @@ const db = new MongoAgentDb({
 ### Redis (key-value)
 
 ```ts
-import { RedisAgentDb } from 'confused-ai';
+import { RedisAgentDb } from 'confused-ai/db';
 
 const db = new RedisAgentDb({
-  redis: process.env.REDIS_URL!,
-  keyPrefix: 'myapp:',
+  url: process.env.REDIS_URL!,
+  prefix: 'myapp:',
 });
 ```
 
 ### Turso (libSQL, edge-ready)
 
 ```ts
-import { TursoAgentDb } from 'confused-ai';
+import { TursoAgentDb } from 'confused-ai/db';
 
 const db = new TursoAgentDb({
   url: process.env.TURSO_DATABASE_URL!,
@@ -81,7 +82,7 @@ const db = new TursoAgentDb({
 ### DynamoDB
 
 ```ts
-import { DynamoDbAgentDb } from 'confused-ai';
+import { DynamoDbAgentDb } from 'confused-ai/db';
 
 const db = new DynamoDbAgentDb({
   region: 'us-east-1',
@@ -89,22 +90,31 @@ const db = new DynamoDbAgentDb({
 });
 ```
 
+### JSON file (zero-dependency persistence)
+
+`JsonFileAgentDb` persists each table as a JSON file under a directory — handy for demos and small local apps with no database server:
+
+```ts
+import { JsonFileAgentDb } from 'confused-ai/db';
+
+const db = new JsonFileAgentDb({ dir: './data/agent-db' });
+```
+
 ### `createAgentDb` factory
 
 Pick a backend by string at runtime:
 
 ```ts
-import { createAgentDb } from 'confused-ai';
+import { createAgentDb } from 'confused-ai/db';
 
-const db = createAgentDb({
+// createAgentDb is async. `uri` is the connection string for every backend
+// (its meaning depends on `type`). A plain URL string also works, e.g.
+// `await createAgentDb('postgres://…')`.
+const db = await createAgentDb({
   type: process.env.DB_TYPE as 'sqlite' | 'postgres' | 'mongo' | 'redis',
-  // sqlite
-  path: './agent.db',
-  // postgres
-  connectionString: process.env.DATABASE_URL,
-  // mongo
-  uri: process.env.MONGODB_URI,
-  database: 'myapp',
+  uri: process.env.DATABASE_URL,   // 'sqlite://./agent.db' | 'postgres://…' | 'mongodb://…' | 'redis://…'
+  database: 'myapp',               // mongo only
+  // tables: { ... }               // optional table-name overrides
 });
 ```
 
@@ -115,14 +125,13 @@ const db = createAgentDb({
 The main use of `AgentDb` is wiring all framework stores to a single persistent backend:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { SqliteAgentDb } from 'confused-ai';
-import { DbSessionStore } from 'confused-ai';
-import { createDbMemoryStore } from 'confused-ai';
+import { createAgent, DbSessionStore } from 'confused-ai';
 import { createDbKnowledgeEngine, OpenAIEmbeddingProvider } from 'confused-ai';
-import { DbScheduleStore } from 'confused-ai';
+import { SqliteAgentDb } from 'confused-ai/db';
+import { createDbMemoryStore } from 'confused-ai/memory';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
+const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
 
 const agent = createAgent({
   name: 'persistent-agent',
@@ -130,10 +139,10 @@ const agent = createAgent({
   model: 'gpt-4o-mini',
   apiKey: process.env.OPENAI_API_KEY!,
   sessionStore:  new DbSessionStore(db),
-  memoryStore:   createDbMemoryStore({ db }),
+  memoryStore:   createDbMemoryStore(db),   // AgentDb passed positionally
   knowledgebase: createDbKnowledgeEngine({
     db,
-    embedding: new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! }),
+    embed: (text) => embedder.embed(text),  // embed is an EmbeddingFn, not a provider
   }),
 });
 ```
@@ -170,6 +179,14 @@ const agent = createAgent({
   apiKey: process.env.OPENAI_API_KEY!,
   tools: [lookupOrder],
 });
+```
+
+### Built-in data tools
+
+If you don't want to hand-write tools, the framework ships ready-made data toolkits under `confused-ai/tools/data` — SQL (`DatabaseToolkit`: Postgres/MySQL/SQLite), `RedisToolkit`, `CsvToolkit`, plus BigQuery and Neo4j tools:
+
+```ts
+import { DatabaseToolkit, RedisToolkit, CsvToolkit } from 'confused-ai/tools/data';
 ```
 
 ---

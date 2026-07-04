@@ -27,7 +27,7 @@ import { agent, defineAgent, compose, tool } from 'confused-ai';
 Use subpaths when you want clearer intent or a narrower import surface.
 
 ```ts
-import { TavilySearchTool } from 'confused-ai/tools';
+import { TavilySearchTool } from 'confused-ai/tools/search';
 import { createSqliteStore } from 'confused-ai/session';
 import { GuardrailValidator, createPiiDetectionRule } from 'confused-ai/guardrails';
 import { withResilience } from 'confused-ai/production';

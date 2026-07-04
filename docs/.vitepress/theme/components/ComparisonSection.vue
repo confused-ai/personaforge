@@ -130,12 +130,12 @@ function icon(val: boolean | string) {
 .ca-th-feat { min-width: 240px; }
 
 .ca-th-ca {
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(20, 184, 166, 0.06);
   border-left: 2px solid var(--vp-c-brand-1);
 }
 
 .ca-col-brand {
-  background: linear-gradient(135deg, #a855f7 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -160,8 +160,8 @@ function icon(val: boolean | string) {
 }
 
 .ca-td-ca {
-  background: rgba(139, 92, 246, 0.04);
-  border-left: 2px solid rgba(139, 92, 246, 0.3);
+  background: rgba(20, 184, 166, 0.04);
+  border-left: 2px solid rgba(20, 184, 166, 0.3);
 }
 
 .ca-icon {

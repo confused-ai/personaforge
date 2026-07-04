@@ -57,13 +57,34 @@ class CompanyDocsProvider extends ContextProvider {
   }
 }
 
-// Attach to agent
+// Attach to agent — there is no `contextProviders` option. Wire a provider in
+// through the tools and instructions it exposes.
+import { createAgent, tool } from 'confused-ai';
+import { z } from 'zod';
+
+const provider = new CompanyDocsProvider();
+await provider.setup();                     // initialise connections before first query
+
+// TOOLS-mode providers expose BackendTool objects ({ name, description, fn }).
+// Wrap each as a framework tool() so the agent can call it.
+const providerTools = provider.getTools().map((t) =>
+  tool({
+    name: t.name,                           // e.g. 'search_company_docs'
+    description: t.description,
+    parameters: z.object({ query: z.string().describe('Search query') }),
+    execute: async ({ query }) => t.fn(query),
+  }),
+);
+
 const agent = createAgent({
   name: 'support-agent',
-  instructions: 'Help employees with policy questions.',
+  // DEFAULT-mode providers contribute prompt text via instructions(); fold it in.
+  instructions: ['Help employees with policy questions.', provider.instructions()]
+    .filter(Boolean)
+    .join('\n\n'),
   model: 'gpt-4o-mini',
   apiKey: process.env.OPENAI_API_KEY!,
-  contextProviders: [new CompanyDocsProvider()],
+  tools: providerTools,
 });
 ```
 
@@ -112,9 +133,20 @@ abstract class ContextProvider {
   // Must implement:
   abstract query(query: string, options?: QueryOptions): Promise<Answer>;
 
-  // Optional:
+  // Optional override:
   async update(documents: Document[], options?: UpdateOptions): Promise<void> { ... }
-  async health(): Promise<Status> { ... }
+
+  // Lifecycle:
+  async setup(): Promise<void> { ... }   // called once before the first query
+  async close(): Promise<void> { ... }   // release resources
+
+  // Agent integration:
+  instructions(): string | undefined { ... }  // text injected into the system prompt
+  getTools(): BackendTool[] { ... }            // TOOLS-mode callable tools ({ name, description, fn })
+
+  // Health:
+  status(): Status { ... }
+  async astatus(): Promise<Status> { ... }
 }
 ```
 

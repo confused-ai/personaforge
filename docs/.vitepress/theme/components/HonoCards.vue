@@ -81,7 +81,7 @@ const cards = [
   transform: translateY(-4px);
   border-color: var(--vp-c-brand-1);
   box-shadow:
-    0 12px 40px rgba(139, 92, 246, 0.14),
+    0 12px 40px rgba(20, 184, 166, 0.14),
     0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -102,8 +102,8 @@ const cards = [
 
 .hc-card:hover .hc-icon-box {
   box-shadow:
-    0 4px 16px rgba(139, 92, 246, 0.18),
-    0 0 0 1px rgba(139, 92, 246, 0.12);
+    0 4px 16px rgba(20, 184, 166, 0.18),
+    0 0 0 1px rgba(20, 184, 166, 0.12);
 }
 
 .hc-emoji {

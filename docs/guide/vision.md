@@ -32,7 +32,7 @@ const agent = createAgent({
 });
 
 const result = await agent.run(
-  multiModal(
+  await multiModal(
     'What is in this image?',
     imageUrl('https://example.com/photo.jpg'),
   ),
@@ -48,7 +48,7 @@ import { multiModal, imageFile } from 'confused-ai';
 
 // imageFile() is async — loads and base64-encodes the file
 const result = await agent.run(
-  multiModal(
+  await multiModal(
     'Describe this chart.',
     await imageFile('./chart.png'),
   ),
@@ -66,7 +66,7 @@ const response = await fetch('https://example.com/diagram.png');
 const buffer = await response.arrayBuffer();
 
 const result = await agent.run(
-  multiModal(
+  await multiModal(
     'What does this architecture diagram show?',
     imageBuffer(buffer, 'image/png'),
   ),
@@ -79,7 +79,7 @@ const result = await agent.run(
 
 ```ts
 const result = await agent.run(
-  multiModal(
+  await multiModal(
     'Compare these two screenshots and explain the differences.',
     imageUrl(beforeUrl),
     imageUrl(afterUrl),

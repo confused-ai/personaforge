@@ -170,7 +170,7 @@ const subpaths = [
 .ca-bat-card:hover {
   transform: translateY(-3px);
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 8px 28px rgba(20, 184, 166, 0.1);
 }
 
 .ca-bat-card-top {
@@ -211,7 +211,7 @@ const subpaths = [
 }
 
 .ca-bat-card:hover .ca-bat-pill {
-  border-color: rgba(139, 92, 246, 0.3);
+  border-color: rgba(20, 184, 166, 0.3);
   color: var(--vp-c-text-1);
 }
 
@@ -228,7 +228,7 @@ const subpaths = [
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(20, 184, 166, 0.06);
   border-bottom: 1px solid var(--vp-c-divider);
 }
 

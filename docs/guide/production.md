@@ -16,10 +16,10 @@ import {
   HealthCheckManager, createLLMHealthCheck,
   GracefulShutdown, createGracefulShutdown,
   ResilientAgent, withResilience,
-  InMemoryAuditStore, SqliteAuditStore,
-  InMemoryIdempotencyStore, SqliteIdempotencyStore,
-  SqliteCheckpointStore,
-} from 'confused-ai';
+  InMemoryAuditStore, SqliteAuditStore, createSqliteAuditStore,
+  InMemoryIdempotencyStore, createSqliteIdempotencyStore,
+  createSqliteCheckpointStore,
+} from 'confused-ai/production';
 ```
 
 ---
@@ -30,7 +30,7 @@ The fastest way to get production resilience — wraps a `createAgent()` agent w
 
 ```ts
 import { createAgent } from 'confused-ai';
-import { withResilience, createSqliteApprovalStore } from 'confused-ai';
+import { withResilience } from 'confused-ai/production';
 
 const agent = createAgent({
   name: 'production-agent',
@@ -41,24 +41,13 @@ const agent = createAgent({
 
 const resilientAgent = withResilience(agent, {
   circuitBreaker: {
-    name: 'openai',
     failureThreshold: 5,      // open after 5 failures
     resetTimeoutMs: 30_000,   // retry after 30s
   },
-  rateLimiter: {
-    name: 'openai',
-    maxRequests: 60,
-    intervalMs: 60_000,
-    burstCapacity: 10,
-  },
-  budget: {
-    maxUsdPerRun: 0.50,
-    maxUsdPerUser: 10.00,
-    maxUsdPerMonth: 500.00,
-    onExceeded: 'throw',
-  },
-  checkpoint: new SqliteCheckpointStore({ path: './agent.db' }),
-  idempotency: new SqliteIdempotencyStore({ path: './agent.db' }),
+  rateLimit: { maxRpm: 60 },  // max requests per minute
+  healthCheck: true,
+  gracefulShutdown: true,
+  retry: { maxRetries: 2, backoffMs: 500 },
 });
 
 // Use exactly like a regular agent
@@ -76,7 +65,7 @@ const result = await resilientAgent.run('Help me with my order.', {
 Prevent cascading failures by temporarily stopping calls to a failing dependency:
 
 ```ts
-import { CircuitBreaker, CircuitState, createLLMCircuitBreaker } from 'confused-ai';
+import { CircuitBreaker, CircuitState, createLLMCircuitBreaker } from 'confused-ai/production';
 
 // Factory for LLM circuit breakers (pre-configured sensible defaults)
 const cb = createLLMCircuitBreaker('openai', {
@@ -104,7 +93,7 @@ console.log(cb.getMetrics()); // { totalCalls, failures, successes, lastFailure 
 Token-bucket rate limiting for external APIs:
 
 ```ts
-import { RateLimiter, createOpenAIRateLimiter, RateLimitError } from 'confused-ai';
+import { RateLimiter, createOpenAIRateLimiter, RateLimitError } from 'confused-ai/production';
 
 // Factory for OpenAI (Tier 1 defaults: 60 RPM + 10 burst)
 const limiter = createOpenAIRateLimiter();
@@ -134,7 +123,7 @@ try {
 ## Redis rate limiter (distributed)
 
 ```ts
-import { RedisRateLimiter } from 'confused-ai';
+import { RedisRateLimiter } from 'confused-ai/production';
 
 const limiter = new RedisRateLimiter({
   redis: process.env.REDIS_URL!,
@@ -151,7 +140,7 @@ const limiter = new RedisRateLimiter({
 Hard stop on LLM spend per run, per user, and per month:
 
 ```ts
-import { BudgetEnforcer, InMemoryBudgetStore, BudgetExceededError, estimateCostUsd } from 'confused-ai';
+import { BudgetEnforcer, InMemoryBudgetStore, BudgetExceededError, estimateCostUsd } from 'confused-ai/production';
 
 const budget = new BudgetEnforcer({
   maxUsdPerRun: 0.50,
@@ -186,7 +175,7 @@ import {
   createSessionStoreHealthCheck,
   createHttpHealthCheck,
   createCustomHealthCheck,
-} from 'confused-ai';
+} from 'confused-ai/production';
 
 const health = new HealthCheckManager({
   checks: [
@@ -217,7 +206,7 @@ app.get('/health', async (req, res) => {
 ## Graceful shutdown
 
 ```ts
-import { createGracefulShutdown, withShutdownGuard } from 'confused-ai';
+import { createGracefulShutdown, withShutdownGuard } from 'confused-ai/production';
 
 const shutdown = createGracefulShutdown({
   timeoutMs: 30_000,
@@ -240,7 +229,7 @@ const safeRun = withShutdownGuard(shutdown, async () => {
 ## Audit logs
 
 ```ts
-import { SqliteAuditStore, createSqliteAuditStore } from 'confused-ai';
+import { SqliteAuditStore, createSqliteAuditStore } from 'confused-ai/production';
 
 const auditStore = createSqliteAuditStore('./agent.db');
 
@@ -272,9 +261,9 @@ const entries = await auditStore.query({
 Prevent duplicate runs from retried HTTP requests:
 
 ```ts
-import { SqliteIdempotencyStore } from 'confused-ai';
+import { createSqliteIdempotencyStore } from 'confused-ai/production';
 
-const idempotency = new SqliteIdempotencyStore({ path: './agent.db' });
+const idempotency = createSqliteIdempotencyStore('./agent.db');
 
 // Pass as runId — the framework deduplicates automatically
 const result = await agent.run(prompt, {
@@ -290,7 +279,7 @@ const result = await agent.run(prompt, {
 Clean up all data associated with a session:
 
 ```ts
-import { deleteSession } from 'confused-ai';
+import { deleteSession } from 'confused-ai/production';
 
 await deleteSession({
   sessionId: 'session-1',

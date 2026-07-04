@@ -16,7 +16,7 @@ import {
   DbScheduleStore,
   validateCronExpr,
   computeNextRun,
-} from 'confused-ai';
+} from 'confused-ai/scheduler';
 ```
 
 ---
@@ -25,7 +25,7 @@ import {
 
 ```ts
 import { createAgent } from 'confused-ai';
-import { ScheduleManager } from 'confused-ai';
+import { ScheduleManager } from 'confused-ai/scheduler';
 
 const agent = createAgent({
   name: 'daily-reporter',
@@ -43,13 +43,12 @@ scheduler.register('daily-report', async () => {
   console.log('Daily report saved.');
 });
 
-// Create a schedule
-const schedule = await scheduler.create({
+// Create a schedule — create() returns the new schedule's id (a string).
+const id = await scheduler.create({
   name: 'Daily Business Report',
-  cronExpr: '0 8 * * *',        // 08:00 UTC every day
+  cronExpr: '0 8 * * *',        // 08:00 every day (evaluated in UTC)
   endpoint: 'daily-report',     // matches the registered handler key
   enabled: true,
-  timezone: 'America/New_York', // IANA timezone
   maxRetries: 3,
   retryDelaySeconds: 300,
 });
@@ -72,10 +71,13 @@ import { validateCronExpr, computeNextRun } from 'confused-ai';
 validateCronExpr('*/5 * * * *');    // every 5 minutes — valid
 validateCronExpr('0 8 * * 1-5');    // weekdays at 08:00 — valid
 
-// Compute next run time
-const next = computeNextRun('0 9 * * MON', 'Europe/London');
-console.log(next.toISOString());
+// Compute next run time. Day-of-week is numeric (0–6, 0 = Sunday); named days
+// like MON are not supported. Returns a Date, or null if no match is found.
+const next = computeNextRun('0 9 * * 1');   // next Monday 09:00 UTC
+console.log(next?.toISOString());
 ```
+
+> **Scheduling is UTC-only.** All cron fields are evaluated in UTC. `computeNextRun` ignores its `timezone` argument (and the `timezone` field on a schedule), so IANA zones like `America/New_York` do not shift the run time — convert to UTC yourself when building the expression.
 
 Common patterns:
 
@@ -107,8 +109,8 @@ const id = await scheduler.create({
 // List all schedules
 const all = await scheduler.list();
 
-// List only enabled
-const enabled = await scheduler.list({ enabledOnly: true });
+// List only enabled — pass the boolean positionally
+const enabled = await scheduler.list(true);
 
 // Get one
 const schedule = await scheduler.get(id);
@@ -143,8 +145,8 @@ for (const run of runs) {
 ## Durable schedule store (survives restarts)
 
 ```ts
-import { DbScheduleStore } from 'confused-ai';
-import { SqliteAgentDb } from 'confused-ai';
+import { DbScheduleStore } from 'confused-ai/scheduler';
+import { SqliteAgentDb } from 'confused-ai/db';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
 const scheduleStore = new DbScheduleStore(db);
@@ -159,6 +161,30 @@ const scheduler = new ScheduleManager({ store: scheduleStore });
 ```ts
 // Fire a schedule immediately without waiting for the cron
 await scheduler.trigger(id);
+```
+
+---
+
+## Let an agent manage schedules
+
+`SchedulerTools` wraps a `ScheduleManager` as agent-callable tools, so an agent can create, list, update, and delete its own schedules from chat. Register the array returned by `getTools()`:
+
+```ts
+import { createAgent } from 'confused-ai';
+import { SchedulerTools, ScheduleManager } from 'confused-ai/scheduler';
+
+const manager = new ScheduleManager();
+
+const agent = createAgent({
+  name: 'SchedulerAgent',
+  instructions: 'Create and manage the user\'s reminders and reports.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: new SchedulerTools({
+    manager,
+    defaultEndpoint: '/agents/assistant/run',
+  }).getTools(),
+});
 ```
 
 ---

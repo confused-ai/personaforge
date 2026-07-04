@@ -160,23 +160,32 @@ Apply middleware to every tool in an agent at once:
 ```ts
 import { createAgent } from 'confused-ai';
 
+const starts = new Map<string, number>();
+
 const agent = createAgent({
   name: 'monitored-agent',
   instructions: '...',
   model: 'gpt-4o-mini',
   apiKey: process.env.OPENAI_API_KEY!,
   tools: [searchTool, emailTool, dbTool],
-  toolMiddleware: async (name, args, next) => {
-    const start = Date.now();
-    try {
-      const result = await next(name, args);
-      metrics.histogram('tool.duration_ms', Date.now() - start, { tool: name, status: 'ok' });
-      return result;
-    } catch (err) {
-      metrics.histogram('tool.duration_ms', Date.now() - start, { tool: name, status: 'error' });
-      throw err;
-    }
-  },
+  toolMiddleware: [
+    {
+      beforeExecute: (tool) => {
+        starts.set(tool.name, Date.now());
+      },
+      afterExecute: (tool, result) => {
+        const start = starts.get(tool.name) ?? Date.now();
+        metrics.histogram('tool.duration_ms', Date.now() - start, {
+          tool: tool.name,
+          status: result.success ? 'ok' : 'error',
+        });
+      },
+      onError: (tool) => {
+        const start = starts.get(tool.name) ?? Date.now();
+        metrics.histogram('tool.duration_ms', Date.now() - start, { tool: tool.name, status: 'error' });
+      },
+    },
+  ],
 });
 ```
 

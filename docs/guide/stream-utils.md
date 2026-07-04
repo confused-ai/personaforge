@@ -75,7 +75,7 @@ console.log(chunks); // ['alpha ', 'gamma']
 
 ## `streamToSSE()`
 
-Pipe a provider stream directly to a Node HTTP response as Server-Sent Events.
+Pipe a provider stream directly to a Node HTTP response as Server-Sent Events. The third argument is typed `StreamToSSEOptions` (also exported from `confused-ai/models`).
 
 ```ts
 import { createServer } from 'node:http';
@@ -109,7 +109,7 @@ data: {}
 
 ## `streamWithBudget()`
 
-Stop yielding deltas after an approximate token budget is reached.
+Stop yielding deltas after an approximate token budget is reached. The options object is typed `StreamBudgetOptions` (also exported from `confused-ai/models`).
 
 ```ts
 import { streamWithBudget } from 'confused-ai/models';
@@ -300,7 +300,7 @@ console.log(await streamToText(logStream));
 | `streamToChunks` | `AsyncIterable<StreamDelta>` | `Promise<string[]>` | Collect text chunks |
 | `streamToSSE` | `AsyncIterable<StreamDelta>` | `Promise<void>` | Write SSE to a `ServerResponse` |
 | `streamWithBudget` | `AsyncIterable<StreamDelta>` | `AsyncIterable<StreamDelta>` | Token-budget gate |
-| `streamTee` | `AsyncIterable<StreamChunk>` | `[AsyncIterable, AsyncIterable]` | Duplicate stream |
+| `streamTee` | `AsyncIterable<StreamDelta>` | `[AsyncIterable, AsyncIterable]` | Duplicate stream |
 | `streamMap` | `AsyncIterable<StreamDelta>` | `AsyncIterable<StreamDelta>` | Transform each delta |
 | `streamFilter` | `AsyncIterable<StreamDelta>` | `AsyncIterable<StreamDelta>` | Drop deltas |
 | `streamMerge` | `AsyncIterable<StreamDelta>[]` | `AsyncIterable<StreamDelta>` | Merge multiple streams |

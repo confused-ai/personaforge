@@ -21,16 +21,14 @@ import {
 ## Attach built-in skills
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { defineAgent } from 'confused-ai';
 import { webResearchSkill, codeReviewerSkill } from 'confused-ai/skills';
 
-const agent = createAgent({
-  name: 'research-reviewer',
-  instructions: 'Help users research topics and review code.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  skills: [webResearchSkill, codeReviewerSkill],
-});
+const agent = defineAgent('research-reviewer')
+  .instructions('Help users research topics and review code.')
+  .model('openai:gpt-4o-mini')
+  .skills([webResearchSkill, codeReviewerSkill])
+  .build();
 ```
 
 ---
@@ -44,13 +42,11 @@ Gives the agent a `fetch_page` tool that retrieves the visible text from any HTT
 ```ts
 import { webResearchSkill } from 'confused-ai/skills';
 
-const agent = createAgent({
-  name: 'researcher',
-  instructions: 'Research questions using the web.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  skills: [webResearchSkill],
-});
+const agent = defineAgent('researcher')
+  .instructions('Research questions using the web.')
+  .model('openai:gpt-4o-mini')
+  .skills([webResearchSkill])
+  .build();
 
 const result = await agent.run('What is the latest version of Node.js?');
 // Agent will call fetch_page('https://nodejs.org/en/download/releases') internally
@@ -63,13 +59,11 @@ Gives the agent a `read_source_file` tool that loads source files from disk:
 ```ts
 import { codeReviewerSkill } from 'confused-ai/skills';
 
-const agent = createAgent({
-  name: 'code-reviewer',
-  instructions: 'Review source code files for bugs and security issues.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  skills: [codeReviewerSkill],
-});
+const agent = defineAgent('code-reviewer')
+  .instructions('Review source code files for bugs and security issues.')
+  .model('openai:gpt-4o-mini')
+  .skills([codeReviewerSkill])
+  .build();
 
 const result = await agent.run('Review src/runtime/jwt-rbac.ts for security vulnerabilities.');
 // Supported extensions: .ts, .js, .py, .go, .rs, .java, .sql, .yaml, .md and more
@@ -82,13 +76,11 @@ Gives the agent the ability to load and summarise PDF documents:
 ```ts
 import { pdfSummarizerSkill } from 'confused-ai/skills';
 
-const agent = createAgent({
-  name: 'doc-summarizer',
-  instructions: 'Summarise documents and answer questions about their content.',
-  model: 'gpt-4o',
-  apiKey: process.env.OPENAI_API_KEY!,
-  skills: [pdfSummarizerSkill],
-});
+const agent = defineAgent('doc-summarizer')
+  .instructions('Summarise documents and answer questions about their content.')
+  .model('openai:gpt-4o')
+  .skills([pdfSummarizerSkill])
+  .build();
 
 const result = await agent.run('Summarise the document at ./reports/Q4-2024.pdf');
 ```
@@ -97,34 +89,33 @@ const result = await agent.run('Summarise the document at ./reports/Q4-2024.pdf'
 
 ## Author a custom skill
 
-A `Skill` is a plain object with `name`, optional `instructions`, and an array of `tools`:
+A `Skill` is a plain object with `id`, `name`, optional `instructions`, and an array of `tools`:
 
 ```ts
-import type { Skill } from 'confused-ai';
-import { tool } from 'confused-ai';
+import type { Skill } from 'confused-ai/contracts';
+import { defineAgent, tool } from 'confused-ai';
 import { z } from 'zod';
 
 const getWeather = tool({
   name: 'get_weather',
   description: 'Get the current weather for a city.',
-  schema: z.object({ city: z.string() }),
+  parameters: z.object({ city: z.string() }),
   execute: async ({ city }) => fetchWeather(city),
 });
 
 export const weatherSkill: Skill = {
+  id: 'weather',
   name: 'weather',
   instructions: 'You can look up current weather for any city using get_weather.',
   tools: [getWeather],
 };
 
 // Use it
-const agent = createAgent({
-  name: 'travel-agent',
-  instructions: 'Help users plan trips.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  skills: [weatherSkill],
-});
+const agent = defineAgent('travel-agent')
+  .instructions('Help users plan trips.')
+  .model('openai:gpt-4o-mini')
+  .skills([weatherSkill])
+  .build();
 ```
 
 ---
@@ -133,12 +124,20 @@ const agent = createAgent({
 
 ```ts
 interface Skill {
-  /** Unique name for the skill */
+  /** Unique identifier — kebab-case recommended (e.g. "web-research") */
+  id: string;
+  /** Human-readable display name */
   name: string;
+  /** Short description of what this skill does */
+  description?: string;
   /** Additional instructions appended to the agent system prompt */
   instructions?: string;
   /** Tools this skill provides */
   tools?: Tool[];
+  /** Optional category tags for discovery and filtering */
+  tags?: string[];
+  /** Arbitrary metadata: version, author, homepage, etc. */
+  metadata?: Record<string, unknown>;
 }
 ```
 

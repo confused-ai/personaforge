@@ -12,7 +12,7 @@ const steps = [
     step: '02',
     title: 'Set an API key',
     code: `OPENAI_API_KEY=sk-...`,
-    note: 'Any of 7 providers. Swap at any time.',
+    note: 'Any of 30+ providers. Swap at any time.',
   },
   {
     step: '03',
@@ -168,7 +168,7 @@ const activeStep = ref(0);
 }
 
 .ca-dx-step.is-active {
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(20, 184, 166, 0.06);
 }
 
 .ca-dx-step-num {
@@ -247,7 +247,7 @@ const activeStep = ref(0);
 .ca-dx-card:hover {
   transform: translateY(-3px);
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 8px 28px rgba(20, 184, 166, 0.1);
 }
 
 .ca-dx-card-icon {

@@ -30,7 +30,7 @@ const agent = createAgent({
 });
 ```
 
-Pass `guardrails: false` to disable all guardrails (including the default PII guardrail that runs when you omit the option).
+Pass `guardrails: false` to disable all guardrails.
 
 ---
 
@@ -65,19 +65,20 @@ const piiRule = createPiiDetectionRule({
   // redact: false        // just flag without modifying
 
   // PII types to detect (all enabled by default):
-  types: ['email', 'phone', 'ssn', 'credit_card', 'jwt', 'aws_key', 'ip_address'],
+  types: ['email', 'phone', 'ssn', 'credit_card', 'jwt', 'aws_key', 'api_key'],
 });
 ```
 
-**Detected PII types:** `email` · `phone` · `ssn` · `credit_card` · `jwt` · `aws_key` · `ip_address` · and more from `PII_PATTERNS`.
+**Detected PII types:** `email` · `phone` · `ssn` · `credit_card` · `national_insurance` · `passport` · `aws_key` · `api_key` · `jwt` · and more from `PII_PATTERNS`.
 
 ```ts
 import { detectPii, PII_PATTERNS } from 'confused-ai';
 
-// Use standalone (no agent required)
-const result = await detectPii('Contact me at alice@example.com or 555-123-4567');
+// Use standalone (no agent required) — detectPii is synchronous
+const result = detectPii('Contact me at alice@example.com or 555-123-4567', { extract: true });
 console.log(result.found);    // true
-console.log(result.matches);  // [{ type: 'email', value: 'alice@example.com' }, ...]
+console.log(result.types);    // ['email', 'phone']
+console.log(result.matches);  // { email: ['alice@example.com'], phone: ['555-123-4567'] }
 ```
 
 ---
@@ -93,10 +94,11 @@ const injectionRule = createPromptInjectionRule({
   threshold: 0.7,    // 0.0–1.0; higher = stricter. Default: 0.7
 });
 
-// Standalone usage:
-const detection = await detectPromptInjection('Ignore all previous instructions and...');
-console.log(detection.score);     // 0.95
-console.log(detection.signals);   // ['ignore_previous', 'jailbreak_attempt']
+// Standalone usage — detectPromptInjection is synchronous:
+const detection = detectPromptInjection('Ignore all previous instructions and...');
+console.log(detection.isInjection); // true
+console.log(detection.score);       // 0.95
+console.log(detection.signals);     // [{ pattern: 'instruction-override', description, weight, match }, ...]
 ```
 
 ### LLM-based injection classifier (higher accuracy)
@@ -160,29 +162,32 @@ import {
 } from 'confused-ai';
 
 const rules = [
-  // Block responses that contain specific patterns
-  createContentRule({
-    patterns: [/\b(password|secret|token)\s*[:=]/i],
-    action: 'block',
-    message: 'Response contains sensitive credential patterns.',
-  }),
+  // Block responses that contain specific patterns.
+  // Signature: createContentRule(name, description, pattern, severity?)
+  createContentRule(
+    'no-credentials',
+    'Blocks responses containing credential patterns.',
+    /\b(password|secret|token)\s*[:=]/i,
+    'error',
+  ),
 
-  // Limit output length
-  createMaxLengthRule({ maxChars: 10_000 }),
+  // Limit output length.
+  // Signature: createMaxLengthRule(name, maxLength, severity?)
+  createMaxLengthRule('max-length', 10_000, 'error'),
 
-  // Only allow certain output patterns
+  // Enforce an allowlist over tools, hosts, paths, outputs, and blocked patterns.
   createAllowlistRule({
-    patterns: [/^[a-z0-9\s.,!?-]+$/i],
-    action: 'block',
+    allowedTools: ['search', 'get_order'],
+    allowedHosts: ['api.company.com', 'docs.company.com'],
+    blockedPatterns: [/\b(password|secret)\b/i],
   }),
 
-  // Flag sensitive data patterns
-  createSensitiveDataRule({ patterns: SENSITIVE_DATA_PATTERNS }),
+  // Flag built-in sensitive data patterns (credit cards, SSNs, API keys). No args.
+  createSensitiveDataRule(),
 
-  // Block requests to disallowed domains
-  createUrlValidationRule({
-    allowedDomains: ['api.company.com', 'docs.company.com'],
-  }),
+  // Restrict URLs to allowed protocols (and optionally hosts).
+  // Signature: createUrlValidationRule(allowedProtocols, allowedHosts?)
+  createUrlValidationRule(['https:'], ['api.company.com', 'docs.company.com']),
 ];
 ```
 
@@ -195,10 +200,9 @@ Restrict which tools the agent can call from within a guardrail rule:
 ```ts
 import { createToolAllowlistRule } from 'confused-ai';
 
-const toolRule = createToolAllowlistRule({
-  allowedTools: ['search_orders', 'get_product_info'],
-  // Any tool not in this list is blocked before execution
-});
+// Signature: createToolAllowlistRule(allowedTools). Any tool not in the list
+// is blocked before execution.
+const toolRule = createToolAllowlistRule(['search_orders', 'get_product_info']);
 ```
 
 ---
@@ -210,20 +214,20 @@ import type { GuardrailRule, GuardrailContext, GuardrailResult } from 'confused-
 
 const noProfanityRule: GuardrailRule = {
   name: 'no-profanity',
-  type: 'output',   // 'input' | 'output' | 'both'
-  check: async (ctx: GuardrailContext): Promise<GuardrailResult> => {
-    const text = typeof ctx.message.content === 'string' ? ctx.message.content : '';
+  description: 'Blocks prohibited language in agent output.',
+  severity: 'error',   // 'error' | 'warning'
+  check: (ctx: GuardrailContext): GuardrailResult => {
+    const text = typeof ctx.output === 'string' ? ctx.output : '';
     const hasProfanity = /\b(badword1|badword2)\b/i.test(text);
 
     if (hasProfanity) {
       return {
         passed: false,
-        action: 'block',
-        message: 'Response contains prohibited language.',
         rule: 'no-profanity',
+        message: 'Response contains prohibited language.',
       };
     }
-    return { passed: true };
+    return { passed: true, rule: 'no-profanity' };
   },
 };
 
@@ -252,8 +256,8 @@ const guardrails = new GuardrailValidator({
     createPiiDetectionRule({ redact: true }),
     createOpenAiModerationRule({ apiKey: process.env.OPENAI_API_KEY! }),
     createForbiddenTopicsRule({ topics: ['competitor pricing', 'legal strategy'] }),
-    createMaxLengthRule({ maxChars: 8_000 }),
-    createToolAllowlistRule({ allowedTools: ['search', 'get_order', 'send_email'] }),
+    createMaxLengthRule('max-length', 8_000, 'error'),
+    createToolAllowlistRule(['search', 'get_order', 'send_email']),
   ],
   onViolation: (violation) => {
     // Send to your audit log
