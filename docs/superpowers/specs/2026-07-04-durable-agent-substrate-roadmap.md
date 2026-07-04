@@ -8,7 +8,7 @@
 
 ## 1. The situation (honest)
 
-- **531 source files, 39 test files (~7% coverage).** The framework out-features LangGraph, Mastra, Agno, CrewAI, and the Vercel AI SDK on surface area — and under-verifies all of it.
+- **531 source files, 39 test files (~789 tests).** That's a low *file-level* test-presence ratio (~7% of source files have a sibling test) — not a line-coverage figure. The framework out-features LangGraph, Mastra, Agno, CrewAI, and the Vercel AI SDK on surface area, while many modules have no direct tests at all.
 - **Two execution engines exist in parallel:** `src/execution/` (`engine.ts`, `engine-v2.ts`, `state-graph.ts`, `workflow.ts`, `durable.ts`) and `src/graph/` (`engine.ts`, `scheduler.ts`, `orchestrator.ts`, `event-store.ts`). Same job, two implementations. Prior notes already flag "type divergence" and "de-dup pending."
 - **Diagnosis:** growth by accretion. The framework is big because concepts were re-implemented, not because it's deep. Adding feature #200 makes this worse.
 

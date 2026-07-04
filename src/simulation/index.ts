@@ -13,3 +13,6 @@ export type {
   SimReport,
   SimulateOptions,
 } from './simulate.js';
+
+// Bridge to self-improvement: turn simulation outcomes into optimizer training data.
+export { trainsetFromReport } from './learn.js';
