@@ -67,6 +67,7 @@ const entries = [
   ['src/dx/index.ts',             'dist/dx.d.ts'],
   ['src/sdk/index.ts',            'dist/sdk.d.ts'],
   ['src/graph/index.ts',          'dist/graph.d.ts'],
+  ['src/simulation/index.ts',     'dist/simulation.d.ts'],
   ['src/cli/index.ts',            'dist/cli.d.ts'],
   ['src/create-agent/index.ts',   'dist/create-agent/index.d.ts'],
   // tools/* sub-entries
