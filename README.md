@@ -111,6 +111,24 @@ Each layer is optional. Most real projects only need a subset.
 | Compression | keep long-running contexts within model token limits |
 | Learning | simulate runs and improve behavior from recorded outcomes |
 
+## Enterprise and compliance
+
+For regulated or high-assurance deployments, the graph engine is event-sourced end to end (`confused-ai/graph`), which unlocks a compliance and operations layer on top of any agent or workflow:
+
+| Capability | What it gives you | Guide |
+|---|---|---|
+| Event sourcing | every run recorded to a durable, file-backed log (`SqliteEventStore`, `BatchingEventStore`) | `docs/guide/graph.md` |
+| Deterministic replay | re-run a recorded execution with zero external calls for time-travel debugging and sims | `docs/guide/graph.md` |
+| Tamper-evident audit | hash-chained event log verified with `verifyChain` to prove the record was not altered | `docs/guide/graph.md` |
+| PII and secret redaction | `RunRecorder` scrubs secrets and free-text PII before anything is persisted | `docs/guide/graph.md` |
+| Right-to-erasure | `EventStore.purge()` deletes every event for one execution (GDPR) | `docs/guide/graph.md` |
+| Distributed execution | fan a graph across workers with a shared task queue | `docs/guide/graph.md` |
+| Multi-tenancy | per-tenant isolation and configuration via `createTenantContext` and `TenantRegistry` | `docs/guide/multi-tenancy.md` |
+| Admin API | health, audit log, pending approvals, and throughput endpoints | `docs/guide/admin-api.md` |
+| Secret management | pluggable backends with versioning and live secret watching | `docs/guide/secret-manager.md` |
+
+Guardrails, HITL approvals, and budget controls (see above) round out the runtime policy layer.
+
 ## Recommended reading order
 
 If you are new to the repo, follow this order:
