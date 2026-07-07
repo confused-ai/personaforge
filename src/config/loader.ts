@@ -22,7 +22,7 @@ function loadLLMConfig(): LLMConfig {
     } else if (provider === 'openrouter') {
         apiKey = process.env.OPENROUTER_API_KEY;
         model = process.env.OPENROUTER_MODEL;
-        baseUrl = 'https://openrouter.io/api/v1';
+        baseUrl = 'https://openrouter.ai/api/v1';
     } else if (provider === 'ollama') {
         apiKey = 'ollama'; // Ollama doesn't require API key
         model = process.env.OLLAMA_MODEL || 'llama3.2';
