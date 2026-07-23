@@ -10,8 +10,8 @@ import type {
     Message,
     GenerateResult,
     GenerateOptions,
-    StreamOptions,
 } from './types.js';
+import { normalizeFinishReason } from './types.js';
 
 // Minimal Bedrock response shapes — avoids importing the heavy AWS SDK at compile time
 interface BedrockConverseResponse {
@@ -141,12 +141,12 @@ export class BedrockConverseProvider implements LLMProvider {
 
         return {
             text,
-            finishReason: out.stopReason ?? undefined,
+            finishReason: normalizeFinishReason(out.stopReason),
             usage,
         };
     }
 
-    async streamText(messages: Message[], options?: StreamOptions): Promise<GenerateResult> {
+    async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
         const client = await this.ensureClient();
         const { ConverseStreamCommand } = await import('@aws-sdk/client-bedrock-runtime');
 
@@ -195,7 +195,7 @@ export class BedrockConverseProvider implements LLMProvider {
                     const delta = evt.contentBlockDelta.delta as { text?: string };
                     const piece = delta.text ?? '';
                     text += piece;
-                    options?.onChunk?.({ type: 'text', text: piece });
+                    options?.onChunk?.(piece);
                 }
             }
         }

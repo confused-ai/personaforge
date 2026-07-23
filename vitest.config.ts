@@ -18,6 +18,15 @@ export default defineConfig({
             'packages/*/*/tests/**/*.test.ts',
             'packages/*/*/src/**/*.test.ts',
         ],
+        // Live-model integration tests are opt-in — they hit real provider APIs
+        // and require secrets. They live under tests/integration/ and run only
+        // via `bun run test:integration` (vitest.integration.config.ts). Keep
+        // them out of the default unit run so CI stays hermetic and fast.
+        exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            'tests/integration/**',
+        ],
 
         // Benchmark file patterns
         benchmark: {
@@ -56,8 +65,9 @@ export default defineConfig({
                 '**/index.ts',
             ],
             // Glob-scoped thresholds: packages/* stay gated at 80/75; the shipped
-            // src/ runtime is reported but not yet gated (interim 0). Ratchet the
-            // src/ numbers up as coverage improves — visibility now, gate later.
+            // src/ runtime is now gated (see the src glob below) at a ratcheting
+            // floor rather than 0. Any regression fails CI; ratchet the floor up
+            // in small steps as coverage improves — do NOT lower it.
             thresholds: {
                 'packages/**/src/**/*.ts': {
                     lines: 80,
@@ -66,10 +76,16 @@ export default defineConfig({
                     statements: 80,
                 },
                 'src/**/*.ts': {
-                    lines: 0,
-                    functions: 0,
-                    branches: 0,
-                    statements: 0,
+                    // Ratcheting floor. Measured baseline 2026-07-23: ~23% lines,
+                    // ~20% funcs, ~17% branches, ~22% stmts. Floors sit a couple of
+                    // points below to absorb noise so any coverage *regression* fails
+                    // CI while the current suite stays green. Bump these whenever
+                    // measured coverage rises ≥ 2 pp. Target 60/50 this quarter,
+                    // 75/65 next (see docs/superpowers/specs/2026-07-23-consolidation-and-path-to-1.md).
+                    lines: 20,
+                    functions: 17,
+                    branches: 15,
+                    statements: 19,
                 },
             },
         },

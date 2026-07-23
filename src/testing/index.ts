@@ -1,12 +1,13 @@
 /**
- * Test utilities for agent framework testing.
+ * `personaforge/testing` — the rich testing toolkit: `MockLLMProvider`,
+ * `createMockAgent`, `ScenarioRunner`, mock session / memory / tool-registry stores,
+ * a graph-runner harness, and HTTP fixtures. Use this for authoring unit,
+ * integration, and e2e tests against agents.
  *
- * @deprecated This implementation folder will be merged into `@personaforge/test-utils` in the
- *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@personaforge/test-utils` directly.
- *
- * Provides helpers for unit tests, integration tests, and e2e tests.
- * Import via `personaforge/testing`.
+ * `personaforge/test-utils` is a smaller parallel surface aimed at framework
+ * conformance testing and lightweight scenario runs. Both live side by side; the
+ * `Mock*` type names in the two modules are similar but not interchangeable — pick
+ * one module per test file.
  */
 
 export * from './mock-llm.js';

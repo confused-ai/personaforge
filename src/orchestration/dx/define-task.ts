@@ -154,7 +154,8 @@ export function resolveTaskBatches(tasks: TaskHandle[]): TaskHandle[][] {
   const resolved = batches.flat();
   if (resolved.length !== tasks.length) {
     // Some tasks were never added — must be a cycle not caught at definition time.
-    const unresolved = tasks.filter((t) => !resolved.includes(t)).map((t) => t.name);
+    const resolvedSet = new Set(resolved);
+    const unresolved = tasks.filter((t) => !resolvedSet.has(t)).map((t) => t.name);
     throw new TaskCycleError(unresolved);
   }
 

@@ -10,8 +10,8 @@ import type {
     GenerateOptions,
     LLMToolDefinition,
     ToolCall,
-    StreamOptions,
 } from './types.js';
+import { normalizeFinishReason } from './types.js';
 import { DebugLogger, createDebugLogger } from '../shared/index.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that
@@ -204,7 +204,7 @@ export class OpenAIProvider implements LLMProvider {
         const choice = response.choices?.[0];
         if (!choice?.message) {
             this.logger.warn('Empty response from LLM');
-            return { text: '', finishReason: choice?.finish_reason ?? 'unknown' };
+            return { text: '', finishReason: normalizeFinishReason(choice?.finish_reason) };
         }
 
         const msg = choice.message;
@@ -232,7 +232,7 @@ export class OpenAIProvider implements LLMProvider {
         return {
             text,
             toolCalls: toolCalls?.length ? toolCalls : undefined,
-            finishReason: choice.finish_reason ?? undefined,
+            finishReason: normalizeFinishReason(choice.finish_reason),
             usage: response.usage
                 ? {
                     promptTokens: response.usage.prompt_tokens,
@@ -243,7 +243,7 @@ export class OpenAIProvider implements LLMProvider {
         };
     }
 
-    async streamText(messages: Message[], options?: StreamOptions): Promise<GenerateResult> {
+    async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
         const body: Record<string, unknown> = {
             model: this.model,
             messages: toOpenAIMessages(messages),
@@ -269,7 +269,7 @@ export class OpenAIProvider implements LLMProvider {
 
         let fullText = '';
         const toolCallsMap = new Map<number, { id: string; name: string; args: string }>();
-        let finishReason: string | undefined;
+        let finishReason: GenerateResult['finishReason'];
         let usage: GenerateResult['usage'];
 
         for await (const chunk of stream) {
@@ -280,7 +280,7 @@ export class OpenAIProvider implements LLMProvider {
             if (delta.content) {
                 const textDelta = delta.content;
                 fullText += textDelta;
-                options?.onChunk?.({ type: 'text', text: textDelta });
+                options?.onChunk?.(textDelta);
             }
 
             // Handle tool calls
@@ -299,19 +299,12 @@ export class OpenAIProvider implements LLMProvider {
                         }
                     }
 
-                    if (tc.function?.arguments) {
-                        options?.onChunk?.({
-                            type: 'tool_call',
-                            id: tc.id ?? toolCallsMap.get(tc.index)?.id ?? '',
-                            name: tc.function.name ?? toolCallsMap.get(tc.index)?.name ?? '',
-                            argsDelta: tc.function.arguments
-                        });
+                    // tool-call streaming intentionally omitted from onChunk (see LLMProvider contract; deltas are aggregated into result.toolCalls)
                     }
-                }
             }
 
             if (chunk.choices?.[0]?.finish_reason) {
-                finishReason = chunk.choices[0].finish_reason ?? undefined;
+                finishReason = normalizeFinishReason(chunk.choices[0].finish_reason);
             }
 
             if (chunk.usage) {

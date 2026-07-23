@@ -1,9 +1,15 @@
 /**
  * Observability module exports.
  *
- * @deprecated This implementation folder will be merged into `@personaforge/observe` in the
- *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@personaforge/observe` directly.
+ * This module is the "batteries-included" observability layer: evaluation runners
+ * (`runEvalBatch`, `runLlmAsJudge`, multi-criteria judges), trace stores, OTLP export,
+ * and Langfuse / Langsmith ingest. It is a distinct layer from `personaforge/observe`,
+ * which provides the lightweight in-process tracing / logging / metrics primitives.
+ *
+ * The two modules share a handful of logging type names (`Logger`, `LogLevel`,
+ * `LogEntry`) but with different shapes — this module's `LogLevel` is an enum that
+ * includes `FATAL`, while `personaforge/observe` uses a 4-value string union. Import
+ * logging types from whichever module you are already using; do not mix the two.
  */
 
 export * from './types.js';

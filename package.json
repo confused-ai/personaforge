@@ -429,6 +429,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "bench": "vitest bench",
     "lint": "eslint src --max-warnings 0",
     "lint:packages": "bun run lint",

@@ -5,7 +5,7 @@
  */
 
 import type { LLMProvider } from '../providers/types.js';
-import type { Message, GenerateResult, GenerateOptions, StreamOptions } from '../providers/types.js';
+import type { Message, GenerateResult, GenerateOptions } from '../providers/types.js';
 
 export interface MockLLMOptions {
     /** Response to return for any prompt */
@@ -79,19 +79,20 @@ export class MockLLMProvider implements LLMProvider {
 
     async streamText(
         messages: Message[],
-        options?: StreamOptions
+        options?: GenerateOptions
     ): Promise<GenerateResult> {
         if (this.options.shouldError) {
             throw new Error('Mock LLM error');
         }
 
-        const result = await this.generateText(messages, options as GenerateOptions);
+        const result = await this.generateText(messages, options);
 
-        // Simulate streaming via onChunk callback
+        // Simulate streaming via onChunk callback (canonical LLMProvider contract:
+        // string chunks; tool-call streaming is delivered via result.toolCalls).
         if (options?.onChunk) {
             const chunkSize = 5;
             for (let i = 0; i < result.text.length; i += chunkSize) {
-                options.onChunk({ type: 'text', text: result.text.slice(i, i + chunkSize) });
+                options.onChunk(result.text.slice(i, i + chunkSize));
                 if (this.options.delay) {
                     await new Promise((resolve) => setTimeout(resolve, 10));
                 }

@@ -1,5 +1,19 @@
 /**
- * @personaforge/graph — DAG execution engine, event store, scheduler, and durable executor.
+ * @personaforge/graph — event-sourced DAG execution engine.
+ *
+ * This is the **durable substrate** engine: every run is an append-only,
+ * hash-chained event log (`EventStore`), which unlocks deterministic replay
+ * (`replay`), time-travel debugging, tamper-evident audit (`verifyChain`), and
+ * simulation. Reach for `personaforge/graph` when you need reproducibility,
+ * compliance, or crash-safe resume.
+ *
+ * NOTE ON NAMING: `personaforge/execution` also exports an `EventStore` /
+ * `InMemoryEventStore` / `ExecutionStatus`, but those are DIFFERENT types
+ * belonging to that engine's CQRS/task model. They are not interchangeable with
+ * the ones here. Do not cross-import between the two engines. See
+ * docs/superpowers/specs/2026-07-23-consolidation-and-path-to-1.md §3.2 for the
+ * chosen direction (graph is the roadmap's L1 substrate; execution is the
+ * task-scheduling engine kept for its worker-pool / plan API).
  *
  * Package barrel — re-exports everything from the implementation modules.
  * Use `@personaforge/core` imports for the bridge utilities (no root src/ dependency).

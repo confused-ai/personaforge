@@ -584,7 +584,7 @@ export class LLMRouter implements LLMProvider {
         }
     }
 
-    async streamText(messages: Message[], options?: StreamOptions): Promise<GenerateResult> {
+    async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
         const { entry, decision } = this.route(messages, options as any);
         this.recordDecision(decision);
 
@@ -680,10 +680,14 @@ export class LLMRouter implements LLMProvider {
         );
         const pool = windowFit.length > 0 ? windowFit : this.entries;
 
-        // 3. Filter by capability
-        const capable = pool.filter((e) => e.capabilities.includes(detectedTask));
+        // 3. Filter by capability — single pass, partitioning task-capable vs 'simple'-capable.
+        const capable: (RouterEntry & { index: number })[] = [];
+        const simpleCapable: (RouterEntry & { index: number })[] = [];
+        for (const e of pool) {
+            if (e.capabilities.includes(detectedTask)) capable.push(e);
+            else if (e.capabilities.includes('simple')) simpleCapable.push(e);
+        }
         // If nothing matches the specific task, fall back to 'simple'-capable models
-        const simpleCapable = pool.filter((e) => e.capabilities.includes('simple'));
         const candidates = capable.length > 0 ? capable : simpleCapable.length > 0 ? simpleCapable : pool;
 
         // 4. Select by strategy

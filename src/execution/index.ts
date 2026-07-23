@@ -1,10 +1,23 @@
 /**
- * @personaforge/execution — Event-driven workflow and graph execution engine.
+ * @personaforge/execution — task-scheduling & step-workflow engine.
+ *
+ * This engine models work as *plans of tasks* and *step workflows* with a
+ * concurrency-controlled scheduler, a real OS-thread pool for CPU-bound jobs,
+ * and a state-machine graph with checkpointing. Reach for `personaforge/execution`
+ * when you want an imperative plan/step DSL and parallel task fan-out.
+ *
+ * NOTE ON NAMING: this module's `EventStore` / `InMemoryEventStore` /
+ * `ExecutionStatus` are DIFFERENT types from the same-named exports in
+ * `personaforge/graph` (the event-sourced substrate engine). They are not
+ * interchangeable — do not cross-import. If you need deterministic replay,
+ * audit, or time-travel, use `personaforge/graph` instead. See
+ * docs/superpowers/specs/2026-07-23-consolidation-and-path-to-1.md §3.2.
  *
  * Capabilities:
  *   - ExecutionEngineImpl: Task-based plan execution
  *   - ExecutionGraphBuilder: Build DAG execution graphs from plans
- *   - WorkerPool: Parallel task execution with concurrency control
+ *   - WorkerPool: Logical (Promise) parallel task scheduling with concurrency control
+ *   - ThreadPool: Real OS-thread parallelism (node:worker_threads) for CPU-bound jobs
  *   - StepWorkflow: Fluent step-chaining DSL
  *   - StateGraph + WorkflowExecutor: State-machine graph workflows with checkpointing
  *   - StepExecutor + PipelineBuilder: Event-driven v2 engine with backpressure
@@ -18,6 +31,10 @@ export * from './types.js';
 export { ExecutionEngineImpl } from './engine.js';
 export { ExecutionGraphBuilder } from './graph-builder.js';
 export { WorkerPool } from './worker-pool.js';
+
+// Real OS-thread parallelism for CPU-bound pure functions (opt-in).
+export { ThreadPool, createThreadPool } from './thread-pool.js';
+export type { ThreadPoolOptions, ThreadJob } from './thread-pool.js';
 
 // Step-chaining workflows
 export {

@@ -1,9 +1,11 @@
 /**
  * Best DX for creating agents in TypeScript.
  *
- * @deprecated This implementation folder will be merged into `@personaforge/sdk` in the
- *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@personaforge/sdk` directly.
+ * `personaforge/dx` is the minimal-ceremony surface (`agent()`, `bare()`, `compose()`,
+ * `definePersona()`, dev logger / tool middleware). `personaforge/sdk` is the
+ * builder-style API on top (`defineAgent().instructions().model().build()`,
+ * workflows, typed agents). Both are supported entry points — pick the shape
+ * that matches how you like to write TypeScript.
  *
  * - agent(instructions) or agent({ instructions, model, dev }) — minimal, one call
  * - bare({ llm }) — zero defaults, bring your own everything

@@ -12,8 +12,8 @@ import type {
     GenerateOptions,
     LLMToolDefinition,
     ToolCall,
-    StreamOptions,
 } from './types.js';
+import { normalizeFinishReason } from './types.js';
 import { createDebugLogger, type DebugLogger } from '../shared/index.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that
@@ -253,7 +253,7 @@ export class GoogleProvider implements LLMProvider {
 
         const text = response.text() ?? '';
         const toolCalls = extractToolCalls(response.candidates);
-        const finishReason = response.candidates?.[0]?.finishReason ?? 'stop';
+        const finishReason = normalizeFinishReason(response.candidates?.[0]?.finishReason) ?? 'stop';
         const usage = response.usageMetadata ? {
             promptTokens: response.usageMetadata.promptTokenCount,
             completionTokens: response.usageMetadata.candidatesTokenCount,
@@ -266,7 +266,7 @@ export class GoogleProvider implements LLMProvider {
         return { text, toolCalls: toolCalls.length ? toolCalls : undefined, finishReason, usage };
     }
 
-    async streamText(messages: Message[], options?: StreamOptions): Promise<GenerateResult> {
+    async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
         const startTime = Date.now();
 
         const systemInstruction = extractSystemInstruction(messages);
@@ -286,21 +286,21 @@ export class GoogleProvider implements LLMProvider {
 
         let fullText = '';
         const toolCalls: ToolCall[] = [];
-        let finishReason: string | undefined;
+        let finishReason: GenerateResult['finishReason'];
         let usage: GenerateResult['usage'];
 
         for await (const chunk of streamResult.stream) {
             const chunkText = chunk.text();
             if (chunkText) {
                 fullText += chunkText;
-                options?.onChunk?.({ type: 'text', text: chunkText });
+                options?.onChunk?.(chunkText);
             }
 
             const chunkToolCalls = extractToolCalls(chunk.candidates as GoogleResponse['candidates']);
             toolCalls.push(...chunkToolCalls);
 
             if (chunk.candidates?.[0]?.finishReason) {
-                finishReason = chunk.candidates[0].finishReason;
+                finishReason = normalizeFinishReason(chunk.candidates[0].finishReason);
             }
             if (chunk.usageMetadata) {
                 usage = {

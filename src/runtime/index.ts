@@ -1,9 +1,12 @@
 /**
  * Production HTTP runtime: stateless app + session-scoped agent APIs.
  *
- * @deprecated This implementation folder will be merged into `@personaforge/serve` in the
- *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@personaforge/serve` directly.
+ * `personaforge/runtime` is the batteries-included HTTP layer — an Express-style
+ * factory (`createHttpService` / `listenService`), OpenAPI generation, admin API,
+ * JWT / RBAC middleware, and background job wiring. It builds on the low-level
+ * primitives in `personaforge/serve` (SSE stream helpers, WebSocket transport,
+ * routing utilities). Both modules are supported; import from whichever level of
+ * abstraction you need.
  */
 
 export { createHttpService, listenService } from './server.js';

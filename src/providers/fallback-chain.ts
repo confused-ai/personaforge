@@ -6,7 +6,7 @@
  * (retry on rate limits or errors with alternative providers).
  */
 
-import type { LLMProvider, Message, GenerateResult, GenerateOptions, StreamOptions } from './types.js';
+import type { LLMProvider, Message, GenerateResult, GenerateOptions } from './types.js';
 import { LLMError } from '../shared/index.js';
 
 /**
@@ -197,7 +197,7 @@ async generateText(messages: Message[], options?: GenerateOptions): Promise<Gene
 /**
  * Stream text using fallback chain
  */
-async streamText(messages: Message[], options?: StreamOptions): Promise<GenerateResult> {
+async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
     let lastError: Error = new Error('No providers available');
     let providerIndex = 0;
 

@@ -1,9 +1,12 @@
 /**
  * LLM provider abstraction — types, providers, utilities.
  *
- * @deprecated This implementation folder will be merged into `@personaforge/models` in the
- *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@personaforge/models` directly.
+ * This is the **canonical** provider stack for personaforge. It owns the single
+ * implementation of every provider adapter, the model-string resolver, cost/cache/
+ * router utilities, and vision helpers. Import providers from `personaforge/providers`.
+ *
+ * `personaforge/models` is a thin compatibility barrel that re-exports from here and
+ * additionally ships the alternate multi-modal content builders and stream utilities.
  */
 
 // Core types
@@ -179,6 +182,13 @@ export {
     OPENROUTER_BASE_URL,
     OLLAMA_BASE_URL,
     LLAMABARN_BASE_URL,
+    // Self-hosted base URLs (canonical home for the personaforge/models compatibility barrel)
+    VLLM_BASE_URL,
+    LMSTUDIO_BASE_URL,
+    LOCALAI_BASE_URL,
+    KOBOLD_BASE_URL,
+    TEXTGENWEBUI_BASE_URL,
+    JAN_BASE_URL,
 } from './model-resolver.js';
 export type { ResolvedModelConfig, ProviderName } from './model-resolver.js';
 

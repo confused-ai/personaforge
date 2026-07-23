@@ -20,9 +20,9 @@ import { ToolRegistryImpl } from '../../tools/index.js';
 import { ClassicalPlanner } from '../../planner/index.js';
 import { PlanningAlgorithm } from '../../planner/index.js';
 import type { LLMProvider, Message, GenerateOptions } from '../../core/index.js';
-import { OpenAIProvider } from '../../models/index.js';
-import { createOpenRouterProvider } from '../../models/index.js';
-import { resolveModelString, isModelString, LLAMABARN_BASE_URL } from '../../models/index.js';
+import { OpenAIProvider } from '../../providers/index.js';
+import { createOpenRouterProvider } from '../../providers/index.js';
+import { resolveModelString, isModelString, LLAMABARN_BASE_URL } from '../../providers/index.js';
 import { DebugLogger, createDebugLogger } from '../../shared/index.js';
 import { newId } from '../../contracts/index.js';
 

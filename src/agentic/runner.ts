@@ -391,10 +391,14 @@ export class AgenticRunner {
 
             // Durable event log — one entry per tool call, paired to its result by id.
             if (this.config.recorder) {
+                // Index tool-result messages by callId once → O(t) instead of O(t²) per step.
+                const byCallId = new Map<string, (typeof toolMessages)[number]>();
+                for (const m of toolMessages) {
+                    const id = (m as { toolCallId?: string }).toolCallId;
+                    if (id !== undefined) byCallId.set(id, m);
+                }
                 for (const tc of result.toolCalls ?? []) {
-                    const msg = toolMessages.find(
-                        (m) => (m as { toolCallId?: string }).toolCallId === tc.id,
-                    );
+                    const msg = byCallId.get(tc.id);
                     await this.config.recorder.toolResult({
                         step: steps,
                         name: tc.name,

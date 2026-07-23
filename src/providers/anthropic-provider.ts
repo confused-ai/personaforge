@@ -15,9 +15,9 @@ import type {
     GenerateOptions,
     LLMToolDefinition,
     ToolCall,
-    StreamOptions,
     AssistantMessage,
 } from './types.js';
+import { normalizeFinishReason } from './types.js';
 import { DebugLogger, createDebugLogger } from '../shared/index.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that
@@ -246,7 +246,7 @@ export class AnthropicProvider implements LLMProvider {
         return {
             text,
             toolCalls: toolCalls.length ? toolCalls : undefined,
-            finishReason: response.stop_reason,
+            finishReason: normalizeFinishReason(response.stop_reason),
             usage: {
                 promptTokens: response.usage?.input_tokens,
                 completionTokens: response.usage?.output_tokens,
@@ -255,7 +255,7 @@ export class AnthropicProvider implements LLMProvider {
         };
     }
 
-    async streamText(messages: Message[], options?: StreamOptions): Promise<GenerateResult> {
+    async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
         const startTime = Date.now();
         const { system, messages: anthropicMsgs } = toAnthropicMessages(messages);
         const tools = toAnthropicTools(options?.tools);
@@ -278,7 +278,7 @@ export class AnthropicProvider implements LLMProvider {
         let fullText = '';
         // index → {id, name, args} for in-flight tool blocks
         const toolBlocks = new Map<number, { id: string; name: string; args: string }>();
-        let finishReason = 'max_tokens';
+        let finishReason: GenerateResult['finishReason'] = 'max_tokens';
         let usage: GenerateResult['usage'];
 
         for await (const event of stream) {
@@ -290,21 +290,16 @@ export class AnthropicProvider implements LLMProvider {
             } else if (event.type === 'content_block_delta' && event.index !== undefined && event.delta) {
                 if (event.delta.type === 'text_delta' && event.delta.text) {
                     fullText += event.delta.text;
-                    options?.onChunk?.({ type: 'text', text: event.delta.text });
+                    options?.onChunk?.(event.delta.text);
                 } else if (event.delta.type === 'input_json_delta' && event.delta.partial_json) {
                     const block = toolBlocks.get(event.index);
                     if (block) {
                         block.args += event.delta.partial_json;
-                        options?.onChunk?.({
-                            type: 'tool_call',
-                            id: block.id,
-                            name: block.name,
-                            argsDelta: event.delta.partial_json,
-                        });
-                    }
+                        // (tool-call streaming is returned via result.toolCalls, not via onChunk in the canonical LLMProvider contract)
+                        }
                 }
             } else if (event.type === 'message_delta' && event.stop_reason) {
-                finishReason = event.stop_reason;
+                finishReason = normalizeFinishReason(event.stop_reason);
             }
 
             if (event.usage) {

@@ -995,16 +995,19 @@ export class InMemoryMemoryStoreAdapter extends BaseAdapter implements MemorySto
         if (options?.type) candidates = candidates.filter((e) => e.type === options.type);
 
         const queryLower = query.toLowerCase();
+        // Hoist the query tokenisation out of the per-entry loop (was O(n) splits → O(1)).
+        const words = queryLower.split(/\s+/);
+        const invWordCount = 1 / Math.max(words.length, 1);
         const results: MemorySearchResult[] = candidates.map((entry) => {
             // Prefer vector cosine similarity; fall back to keyword overlap
             if (options?.embedding && entry.embedding) {
                 const score = this._cosine(options.embedding, entry.embedding);
                 return { entry, score };
             }
-            const words = queryLower.split(/\s+/);
             const contentLower = entry.content.toLowerCase();
-            const hits = words.filter((w) => contentLower.includes(w)).length;
-            return { entry, score: hits / Math.max(words.length, 1) };
+            let hits = 0;
+            for (const w of words) if (contentLower.includes(w)) hits++;
+            return { entry, score: hits * invWordCount };
         });
 
         const threshold = options?.threshold ?? 0;
@@ -1168,11 +1171,11 @@ export class InMemoryToolRegistryAdapter extends BaseAdapter implements ToolRegi
     private tools = new Map<string, RemoteToolDescriptor>();
 
     async list(filter?: { tags?: string[] }): Promise<RemoteToolDescriptor[]> {
-        let all = Array.from(this.tools.values());
-        if (filter?.tags?.length) {
-            all = all.filter((t) => filter.tags!.some((tag) => t.tags?.includes(tag)));
-        }
-        return all;
+        const all = Array.from(this.tools.values());
+        if (!filter?.tags?.length) return all;
+        // Hash the requested tags once → O(t + n·avgTags) instead of O(n·t·avgTags).
+        const wanted = new Set(filter.tags);
+        return all.filter((t) => t.tags?.some((tag) => wanted.has(tag)) ?? false);
     }
 
     async find(name: string): Promise<RemoteToolDescriptor | null> {

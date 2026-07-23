@@ -1,21 +1,18 @@
 /**
- * @personaforge/models — LLM provider adapters.
+ * @personaforge/models — compatibility barrel.
  *
- * SOLID:
- *   SRP  — each adapter file owns exactly one provider.
- *   OCP  — add new providers by adding new files; never edit existing ones.
- *   LSP  — every adapter returns LLMProvider, fully substitutable.
- *   ISP  — adapters expose only what the runner needs (generateText + optional streamText).
- *   DIP  — adapters depend on LLMProvider interface from @personaforge/core.
+ * The canonical implementation of every LLM provider lives in `personaforge/providers`.
+ * This module re-exports the provider classes and model-string resolver from there,
+ * and additionally ships:
+ *   - alternate multi-modal content builders (`image()`, `audio()`, `video()`,
+ *     `buildMessage()`, `contentToText()`)
+ *   - stream utilities (`streamToSSE`, `streamToText`, `streamMap`, ...)
+ *   - retry / fallback helpers (`withRetry`, `withFallbacks`)
+ *   - thin lazy adapters (`openai`, `anthropic`, `google`, `ollama`, `bedrock`) that
+ *     return an `LLMProvider` without pre-loading any SDK.
  *
- * All SDKs are lazy dynamic imports — zero bundle cost unless used.
- * Importing this barrel alone installs nothing.
- *
- * @deprecated `@personaforge/providers` (`src/providers/`) is the canonical provider stack.
- *   This barrel is retained because its `GenerateResult`/`LLMProvider` shapes are
- *   `contracts/interfaces`-compatible (consumed by `orchestration/multi-agent/swarm.ts`)
- *   and it exposes adapter/multimodal/stream surfaces not yet present in `providers/`.
- *   Prefer importing from `personaforge/providers` for new code.
+ * Prefer importing providers themselves from `personaforge/providers`.
+ * Use this barrel when you need the extra content/stream helpers listed above.
  */
 
 export { openai }    from './openai.js';
@@ -25,14 +22,16 @@ export { ollama }    from './ollama.js';
 export { bedrock }   from './bedrock.js';
 export type { ModelAdapterConfig } from './types.js';
 
-// Full provider implementations
-export { OpenAIProvider }         from './openai-provider.js';
-export { createOpenRouterProvider } from './openrouter-provider.js';
-export type { OpenRouterProviderConfig } from './openrouter-provider.js';
+// Full provider implementations — re-exported from the canonical `providers/` stack.
+// These previously lived in duplicate files under `models/`; consolidated 2026-07 so
+// there is exactly one OpenAIProvider / OpenRouter / model-resolver implementation.
+export { OpenAIProvider }          from '../providers/index.js';
+export { createOpenRouterProvider } from '../providers/index.js';
+export type { OpenRouterProviderConfig } from '../providers/index.js';
 export {
     resolveModelString,
     isModelString,
-    PROVIDER,
+    MODEL_PROVIDER as PROVIDER,
     LLAMABARN_BASE_URL,
     // Wave 2 base URLs
     DEEPINFRA_BASE_URL,
@@ -56,7 +55,7 @@ export {
     KOBOLD_BASE_URL,
     TEXTGENWEBUI_BASE_URL,
     JAN_BASE_URL,
-} from './model-resolver.js';
+} from '../providers/index.js';
 
 // Multi-modal content builders
 export {

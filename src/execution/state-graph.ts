@@ -365,7 +365,18 @@ export class StateNode {
     return new Set(this._incoming);
   }
 
-  canExecute(history: NodeExecutionRecord[]): boolean {
+  canExecute(
+    history: NodeExecutionRecord[],
+    historyByNodeId?: ReadonlyMap<EntityId, NodeExecutionRecord>,
+  ): boolean {
+    // Fast path: caller supplied an index → O(deps) instead of O(deps · history).
+    if (historyByNodeId) {
+      for (const incomingId of this._incoming) {
+        const record = historyByNodeId.get(incomingId);
+        if (!record || record.error) return false;
+      }
+      return true;
+    }
     for (const incomingId of this._incoming) {
       const record = history.find(r => r.nodeId === incomingId);
       if (!record || record.error) {
@@ -657,11 +668,16 @@ class WorkflowRuntime {
       return;
     }
 
+    // Build a nodeId → last-record index once per fan-out, not per neighbour.
+    const historyIndex = new Map<EntityId, NodeExecutionRecord>();
+    // Keep first occurrence to match the previous Array.find() semantics.
+    for (const rec of this.ctx.history) if (!historyIndex.has(rec.nodeId)) historyIndex.set(rec.nodeId, rec);
+
     for (const nextNodeId of outgoing) {
       const nextNode = this.graph.getNode(nextNodeId);
       if (!nextNode) continue;
 
-      if (nextNode.canExecute(this.ctx.history)) {
+      if (nextNode.canExecute(this.ctx.history, historyIndex)) {
         await this.executeNode(nextNodeId);
         await this.executeNext();
       }
