@@ -110,6 +110,19 @@ Each layer is optional. Most real projects only need a subset.
 | Graph | durable, replayable execution with tamper-evident audit |
 | Compression | keep long-running contexts within model token limits |
 | Learning | simulate runs and improve behavior from recorded outcomes |
+| Advanced Retrieval | text splitters, BM25, hybrid RRF, rerankers, and retriever primitives (`confused-ai/knowledge`) |
+| Runnable / LCEL | composable `Runnable` primitive with pipe/batch/stream/withRetry/withFallbacks/assign (`confused-ai/runnable`) |
+| Output Parsers | JSON (Zod-aware), CSV, Regex, output-fixing, retry-with-error (`confused-ai/parsers`) |
+| Structured Output | unified native JSON-schema output across OpenAI, Anthropic, Gemini (`confused-ai/structured`) |
+| Event Streaming | LangGraph-style values/updates/messages/debug/custom event bus (`confused-ai/streaming`) |
+| Durable Interrupt | `interrupt()` / `resume()` / fork-from-checkpoint (`confused-ai/checkpoint`) |
+| Reasoning Tools | Agno-style `think` / `analyze` scratchpad tools (`confused-ai/reasoning`) |
+| Team Modes | `createModeTeam` with route / coordinate / collaborate (`confused-ai/orchestration`) |
+| Model Fallbacks | `withFallbacks(primary, [alt1, alt2])`, `withRetry(...)` (`confused-ai/models`) |
+| Toolkits | SQL, HTTP, File toolkits with prompt fragments (`confused-ai/toolkits`) |
+| Deep Research | `createDeepAgent` plan-research-synthesize recipe (`confused-ai/skills`) |
+| Trace ↔ Dataset | `spanToSample`, `replayDataset`, `diffResults` for regression eval (`confused-ai/eval`) |
+| Control Plane | zero-dep AgentOS dashboard: sessions, memory, evals, traces, approvals, chat (`confused-ai/control-plane`) |
 
 ## Enterprise and compliance
 

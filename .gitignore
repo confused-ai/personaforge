@@ -56,3 +56,5 @@ package-lock.json
 
 # vitepress build cache (do not commit)
 docs/.vitepress/cache/
+docs/.vitepress/.temp/
+docs/.vitepress/dist/

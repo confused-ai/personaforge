@@ -85,3 +85,7 @@ export {
     streamToNodeCallback,
 } from './stream-utils.js';
 export type { StreamToSSEOptions, StreamBudgetOptions } from './stream-utils.js';
+
+// ── Model fallback + retry ────────────────────────────────────────────────────
+export { withFallbacks, withRetry } from './fallback.js';
+export type { RetryOptions } from './fallback.js';

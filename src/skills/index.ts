@@ -19,3 +19,7 @@
 export { webResearchSkill } from './web-research.js';
 export { pdfSummarizerSkill } from './pdf-summarizer.js';
 export { codeReviewerSkill } from './code-reviewer.js';
+
+// ── Deep research recipe ──────────────────────────────────────────────────────
+export { createDeepAgent } from './deep-research.js';
+export type { DeepAgentConfig, DeepResearchResult, DeepStep } from './deep-research.js';

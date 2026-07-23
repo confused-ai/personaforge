@@ -53,3 +53,7 @@ export type {
     Scorer,
     ScorerFn,
 } from './benchmark.js';
+
+// ── Dataset <-> trace loop ────────────────────────────────────────────────────
+export { spanToSample, replayDataset, diffResults, summarizeDiff } from './trace-dataset.js';
+export type { TraceSpan, ReplayResult, DiffEntry, DiffSummary } from './trace-dataset.js';

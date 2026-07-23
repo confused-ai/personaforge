@@ -108,3 +108,12 @@ export type {
     WildcardHandler,
     EventSubscription,
 } from './event-bus.js';
+
+// ── Team modes (route | coordinate | collaborate) ─────────────────────────────
+export { createModeTeam } from './team-modes.js';
+export type {
+    TeamAgent as ModeTeamAgent,
+    TeamMode as ModeTeamMode,
+    TeamConfig as ModeTeamConfig,
+    TeamResult as ModeTeamResult,
+} from './team-modes.js';

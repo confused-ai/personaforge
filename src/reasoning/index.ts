@@ -9,3 +9,7 @@ export * from './types.js';
 export { ReasoningManager, REASONING_SYSTEM_PROMPT } from './manager.js';
 export { TreeOfThoughtEngine } from './tot.js';
 export type { TotConfig, TotNode, TotResult } from './tot.js';
+
+// ── Reasoning-as-tools (Agno-style think/analyze) ────────────────────────────
+export { ReasoningScratchpad, createReasoningTools } from './reasoning-tools.js';
+export type { ReasoningStep, ReasoningToolset } from './reasoning-tools.js';

@@ -7,6 +7,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased] — parity-with-langchain-and-agno
+
+### Added — 14 new feature areas closing the LangChain / LangGraph / Agno gap
+
+- **`confused-ai/knowledge/retrieval`** — RecursiveCharacterSplitter, MarkdownSplitter, SemanticSplitter; BM25Index; HybridRetriever + rrfFuse (Reciprocal-Rank Fusion); CohereReranker / JinaReranker / LLMReranker; MultiQueryRetriever, ContextualCompressionRetriever, ParentDocumentRetriever, SelfQueryRetriever, TimeWeightedRetriever.
+- **`confused-ai/runnable`** — LCEL-style primitive: `Runnable`, `RunnableSequence`, `RunnableParallel`, `RunnableLambda`, `RunnablePassthrough` with `.pipe/.batch/.stream/.map/.bind/.withRetry/.withFallbacks/.withConfig/.assign`.
+- **`confused-ai/parsers`** — String / Json (Zod-aware) / CsvList / Regex parsers plus OutputFixingParser and RetryWithErrorParser; all Runnable-composable.
+- **`confused-ai/structured`** — Unified native structured output via `generateStructured` with per-provider routing (OpenAI `response_format`, Anthropic tool-forced, Gemini schema, prompt fallback with retry).
+- **`confused-ai/streaming`** — LangGraph-style event stream: `values | updates | messages | debug | custom` modes, `StreamEventBus`, `StreamContext.emit()`, `createStreamableRun()`.
+- **`confused-ai/checkpoint`** — Durable `interrupt()` / `resume(threadId, value)` / `fork(threadId)` with in-memory + pluggable `CheckpointStore`.
+- **`confused-ai/reasoning`** — Agno-style `think` / `analyze` reasoning tools on top of `ReasoningScratchpad`.
+- **`confused-ai/orchestration`** — `createModeTeam({ mode: 'route' | 'coordinate' | 'collaborate' })` sugar.
+- **`confused-ai/models`** — `withFallbacks(primary, [alt1, alt2])` and `withRetry(provider, opts)` — model-level resilience one-liners.
+- **`confused-ai/toolkits`** — `sqlToolkit`, `httpToolkit`, `fileToolkit`, `combineToolkits` with system-prompt fragments.
+- **`confused-ai/knowledge`** — Additional loaders: `loadMarkdown`, `loadHtml`, `loadJson`, `loadDocx`, `loadSitemap`, `loadGithubRepo`, `loadS3`.
+- **`confused-ai/skills`** — `createDeepAgent` deep-research recipe (plan → parallel research → synthesize).
+- **`confused-ai/eval`** — `spanToSample`, `replayDataset`, `diffResults`, `summarizeDiff` — trace ↔ dataset loop for regression testing.
+- **`confused-ai/control-plane`** — Zero-dependency AgentOS dashboard server with sessions / memory / evals / traces / approvals / knowledge / chat panels.
+
+### Tests
+- 13 new test files, 93 new tests (all green).
+- Full suite: **63 files / 910 tests passing** (2 skipped).
+
+---
+
 ## [Unreleased]
 
 ## [2.4.0] — 2026-06-30
