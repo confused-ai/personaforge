@@ -44,7 +44,7 @@ export type { TextStreamChunk as StreamChunk } from '../core/index.js';
 // now share the canonical narrow type from `contracts/interfaces` and normalise
 // raw SDK finish-reason strings via `normalizeFinishReason` at their emit sites.
 
-import type { GenerateOptions, Message, LLMToolDefinition, StreamDelta } from '../core/index.js';
+import type { LLMToolDefinition, StreamDelta } from '../core/index.js';
 
 /** Streaming options — legacy variant where onChunk receives typed StreamDelta objects. */
 export interface StreamOptions {

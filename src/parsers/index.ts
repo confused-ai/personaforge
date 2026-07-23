@@ -13,8 +13,7 @@
  *   RetryWithErrorParser<T>  — re-runs the original chain with the error
  */
 
-import { Runnable, RunnableLambda } from '../runnable/index.js';
-import type { RunnableConfig } from '../runnable/index.js';
+import { Runnable } from '../runnable/index.js';
 
 /** Common parser interface. */
 export interface OutputParser<T> {

@@ -33,7 +33,7 @@ export interface TraceSpan {
 // ── span -> sample ────────────────────────────────────────────────────────────
 
 /** Convert a production trace span into an eval dataset sample. */
-export function spanToSample(span: TraceSpan, opts?: { expectedField?: 'output' }): EvalSample {
+export function spanToSample(span: TraceSpan, _opts?: { expectedField?: 'output' }): EvalSample {
   return {
     id: span.id,
     input: span.input,
