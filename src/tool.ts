@@ -1,8 +1,8 @@
 /**
- * confused-ai/tool — Define, compose, and manage tools.
+ * personaforge/tool — Define, compose, and manage tools.
  *
  * ```ts
- * import { tool, createTools, defineTool, extendTool } from 'confused-ai/tool'
+ * import { tool, createTools, defineTool, extendTool } from 'personaforge/tool'
  * ```
  */
 

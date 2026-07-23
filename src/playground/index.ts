@@ -1,5 +1,5 @@
 /**
- * @confused-ai/playground — barrel export.
+ * @personaforge/playground — barrel export.
  *
  * @example
  * ```ts

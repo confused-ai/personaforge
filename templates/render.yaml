@@ -1,11 +1,11 @@
-# render.yaml — Render.com deployment configuration for confused-ai agents
+# render.yaml — Render.com deployment configuration for personaforge agents
 # https://render.com/docs/render-yaml-spec
 #
 # Commit this file to your repo and connect via the Render dashboard.
 
 services:
   - type: web
-    name: confused-ai-agent
+    name: personaforge-agent
     runtime: docker
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health

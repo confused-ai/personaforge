@@ -19,7 +19,7 @@ import {
   InMemoryAuditStore, SqliteAuditStore, createSqliteAuditStore,
   InMemoryIdempotencyStore, createSqliteIdempotencyStore,
   createSqliteCheckpointStore,
-} from 'confused-ai/production';
+} from 'personaforge/production';
 ```
 
 ---
@@ -29,8 +29,8 @@ import {
 The fastest way to get production resilience — wraps a `createAgent()` agent with circuit breaker, rate limiter, budget enforcement, checkpointing, and idempotency:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
+import { createAgent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
 
 const agent = createAgent({
   name: 'production-agent',
@@ -65,7 +65,7 @@ const result = await resilientAgent.run('Help me with my order.', {
 Prevent cascading failures by temporarily stopping calls to a failing dependency:
 
 ```ts
-import { CircuitBreaker, CircuitState, createLLMCircuitBreaker } from 'confused-ai/production';
+import { CircuitBreaker, CircuitState, createLLMCircuitBreaker } from 'personaforge/production';
 
 // Factory for LLM circuit breakers (pre-configured sensible defaults)
 const cb = createLLMCircuitBreaker('openai', {
@@ -93,7 +93,7 @@ console.log(cb.getMetrics()); // { totalCalls, failures, successes, lastFailure 
 Token-bucket rate limiting for external APIs:
 
 ```ts
-import { RateLimiter, createOpenAIRateLimiter, RateLimitError } from 'confused-ai/production';
+import { RateLimiter, createOpenAIRateLimiter, RateLimitError } from 'personaforge/production';
 
 // Factory for OpenAI (Tier 1 defaults: 60 RPM + 10 burst)
 const limiter = createOpenAIRateLimiter();
@@ -123,7 +123,7 @@ try {
 ## Redis rate limiter (distributed)
 
 ```ts
-import { RedisRateLimiter } from 'confused-ai/production';
+import { RedisRateLimiter } from 'personaforge/production';
 
 const limiter = new RedisRateLimiter({
   redis: process.env.REDIS_URL!,
@@ -140,7 +140,7 @@ const limiter = new RedisRateLimiter({
 Hard stop on LLM spend per run, per user, and per month:
 
 ```ts
-import { BudgetEnforcer, InMemoryBudgetStore, BudgetExceededError, estimateCostUsd } from 'confused-ai/production';
+import { BudgetEnforcer, InMemoryBudgetStore, BudgetExceededError, estimateCostUsd } from 'personaforge/production';
 
 const budget = new BudgetEnforcer({
   maxUsdPerRun: 0.50,
@@ -175,7 +175,7 @@ import {
   createSessionStoreHealthCheck,
   createHttpHealthCheck,
   createCustomHealthCheck,
-} from 'confused-ai/production';
+} from 'personaforge/production';
 
 const health = new HealthCheckManager({
   checks: [
@@ -206,7 +206,7 @@ app.get('/health', async (req, res) => {
 ## Graceful shutdown
 
 ```ts
-import { createGracefulShutdown, withShutdownGuard } from 'confused-ai/production';
+import { createGracefulShutdown, withShutdownGuard } from 'personaforge/production';
 
 const shutdown = createGracefulShutdown({
   timeoutMs: 30_000,
@@ -229,7 +229,7 @@ const safeRun = withShutdownGuard(shutdown, async () => {
 ## Audit logs
 
 ```ts
-import { SqliteAuditStore, createSqliteAuditStore } from 'confused-ai/production';
+import { SqliteAuditStore, createSqliteAuditStore } from 'personaforge/production';
 
 const auditStore = createSqliteAuditStore('./agent.db');
 
@@ -261,7 +261,7 @@ const entries = await auditStore.query({
 Prevent duplicate runs from retried HTTP requests:
 
 ```ts
-import { createSqliteIdempotencyStore } from 'confused-ai/production';
+import { createSqliteIdempotencyStore } from 'personaforge/production';
 
 const idempotency = createSqliteIdempotencyStore('./agent.db');
 
@@ -279,7 +279,7 @@ const result = await agent.run(prompt, {
 Clean up all data associated with a session:
 
 ```ts
-import { deleteSession } from 'confused-ai/production';
+import { deleteSession } from 'personaforge/production';
 
 await deleteSession({
   sessionId: 'session-1',

@@ -1,9 +1,9 @@
 /**
  * Best DX for creating agents in TypeScript.
  *
- * @deprecated This implementation folder will be merged into `@confused-ai/sdk` in the
+ * @deprecated This implementation folder will be merged into `@personaforge/sdk` in the
  *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@confused-ai/sdk` directly.
+ *   Migrate new code to import from `@personaforge/sdk` directly.
  *
  * - agent(instructions) or agent({ instructions, model, dev }) — minimal, one call
  * - bare({ llm }) — zero defaults, bring your own everything

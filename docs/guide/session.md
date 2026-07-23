@@ -16,7 +16,7 @@ import {
   DbSessionStore,
   FallbackSessionStore,
   createFallbackSessionStore,
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -24,7 +24,7 @@ import {
 ## Quick start
 
 ```ts
-import { createAgent, createInMemoryStore } from 'confused-ai';
+import { createAgent, createInMemoryStore } from 'personaforge';
 
 const sessionStore = createInMemoryStore();
 
@@ -53,7 +53,7 @@ console.log(result.text); // "Your name is Alice."
 Fast, zero-config. Sessions are lost on restart.
 
 ```ts
-import { createInMemoryStore } from 'confused-ai';
+import { createInMemoryStore } from 'personaforge';
 
 const store = createInMemoryStore({
   retentionDays: 7,  // evict sessions older than 7 days
@@ -75,7 +75,7 @@ console.log(`Pruned ${deleted} sessions`);
 Durable sessions on disk — no external server needed:
 
 ```ts
-import { createSqliteStore } from 'confused-ai';
+import { createSqliteStore } from 'personaforge';
 
 const store = createSqliteStore({
   path: './data/sessions.db',  // defaults to ':memory:' if omitted
@@ -85,7 +85,7 @@ const store = createSqliteStore({
 ### Redis (distributed, horizontally scalable)
 
 ```ts
-import { createRedisStore } from 'confused-ai';
+import { createRedisStore } from 'personaforge';
 
 const store = createRedisStore({
   redis: process.env.REDIS_URL!,   // 'redis://localhost:6379' or ioredis options
@@ -97,8 +97,8 @@ const store = createRedisStore({
 ### DbSessionStore (any AgentDb backend)
 
 ```ts
-import { DbSessionStore } from 'confused-ai';
-import { SqliteAgentDb, PostgresAgentDb } from 'confused-ai';
+import { DbSessionStore } from 'personaforge';
+import { SqliteAgentDb, PostgresAgentDb } from 'personaforge';
 
 // SQLite
 const db = new SqliteAgentDb({ path: './agent.db' });
@@ -114,7 +114,7 @@ const pgStore = new DbSessionStore(pgDb);
 Use a primary store (Redis/Postgres) with automatic in-memory fallback if it goes down:
 
 ```ts
-import { createFallbackSessionStore, createRedisStore } from 'confused-ai';
+import { createFallbackSessionStore, createRedisStore } from 'personaforge';
 
 const store = createFallbackSessionStore(
   createRedisStore({ redis: process.env.REDIS_URL! }),

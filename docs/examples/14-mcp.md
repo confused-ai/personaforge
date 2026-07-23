@@ -1,15 +1,15 @@
 ---
 title: 14 · MCP Tools
-description: Load tools from a remote MCP server into any agent, or expose your own tool registry as an MCP server using confused-ai/tool.
+description: Load tools from a remote MCP server into any agent, or expose your own tool registry as an MCP server using personaforge/tool.
 outline: [2, 3]
 ---
 
 # 14 · MCP Tools
 
-The Model Context Protocol (MCP) lets you share tools across processes and languages. `confused-ai` supports both sides: loading remote MCP tools into an agent, and serving a tool registry as an MCP server others can connect to.
+The Model Context Protocol (MCP) lets you share tools across processes and languages. `personaforge` supports both sides: loading remote MCP tools into an agent, and serving a tool registry as an MCP server others can connect to.
 
 ```ts
-import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer, runMcpStdioToolServer } from 'confused-ai/tool';
+import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer, runMcpStdioToolServer } from 'personaforge/tool';
 ```
 
 ---
@@ -28,8 +28,8 @@ import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer, runMcpStdioToolSer
 The fastest path — `loadMcpToolsFromUrl()` fetches the tool schema from a remote server and returns typed tool objects ready to attach to any agent.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { loadMcpToolsFromUrl } from 'confused-ai/tool';
+import { createAgent } from 'personaforge';
+import { loadMcpToolsFromUrl } from 'personaforge/tool';
 
 // Fetch all tools from a running MCP server
 const remoteTools = await loadMcpToolsFromUrl('http://127.0.0.1:3100/mcp', {
@@ -55,8 +55,8 @@ console.log(result.text);
 Use `HttpMcpClient` when you want to list tools, call them directly, or selectively expose a subset to your agent.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { HttpMcpClient } from 'confused-ai/tool';
+import { createAgent } from 'personaforge';
+import { HttpMcpClient } from 'personaforge/tool';
 
 const client = new HttpMcpClient({
   url: 'http://127.0.0.1:3100/mcp',
@@ -93,8 +93,8 @@ Use `createMcpServer()` and `McpHttpServer` to publish your own tool registry so
 
 ```ts
 import { z } from 'zod/v3';
-import { tool } from 'confused-ai';
-import { createMcpServer, McpHttpServer } from 'confused-ai/tool';
+import { tool } from 'personaforge';
+import { createMcpServer, McpHttpServer } from 'personaforge/tool';
 
 // Define the tools you want to expose
 const searchDocs = tool({
@@ -140,8 +140,8 @@ The stdio transport is the standard for desktop MCP clients such as Claude Deskt
 
 ```ts
 import { z } from 'zod/v3';
-import { tool } from 'confused-ai';
-import { runMcpStdioToolServer } from 'confused-ai/tool';
+import { tool } from 'personaforge';
+import { runMcpStdioToolServer } from 'personaforge/tool';
 
 const readFile = tool({
   name: 'read_file',
@@ -188,7 +188,7 @@ Add this to `claude_desktop_config.json` to use it in Claude Desktop:
 | `McpHttpServer` | Serve an MCP server over HTTP |
 | `runMcpStdioToolServer(config)` | Serve an MCP server over stdio (CLI clients) |
 
-All MCP imports come from `confused-ai/tool`.
+All MCP imports come from `personaforge/tool`.
 
 ---
 

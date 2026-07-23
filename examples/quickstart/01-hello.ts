@@ -7,7 +7,7 @@
  *   OPENAI_API_KEY=sk-... bun examples/quickstart/01-hello.ts
  */
 
-import { agent } from 'confused-ai';
+import { agent } from 'personaforge';
 
 const bot = agent({
   name: 'HelloBot',

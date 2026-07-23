@@ -1,5 +1,5 @@
 /**
- * @confused-ai/orchestration — createTeam() with explicit mode sugar.
+ * @personaforge/orchestration — createTeam() with explicit mode sugar.
  *
  * Three modes (matching Agno's Team abstraction):
  *   route        — pick one specialist per query (via LLM or keyword router)

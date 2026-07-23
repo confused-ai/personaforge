@@ -9,7 +9,7 @@ outline: [2, 3]
 `createModeTeam` is ergonomic sugar over the orchestration layer for three common multi-agent patterns. Each mode has different routing and aggregation semantics.
 
 ```ts
-import { createModeTeam } from 'confused-ai/orchestration';
+import { createModeTeam } from 'personaforge/orchestration';
 ```
 
 | Mode | Behaviour |

@@ -9,7 +9,7 @@ outline: [2, 3]
 Tool composition lets you add caching, auth, logging, retries, and other cross-cutting concerns to any tool without touching its core logic.
 
 ```ts
-import { extendTool, wrapTool, pipeTools, versionTool } from 'confused-ai';
+import { extendTool, wrapTool, pipeTools, versionTool } from 'personaforge';
 ```
 
 ---
@@ -19,8 +19,8 @@ import { extendTool, wrapTool, pipeTools, versionTool } from 'confused-ai';
 Add `beforeExecute`, `afterExecute`, `transformInput`, `transformOutput`, and `onError` to any existing tool:
 
 ```ts
-import { extendTool } from 'confused-ai';
-import { webSearchTool } from 'confused-ai';  // or any built-in / custom tool
+import { extendTool } from 'personaforge';
+import { webSearchTool } from 'personaforge';  // or any built-in / custom tool
 
 // Add result trimming + console logging to the built-in web search
 const limitedSearch = extendTool(webSearchTool, {
@@ -76,7 +76,7 @@ const limitedSearch = extendTool(webSearchTool, {
 Apply a stack of `(params, ctx, next) => result` middlewares (onion model):
 
 ```ts
-import { wrapTool } from 'confused-ai';
+import { wrapTool } from 'personaforge';
 
 const safeTool = wrapTool(myTool, [
   // 1. Auth check (outermost — runs first)
@@ -113,7 +113,7 @@ const safeTool = wrapTool(myTool, [
 Output of the first tool becomes input to the second:
 
 ```ts
-import { pipeTools } from 'confused-ai';
+import { pipeTools } from 'personaforge';
 import { fetchUrlTool, myHtmlParserTool } from './tools.js';
 
 const fetchAndParse = pipeTools(fetchUrlTool, myHtmlParserTool, {
@@ -137,7 +137,7 @@ const result = await fetchAndParse.execute({ url: 'https://example.com' }, ctx);
 Tag a tool with a version for deprecation management:
 
 ```ts
-import { versionTool, extendTool } from 'confused-ai';
+import { versionTool, extendTool } from 'personaforge';
 
 // Tag as version 2.0 with a changelog
 const searchV2 = versionTool(searchTool, '2.0', {
@@ -158,7 +158,7 @@ const searchV1 = versionTool(oldSearchTool, '1.0', {
 Apply middleware to every tool in an agent at once:
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const starts = new Map<string, number>();
 

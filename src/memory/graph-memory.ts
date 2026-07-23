@@ -1,5 +1,5 @@
 /**
- * @confused-ai/memory — graph / entity memory.
+ * @personaforge/memory — graph / entity memory.
  *
  * Complements the vector tier with a structured knowledge graph: typed entities
  * (nodes) and labelled relations (edges). This is the Zep / Mem0 graph-memory

@@ -5,7 +5,7 @@
  *
  * @example
  * ```ts
- * import { createHandoff, HandoffProtocol } from 'confused-ai/orchestration';
+ * import { createHandoff, HandoffProtocol } from 'personaforge/orchestration';
  *
  * const handoff = createHandoff({
  *   from: triageAgent,

@@ -1,5 +1,5 @@
 /**
- * Agno vs confused-ai — Head-to-Head Harness Benchmark
+ * Agno vs personaforge — Head-to-Head Harness Benchmark
  *
  * Runs the same golden Q&A dataset through both frameworks and compares:
  *   ✓  Quality score  — word-overlap F1 per sample
@@ -14,11 +14,11 @@
  *   OPENAI_API_KEY=sk-... bun run example:agno-server
  *   # → http://localhost:8000
  *
- * ── confused-ai setup ────────────────────────────────────────────────────────
+ * ── personaforge setup ────────────────────────────────────────────────────────
  *  No server needed. Uses MockLLMProvider by default (no API key).
  *  Set OPENAI_API_KEY + BENCHMARK_REAL_LLM=1 for real LLM calls.
  *
- * Run: bun examples/agno-vs-confused-ai.ts
+ * Run: bun examples/agno-vs-personaforge.ts
  */
 
 import path from 'node:path';
@@ -38,13 +38,13 @@ import {
     type EvalReport,
     type EvalScorer,
     type CreateAgentResult,
-} from 'confused-ai';
-import { tool } from 'confused-ai/tool';
+} from 'personaforge';
+import { tool } from 'personaforge/tool';
 import { z } from 'zod';
 // Use the testing-module MockLLMProvider — it accepts responses as Map<string,string>
 // (lookup by prompt) rather than string[] (cycling), which is what we need here.
-import { MockLLMProvider } from 'confused-ai/testing';
-import type { AgentRunResult } from 'confused-ai';
+import { MockLLMProvider } from 'personaforge/testing';
+import type { AgentRunResult } from 'personaforge';
 
 // ── Configuration ──────────────────────────────────────────────────────────
 
@@ -376,7 +376,7 @@ function createAgnoAdapter(useRealServer: boolean) {
     };
 }
 
-// ── confused-ai agent ────────────────────────────────────────────────────────
+// ── personaforge agent ────────────────────────────────────────────────────────
 // Runs entirely in-process — no external server, no network hop.
 
 function createConfusedAiAgent() {
@@ -385,7 +385,7 @@ function createConfusedAiAgent() {
         : new MockLLMProvider({ responses: MOCK_RESPONSES });
 
     return createAgent({
-        name: 'confused-ai/native',
+        name: 'personaforge/native',
         instructions: [
             'You are a precise, direct assistant.',
             'Rules you MUST follow for every reply:',
@@ -462,14 +462,14 @@ async function runAgnoMultiTurn(sessionId: string, prompts: string[]): Promise<s
 async function runMultiTurnSuite(
     agnoOnline: boolean,
 ): Promise<{ ca: FeatureResult; agno: FeatureResult }> {
-    // confused-ai: dedicated agent with addHistoryToContext so each turn sees prior messages.
+    // personaforge: dedicated agent with addHistoryToContext so each turn sees prior messages.
     // Multi-turn requires a real LLM — mock has no in-context state, so mark as N/A in mock mode.
     const caT0 = Date.now();
     let caScore = 0;
 
     if (USE_REAL_LLM) {
         const multiTurnAgent = createAgent({
-            name: 'confused-ai/multi-turn',
+            name: 'personaforge/multi-turn',
             instructions: [
                 'You are a helpful assistant with perfect memory of the conversation.',
                 'When asked about something mentioned earlier, recall it exactly.',
@@ -532,7 +532,7 @@ async function runMultiTurnSuite(
 }
 
 // ── Suite 3: Tool use ─────────────────────────────────────────────────────────
-// Give confused-ai a real calculator tool; Agno has no tools on the server.
+// Give personaforge a real calculator tool; Agno has no tools on the server.
 // Tests whether tool-equipped agents get exact numeric answers.
 
 const TOOL_PROBLEMS = [
@@ -566,7 +566,7 @@ async function runToolUseSuite(
     agnoOnline: boolean,
 ): Promise<{ ca: FeatureResult; agno: FeatureResult }> {
     const caAgent = createAgent({
-        name: 'confused-ai/tool-agent',
+        name: 'personaforge/tool-agent',
         instructions: 'Use the calculate tool for all arithmetic. Return only the numeric result.',
         tools: [calculatorTool as any],
         guardrails: false,
@@ -640,7 +640,7 @@ async function runStreamingSuite(
     caAgent: CreateAgentResult,
     agnoOnline: boolean,
 ): Promise<{ ca: FeatureResult; agno: FeatureResult }> {
-    // confused-ai: stream() must yield chunks that concatenate to a non-empty string
+    // personaforge: stream() must yield chunks that concatenate to a non-empty string
     let caOk = 0;
     const caT0 = Date.now();
     for (const prompt of STREAM_PROMPTS) {
@@ -825,7 +825,7 @@ function printFeatureMatrix(
     console.log(sep);
     console.log(
         '  ' + 'Feature'.padEnd(nameW) +
-        'confused-ai'.padEnd(W) +
+        'personaforge'.padEnd(W) +
         'Agno',
     );
     console.log(sep);
@@ -978,7 +978,7 @@ function printDxComparison(agnoOnline: boolean): void {
 
     const labelW = 22;
     const colW = 38;
-    console.log('\n  ' + 'Feature'.padEnd(labelW) + 'confused-ai'.padEnd(colW) + 'Agno');
+    console.log('\n  ' + 'Feature'.padEnd(labelW) + 'personaforge'.padEnd(colW) + 'Agno');
     console.log('  ' + '─'.repeat(labelW + colW * 2 - 4));
     for (const [feature, ca, agno] of rows) {
         console.log(`  ${feature.padEnd(labelW)}${ca.padEnd(colW)}${agno}`);
@@ -989,7 +989,7 @@ function printDxComparison(agnoOnline: boolean): void {
 
 async function main() {
     console.log('\n╔══════════════════════════════════════════════════════╗');
-    console.log('║   Agno vs confused-ai — Head-to-Head Harness Test   ║');
+    console.log('║   Agno vs personaforge — Head-to-Head Harness Test   ║');
     console.log('╚══════════════════════════════════════════════════════╝\n');
     console.log(`  Dataset      : ${DATASET.length} samples across 5 categories`);
     console.log(`  Scorer       : word-overlap F1`);
@@ -1005,14 +1005,14 @@ async function main() {
 
     // ── Suite 1: Accuracy ─────────────────────────────────────────────────
     console.log('\n' + '─'.repeat(60));
-    console.log('  [1/2] confused-ai — native TypeScript, in-process');
+    console.log('  [1/2] personaforge — native TypeScript, in-process');
     console.log('─'.repeat(60));
 
-    const confusedAiAgent = createConfusedAiAgent();
-    const confusedAiReport = await runEvalSuite({
+    const personaForgeAgent = createConfusedAiAgent();
+    const personaForgeReport = await runEvalSuite({
         suiteName: 'head-to-head',
         dataset: DATASET,
-        agent: confusedAiAgent as any,
+        agent: personaForgeAgent as any,
         store,
         scorer: wordOverlapF1,
         passingScore: PASSING_SCORE,
@@ -1047,10 +1047,10 @@ async function main() {
 
     const caAccuracy: FeatureResult = {
         name: 'Accuracy (25-item QA)',
-        score: confusedAiReport.averageScore,
-        passed: confusedAiReport.passed,
-        latencyMs: avg(confusedAiReport.samples.map((s) => s.durationMs)) * confusedAiReport.totalCount,
-        notes: `${confusedAiReport.passedCount}/${confusedAiReport.totalCount} samples ≥ ${(PASSING_SCORE * 100).toFixed(0)}%`,
+        score: personaForgeReport.averageScore,
+        passed: personaForgeReport.passed,
+        latencyMs: avg(personaForgeReport.samples.map((s) => s.durationMs)) * personaForgeReport.totalCount,
+        notes: `${personaForgeReport.passedCount}/${personaForgeReport.totalCount} samples ≥ ${(PASSING_SCORE * 100).toFixed(0)}%`,
         supported: true,
     };
 
@@ -1069,15 +1069,15 @@ async function main() {
     console.log('═'.repeat(92));
 
     const pairs: Array<{ label: string; report: EvalReport }> = [
-        { label: 'confused-ai (native TS)', report: confusedAiReport },
+        { label: 'personaforge (native TS)', report: personaForgeReport },
         { label: agnoAdapter.name, report: agnoReport },
     ];
 
     printSideBySideReport(pairs, agnoOnline);
 
     // ── Winner ────────────────────────────────────────────────────────────
-    const caDelta = confusedAiReport.averageScore - agnoReport.averageScore;
-    const caLatAvg = avg(confusedAiReport.samples.map((s) => s.durationMs));
+    const caDelta = personaForgeReport.averageScore - agnoReport.averageScore;
+    const caLatAvg = avg(personaForgeReport.samples.map((s) => s.durationMs));
     const agnoLatAvg = avg(agnoReport.samples.map((s) => s.durationMs));
     const latRatio = agnoLatAvg > 0 ? (agnoLatAvg / caLatAvg).toFixed(1) : '?';
 
@@ -1085,13 +1085,13 @@ async function main() {
     if (Math.abs(caDelta) < 0.01) {
         console.log('  📊 Score: tie (within 1%). Quality is driven by the underlying LLM.');
     } else if (caDelta > 0) {
-        console.log(`  📊 Score: confused-ai leads by +${(caDelta * 100).toFixed(1)}%`);
+        console.log(`  📊 Score: personaforge leads by +${(caDelta * 100).toFixed(1)}%`);
     } else {
         console.log(`  📊 Score: Agno leads by +${(Math.abs(caDelta) * 100).toFixed(1)}%`);
     }
 
     if (agnoOnline) {
-        console.log(`  ⚡ Latency: confused-ai is ${latRatio}x faster (no HTTP overhead)`);
+        console.log(`  ⚡ Latency: personaforge is ${latRatio}x faster (no HTTP overhead)`);
     } else {
         console.log(`  ⚡ Latency: Agno server offline — start it to measure real HTTP latency`);
     }
@@ -1107,22 +1107,22 @@ async function main() {
     // Multi-turn memory
     process.stdout.write('  [feature] Multi-turn memory … ');
     const { ca: caMultiTurn, agno: agnoMultiTurn } = await runMultiTurnSuite(agnoOnline);
-    console.log(`confused-ai ${(caMultiTurn.score * 100).toFixed(0)}%  |  Agno ${agnoOnline ? (agnoMultiTurn.score * 100).toFixed(0) + '%' : 'offline'}`);
+    console.log(`personaforge ${(caMultiTurn.score * 100).toFixed(0)}%  |  Agno ${agnoOnline ? (agnoMultiTurn.score * 100).toFixed(0) + '%' : 'offline'}`);
 
     // Tool use
     process.stdout.write('  [feature] Tool use … ');
     const { ca: caTool, agno: agnoTool } = await runToolUseSuite(agnoOnline);
-    console.log(`confused-ai ${(caTool.score * 100).toFixed(0)}%  |  Agno ${agnoOnline ? (agnoTool.score * 100).toFixed(0) + '%' : 'offline'}`);
+    console.log(`personaforge ${(caTool.score * 100).toFixed(0)}%  |  Agno ${agnoOnline ? (agnoTool.score * 100).toFixed(0) + '%' : 'offline'}`);
 
     // Streaming
     process.stdout.write('  [feature] Streaming … ');
-    const { ca: caStream, agno: agnoStream } = await runStreamingSuite(confusedAiAgent, agnoOnline);
-    console.log(`confused-ai ${USE_REAL_LLM ? (caStream.score * 100).toFixed(0) + '%' : 'mock-N/A'}  |  Agno ${agnoOnline ? (agnoStream.score * 100).toFixed(0) + '%' : 'offline'}`);
+    const { ca: caStream, agno: agnoStream } = await runStreamingSuite(personaForgeAgent, agnoOnline);
+    console.log(`personaforge ${USE_REAL_LLM ? (caStream.score * 100).toFixed(0) + '%' : 'mock-N/A'}  |  Agno ${agnoOnline ? (agnoStream.score * 100).toFixed(0) + '%' : 'offline'}`);
 
     // Structured output
     process.stdout.write('  [feature] Structured output … ');
-    const { ca: caStruct, agno: agnoStruct } = await runStructuredOutputSuite(confusedAiAgent, agnoOnline);
-    console.log(`confused-ai ${(caStruct.score * 100).toFixed(0)}%  |  Agno ${agnoOnline ? (agnoStruct.score * 100).toFixed(0) + '%' : 'offline'}`);
+    const { ca: caStruct, agno: agnoStruct } = await runStructuredOutputSuite(personaForgeAgent, agnoOnline);
+    console.log(`personaforge ${(caStruct.score * 100).toFixed(0)}%  |  Agno ${agnoOnline ? (agnoStruct.score * 100).toFixed(0) + '%' : 'offline'}`);
 
     // ── Feature matrix ────────────────────────────────────────────────────
     const caFeatures: FeatureResult[] = [caAccuracy, caMultiTurn, caTool, caStream, caStruct];
@@ -1142,32 +1142,32 @@ async function main() {
     console.log('  1. Same underlying LLM → similar quality score. The framework');
     console.log('     wrapping doesn\'t add intelligence; it adds DX + infrastructure.');
     console.log('');
-    console.log('  2. confused-ai has zero HTTP overhead per call — latency scales');
+    console.log('  2. personaforge has zero HTTP overhead per call — latency scales');
     console.log('     with LLM response time only, not your stack depth.');
     console.log('');
-    console.log('  3. confused-ai provides a native TS harness (MockLLMProvider,');
+    console.log('  3. personaforge provides a native TS harness (MockLLMProvider,');
     console.log('     runEvalSuite, ScenarioRunner) — this file ran without a running');
     console.log('     Python server or an API key.');
     console.log('');
     console.log('  4. Tool use, session memory, and streaming are native TypeScript');
-    console.log('     features in confused-ai — no HTTP bridge or server restart needed.');
+    console.log('     features in personaforge — no HTTP bridge or server restart needed.');
     console.log('');
 
     if (!agnoOnline) {
         console.log('  ── To run with a real Agno server ─────────────────────────');
         console.log('     1. uv pip install \'agno[os]\' openai');
         console.log('     2. nohup python3 examples/run_agno_server.py &');
-        console.log('     3. bun examples/agno-vs-confused-ai.ts');
+        console.log('     3. bun examples/agno-vs-personaforge.ts');
         console.log('');
         console.log('  ── To run with a real LLM for both ────────────────────────');
-        console.log('     OPENAI_API_KEY=sk-... BENCHMARK_REAL_LLM=1 bun examples/agno-vs-confused-ai.ts');
+        console.log('     OPENAI_API_KEY=sk-... BENCHMARK_REAL_LLM=1 bun examples/agno-vs-personaforge.ts');
         console.log('');
     }
 
-    const allPassed = confusedAiReport.passed && agnoReport.passed;
+    const allPassed = personaForgeReport.passed && agnoReport.passed;
     if (!allPassed) {
         const failed = [
-            !confusedAiReport.passed && 'confused-ai',
+            !personaForgeReport.passed && 'personaforge',
             !agnoReport.passed && 'Agno',
         ].filter(Boolean);
         console.warn(`  ❌ Failed suites: ${failed.join(', ')}`);

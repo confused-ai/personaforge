@@ -9,13 +9,13 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config as loadEnv } from 'dotenv';
-import { splitText } from 'confused-ai/knowledge';
-import { InMemoryArtifactStorage, createTextArtifact } from 'confused-ai/artifacts';
-import { InMemoryUserProfileStore } from 'confused-ai';
-import { CircuitBreaker, CircuitState } from 'confused-ai/production';
-import { RateLimiter } from 'confused-ai/production';
-import { ExactMatchAccuracy, LevenshteinAccuracy } from 'confused-ai';
-import { loadConfig } from 'confused-ai/config';
+import { splitText } from 'personaforge/knowledge';
+import { InMemoryArtifactStorage, createTextArtifact } from 'personaforge/artifacts';
+import { InMemoryUserProfileStore } from 'personaforge';
+import { CircuitBreaker, CircuitState } from 'personaforge/production';
+import { RateLimiter } from 'personaforge/production';
+import { ExactMatchAccuracy, LevenshteinAccuracy } from 'personaforge';
+import { loadConfig } from 'personaforge/config';
 
 loadEnv({
     path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env'),
@@ -27,7 +27,7 @@ function log(title: string) {
 }
 
 async function main() {
-    console.log('confused-ai — unlock more modules (no LLM call in this script)\n');
+    console.log('personaforge — unlock more modules (no LLM call in this script)\n');
 
     log('Knowledge: splitText (chunking for RAG pipelines)');
     const chunks = splitText('Hello world. Second sentence here.', {

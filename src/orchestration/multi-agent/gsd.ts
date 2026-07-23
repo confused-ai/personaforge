@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * import { createGSDCoordinator, FilesystemGSDStorage } from 'confused-ai/orchestration';
+ * import { createGSDCoordinator, FilesystemGSDStorage } from 'personaforge/orchestration';
  *
  * const gsd = createGSDCoordinator({
  *   projectDir: './my-project',

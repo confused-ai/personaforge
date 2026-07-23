@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/json — JsonFileAgentDb.
+ * @personaforge/db/json — JsonFileAgentDb.
  *
  * Zero peer-dependency file-based backend. Stores each table as a separate
  * JSON file in a directory. Great for local development and debugging.

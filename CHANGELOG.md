@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `confused-ai` are documented here.
+All notable changes to `personaforge` are documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -11,20 +11,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added — 14 new feature areas closing the LangChain / LangGraph / Agno gap
 
-- **`confused-ai/knowledge/retrieval`** — RecursiveCharacterSplitter, MarkdownSplitter, SemanticSplitter; BM25Index; HybridRetriever + rrfFuse (Reciprocal-Rank Fusion); CohereReranker / JinaReranker / LLMReranker; MultiQueryRetriever, ContextualCompressionRetriever, ParentDocumentRetriever, SelfQueryRetriever, TimeWeightedRetriever.
-- **`confused-ai/runnable`** — LCEL-style primitive: `Runnable`, `RunnableSequence`, `RunnableParallel`, `RunnableLambda`, `RunnablePassthrough` with `.pipe/.batch/.stream/.map/.bind/.withRetry/.withFallbacks/.withConfig/.assign`.
-- **`confused-ai/parsers`** — String / Json (Zod-aware) / CsvList / Regex parsers plus OutputFixingParser and RetryWithErrorParser; all Runnable-composable.
-- **`confused-ai/structured`** — Unified native structured output via `generateStructured` with per-provider routing (OpenAI `response_format`, Anthropic tool-forced, Gemini schema, prompt fallback with retry).
-- **`confused-ai/streaming`** — LangGraph-style event stream: `values | updates | messages | debug | custom` modes, `StreamEventBus`, `StreamContext.emit()`, `createStreamableRun()`.
-- **`confused-ai/checkpoint`** — Durable `interrupt()` / `resume(threadId, value)` / `fork(threadId)` with in-memory + pluggable `CheckpointStore`.
-- **`confused-ai/reasoning`** — Agno-style `think` / `analyze` reasoning tools on top of `ReasoningScratchpad`.
-- **`confused-ai/orchestration`** — `createModeTeam({ mode: 'route' | 'coordinate' | 'collaborate' })` sugar.
-- **`confused-ai/models`** — `withFallbacks(primary, [alt1, alt2])` and `withRetry(provider, opts)` — model-level resilience one-liners.
-- **`confused-ai/toolkits`** — `sqlToolkit`, `httpToolkit`, `fileToolkit`, `combineToolkits` with system-prompt fragments.
-- **`confused-ai/knowledge`** — Additional loaders: `loadMarkdown`, `loadHtml`, `loadJson`, `loadDocx`, `loadSitemap`, `loadGithubRepo`, `loadS3`.
-- **`confused-ai/skills`** — `createDeepAgent` deep-research recipe (plan → parallel research → synthesize).
-- **`confused-ai/eval`** — `spanToSample`, `replayDataset`, `diffResults`, `summarizeDiff` — trace ↔ dataset loop for regression testing.
-- **`confused-ai/control-plane`** — Zero-dependency AgentOS dashboard server with sessions / memory / evals / traces / approvals / knowledge / chat panels.
+- **`personaforge/knowledge/retrieval`** — RecursiveCharacterSplitter, MarkdownSplitter, SemanticSplitter; BM25Index; HybridRetriever + rrfFuse (Reciprocal-Rank Fusion); CohereReranker / JinaReranker / LLMReranker; MultiQueryRetriever, ContextualCompressionRetriever, ParentDocumentRetriever, SelfQueryRetriever, TimeWeightedRetriever.
+- **`personaforge/runnable`** — LCEL-style primitive: `Runnable`, `RunnableSequence`, `RunnableParallel`, `RunnableLambda`, `RunnablePassthrough` with `.pipe/.batch/.stream/.map/.bind/.withRetry/.withFallbacks/.withConfig/.assign`.
+- **`personaforge/parsers`** — String / Json (Zod-aware) / CsvList / Regex parsers plus OutputFixingParser and RetryWithErrorParser; all Runnable-composable.
+- **`personaforge/structured`** — Unified native structured output via `generateStructured` with per-provider routing (OpenAI `response_format`, Anthropic tool-forced, Gemini schema, prompt fallback with retry).
+- **`personaforge/streaming`** — LangGraph-style event stream: `values | updates | messages | debug | custom` modes, `StreamEventBus`, `StreamContext.emit()`, `createStreamableRun()`.
+- **`personaforge/checkpoint`** — Durable `interrupt()` / `resume(threadId, value)` / `fork(threadId)` with in-memory + pluggable `CheckpointStore`.
+- **`personaforge/reasoning`** — Agno-style `think` / `analyze` reasoning tools on top of `ReasoningScratchpad`.
+- **`personaforge/orchestration`** — `createModeTeam({ mode: 'route' | 'coordinate' | 'collaborate' })` sugar.
+- **`personaforge/models`** — `withFallbacks(primary, [alt1, alt2])` and `withRetry(provider, opts)` — model-level resilience one-liners.
+- **`personaforge/toolkits`** — `sqlToolkit`, `httpToolkit`, `fileToolkit`, `combineToolkits` with system-prompt fragments.
+- **`personaforge/knowledge`** — Additional loaders: `loadMarkdown`, `loadHtml`, `loadJson`, `loadDocx`, `loadSitemap`, `loadGithubRepo`, `loadS3`.
+- **`personaforge/skills`** — `createDeepAgent` deep-research recipe (plan → parallel research → synthesize).
+- **`personaforge/eval`** — `spanToSample`, `replayDataset`, `diffResults`, `summarizeDiff` — trace ↔ dataset loop for regression testing.
+- **`personaforge/control-plane`** — Zero-dependency AgentOS dashboard server with sessions / memory / evals / traces / approvals / knowledge / chat panels.
 
 ### Tests
 - 13 new test files, 93 new tests (all green).
@@ -85,10 +85,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **9 Extended Multi-Agent Orchestration Patterns** (`@confused-ai/orchestration`) — Mixture-of-Agents (MoA), Actor-Critic loops, Socratic tutor guiding, Prompt Chaining pipelines, Program-of-Thought code sandbox runtimes, Skeleton-of-Thought parallel generation, Step-Back conceptual abstraction solvers, Rejection Sampling (Best-of-N) evaluations, and validation-driven Self-Correction.
+- **9 Extended Multi-Agent Orchestration Patterns** (`@personaforge/orchestration`) — Mixture-of-Agents (MoA), Actor-Critic loops, Socratic tutor guiding, Prompt Chaining pipelines, Program-of-Thought code sandbox runtimes, Skeleton-of-Thought parallel generation, Step-Back conceptual abstraction solvers, Rejection Sampling (Best-of-N) evaluations, and validation-driven Self-Correction.
 - **`createGSDCoordinator()` (Get Shit Done)** — spec-driven workflow coordinator that executes project goals inPlan-Execute-Verify phases, using a workspace `.planning` folder to isolate contexts.
 - **`createRalphLoop()` (RALF)** — autonomous cycle executor that leverages fresh session isolation to prevent context bloat while propagating iteration summaries.
-- **`Mastermind` Context Compression** (`@confused-ai/compression`) — a multi-stage intelligent context compression suite featuring:
+- **`Mastermind` Context Compression** (`@personaforge/compression`) — a multi-stage intelligent context compression suite featuring:
   - `CacheAligner` (KV-cache prefix alignment).
   - Specialized crushers (`smart-crusher` for JSON, minifiers for Code, log timestamp/duplicate aggregators, XML, CSV).
   - Sliding-window group budget enforcers to prevent orphaned tool call/result pairs.
@@ -102,10 +102,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - **`defineAgent(name)` fluent builder** — `defineAgent('my-agent').instructions('...').model('openai:gpt-4o').tools(...).build()` returns a fully-typed `TypedAgent<TIn, TOut>` with `.run()`, `.stream()`, `.resume()`, and `.plan()`. Old `defineAgentFromConfig(config)` kept for backward compatibility.
-- **`confused-ai chat` CLI REPL** — `confused-ai chat [--system <instructions>] [--model <id>] [--session-id <id>]` starts an interactive readline loop. Session ID is preserved across all turns; `/exit` and Ctrl-C handled cleanly.
-- **`@confused-ai/playground` package** — `createPlayground(agents, options?)` spins up a pure Node.js HTTP server with a built-in dark-theme chat UI. Routes: `GET /`, `POST /api/chat`, `GET /api/agents`, `GET /health`. CSP headers, 64 KB body cap, zero framework dependencies.
+- **`personaforge chat` CLI REPL** — `personaforge chat [--system <instructions>] [--model <id>] [--session-id <id>]` starts an interactive readline loop. Session ID is preserved across all turns; `/exit` and Ctrl-C handled cleanly.
+- **`@personaforge/playground` package** — `createPlayground(agents, options?)` spins up a pure Node.js HTTP server with a built-in dark-theme chat UI. Routes: `GET /`, `POST /api/chat`, `GET /api/agents`, `GET /health`. CSP headers, 64 KB body cap, zero framework dependencies.
 - **DNS-based SSRF guard** — `HttpClientTool` now resolves every hostname via `dns.promises.lookup()` (2-second timeout) before making any request. Requests resolving to RFC 1918 / loopback addresses are blocked with a descriptive error. Redirects are followed manually and re-validated on each hop.
-- **`SpanName` constants** — `packages/platform/observe/src/spans.ts` exports 30+ canonical span name constants (`SpanName.AGENT_RUN`, `SpanName.LLM_GENERATE`, `SpanName.TOOL_CALL`, etc.). Import from `@confused-ai/observe`.
+- **`SpanName` constants** — `packages/platform/observe/src/spans.ts` exports 30+ canonical span name constants (`SpanName.AGENT_RUN`, `SpanName.LLM_GENERATE`, `SpanName.TOOL_CALL`, etc.). Import from `@personaforge/observe`.
 - **`SecretManagerAdapter.watch()`** — polling-based secret rotation watch (5-minute default interval) added to all five adapter classes (`EnvSecretManager`, `AwsSecretsManagerAdapter`, `VaultSecretManager`, `AzureKeyVaultAdapter`, `GcpSecretManagerAdapter`). Fail-closed on errors.
 - **DB migration runner** — `packages/state/db/src/migrations/runner.ts` applies versioned schema migrations on `PostgresAgentDb._doInit()`. Ships with a v1 baseline schema.
 - **E2E integration tests** (`tests/e2e-agent.test.ts`) — 28 full-stack ReAct-loop tests covering: single/multi-turn tool use, tool error recovery, guardrail injection blocking, session persistence, max-steps guard, AbortSignal cancellation, all lifecycle hooks, concurrent run isolation, HTTP service, eval suite regression detection, prompt injection detection, and budget enforcement.
@@ -119,8 +119,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **Package domain restructure** — 39 packages reorganised into six domain groups: `packages/foundation/`, `packages/platform/`, `packages/providers/`, `packages/runtime/`, `packages/state/`, `packages/tools-layer/`, `packages/developer/`, `packages/extensions/`. `pnpm-workspace.yaml` updated to `packages/*/*`.
-- **Examples** — all 12 `examples/*.ts` and 5 `examples/quickstart/*.ts` now import from `confused-ai` / `@confused-ai/*` package paths; zero `../src/` relative imports remain.
-- **`MockLLMProvider`** added to `@confused-ai/test-utils` for use in examples and conformance suites.
+- **Examples** — all 12 `examples/*.ts` and 5 `examples/quickstart/*.ts` now import from `personaforge` / `@personaforge/*` package paths; zero `../src/` relative imports remain.
+- **`MockLLMProvider`** added to `@personaforge/test-utils` for use in examples and conformance suites.
 
 ### Fixed
 
@@ -143,13 +143,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **`DbScheduleStore`** (`packages/scheduler`) — bridges `ScheduleManager` with any `AgentDb` backend. Pass any `AgentDb` instance (SQLite, Postgres, MySQL, MongoDB, Redis, DynamoDB, Turso, JSON) as the `ScheduleStore` without writing custom persistence code. Exported from `confused-ai/scheduler`.
+- **`DbScheduleStore`** (`packages/scheduler`) — bridges `ScheduleManager` with any `AgentDb` backend. Pass any `AgentDb` instance (SQLite, Postgres, MySQL, MongoDB, Redis, DynamoDB, Turso, JSON) as the `ScheduleStore` without writing custom persistence code. Exported from `personaforge/scheduler`.
 - **DB health in `/health` endpoint** — `CreateHttpServiceOptions` now accepts `db?: AgentDb`. When set, `GET /health` and `GET /v1/health` run a live `db.health()` probe and return HTTP 503 with `{ status: 'degraded' }` if the database is unreachable.
 
 ### Fixed
 
-- **`@confused-ai/db` — `uuid()` not cryptographically secure** — all 8 backends now use `crypto.randomUUID()` via a shared `packages/db/src/utils.ts` module (was `Math.random()`-based).
-- **`@confused-ai/db` — `init()` race condition** — concurrent callers no longer double-initialize the connection pool. Async backends (Postgres, MongoDB, MySQL, DynamoDB, Turso) now guard with a shared `_initPromise`.
+- **`@personaforge/db` — `uuid()` not cryptographically secure** — all 8 backends now use `crypto.randomUUID()` via a shared `packages/db/src/utils.ts` module (was `Math.random()`-based).
+- **`@personaforge/db` — `init()` race condition** — concurrent callers no longer double-initialize the connection pool. Async backends (Postgres, MongoDB, MySQL, DynamoDB, Turso) now guard with a shared `_initPromise`.
 - **`PostgresAgentDb`** — `getKnowledgeItems()`, `getTrace()`, and `getTraces()` now re-serialize JSONB `content` / `metadata` columns back to strings. The `pg` driver returns JSONB as parsed objects, not strings; this caused type contract violations for consumers expecting `string | null`.
 - **`PostgresAgentDb`** — `close()` method was accidentally removed during a refactor; restored.
 - **`MongoAgentDb`** — all `findOne()` and `find()` calls now include `{ projection: { _id: 0 } }`, preventing MongoDB's internal `_id` ObjectId field from leaking into `SessionRow`, `MemoryRow`, and other row types.
@@ -174,7 +174,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `adapter-redis/session-store`: removed unnecessary optional chain on non-null `hGetAll` result; fixed template literal number type.
 - `tools/types.ts`: migrated from deprecated `ZodTypeAny` → `z.ZodType`, `_def` → `.def`.
 - Removed 33 broken package copies that had relative `src/`-path imports.
-- Docs URL: replaced all `rvuyyuru2.github.io/agent-framework` references with `confused-ai.github.io/confused-ai`.
+- Docs URL: replaced all `rvuyyuru2.github.io/agent-framework` references with `personaforge.github.io/personaforge`.
 - Version consistency: `ARCHITECTURE.md` and `SECURITY.md` now match `package.json` version `1.1.6`.
 
 ### Security
@@ -211,15 +211,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-#### Reasoning Module (`confused-ai/reasoning`)
+#### Reasoning Module (`personaforge/reasoning`)
 - `ReasoningManager` — drives chain-of-thought and self-critique loops over a `generate` function; fully framework-agnostic (pass any LLM call)
 - `ReasoningConfig` — `{ generate, minSteps, maxSteps, systemPrompt, temperature }`; configurable step counts and system prompt override
 - `ReasoningEventType` — discriminated union: `step`, `action`, `complete`, `error` — iterate with `for await`
 - `NextAction` — typed decision point: `continue | finish | backtrack | escalate`; `ReasoningStep` captures thought + observation + next action
 - `ReasoningStore` — pluggable persistence for full reasoning traces (audit, replay, fine-tuning)
-- Exported from `confused-ai/reasoning` subpath
+- Exported from `personaforge/reasoning` subpath
 
-#### Scheduler Module (`confused-ai/scheduler`)
+#### Scheduler Module (`personaforge/scheduler`)
 - `ScheduleManager` — CRUD for cron-based job schedules; pluggable `ScheduleStore` + `ScheduleRunStore` backends
 - `InMemoryScheduleStore` / `InMemoryScheduleRunStore` — zero-config for dev and testing
 - `SqliteScheduleStore` / `SqliteScheduleRunStore` — durable persistence; survives process restarts
@@ -230,31 +230,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `manager.triggerNow(id)` — manual trigger for backfill / testing
 - `manager.listRuns(id, limit)` — query run history with status, duration, error
 - `manager.start() / stop()` — poll loop lifecycle
-- Exported from `confused-ai/scheduler` subpath
+- Exported from `personaforge/scheduler` subpath
 
-#### CompressionManager (`confused-ai/compression`)
+#### CompressionManager (`personaforge/compression`)
 - `CompressionManager` — transparently compresses context windows before LLM calls; pluggable strategy (`truncate | summarise | rolling`)
 - `CompressionConfig` — `{ strategy, targetTokens, summaryPrompt, model }`
 - Automatic trigger when token estimate exceeds `targetTokens`; preserves system prompt + most-recent N messages unconditionally
-- Exported from `confused-ai/compression` subpath
+- Exported from `personaforge/compression` subpath
 
-#### ContextProvider (`confused-ai/context`)
+#### ContextProvider (`personaforge/context`)
 - `ContextProvider` — retrieves grounding documents and injects them into the system prompt or user message at run time
 - `ContextBackend` — pluggable retrieval backend: `InMemoryContextBackend`, `SqliteContextBackend`; implement `search(query, k)` for custom backends
 - `ContextMode` — `prepend | append | system` — controls injection point
 - `Document` — `{ id, content, metadata }`; `Answer` — `{ text, sources }`
-- Exported from `confused-ai/context` subpath
+- Exported from `personaforge/context` subpath
 
-#### Freedom Layer — bare / compose / pipe (`confused-ai`)
+#### Freedom Layer — bare / compose / pipe (`personaforge`)
 - `bare(opts)` — zero-defaults agent constructor; caller provides LLM, tools, hooks, everything; no sessions, no injected tools, no guardrails
 - `BareAgentOptions` — `{ name, instructions, llm, tools?, hooks?, maxSteps?, timeoutMs? }`
 - `compose(...agents, opts?)` — pipe N agents sequentially; output text of step N → input of step N+1
 - `ComposeOptions` — `{ when?, transform? }` — conditional routing and data reshaping between steps
 - `pipe(agent).then(agent).run(prompt)` — builder-style alternative to `compose()` with identical semantics
 - `hooks.buildSystemPrompt` / `hooks.afterRun` — lifecycle interception on every `bare()` agent
-- Exported from top-level `confused-ai` import
+- Exported from top-level `personaforge` import
 
-#### Eval Regression Suite (`confused-ai/observability`)
+#### Eval Regression Suite (`personaforge/observability`)
 - `runEvalSuite({ suiteName, dataset, agent, store, scorer, passingScore, regressionThreshold, setBaseline, onSample })` — run a labeled dataset, score every sample, compare to baseline
 - `EvalStore` interface — `appendSample`, `appendRun`, `querySamples`, `queryRuns`, `getBaseline`, `saveBaseline`
 - `InMemoryEvalStore` — zero-config for dev; `SqliteEvalStore` — durable CI persistence
@@ -309,8 +309,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `DurableExecutor` class — wraps `DAGEngine` + `EventStore` for fully durable execution; `.run()` starts a new execution, `.resume(executionId)` replays all events and continues from the last incomplete node; detects graph version mismatch on resume
 - `computeWaves(graph: GraphDef): NodeId[][]` — topological level assignment returning groups of nodes that can execute in parallel, used internally by the scheduler and available for custom scheduling
 - `BackpressureController(maxConcurrency)` — semaphore for concurrency control; `.acquire()` waits for a free slot, `.release()` frees one, `.inflight` and `.queueDepth` expose current state
-- Graph testing utilities exported from `confused-ai/testing`: `createTestRunner(opts?)`, `createMockLLMProvider(name, responses)`, `expectEventSequence(actual, expected)` (subset match), `assertExactEventSequence(actual, expected)` (strict match)
-- 4 new CLI commands: `confused-ai replay --run-id <id>` (stream events), `confused-ai inspect --run-id <id>` (per-node summary), `confused-ai export --run-id <id> [--out file]` (dump to JSON), `confused-ai diff --run-id-a <id> --run-id-b <id>` (compare two runs; exits `1` if divergent)
+- Graph testing utilities exported from `personaforge/testing`: `createTestRunner(opts?)`, `createMockLLMProvider(name, responses)`, `expectEventSequence(actual, expected)` (subset match), `assertExactEventSequence(actual, expected)` (strict match)
+- 4 new CLI commands: `personaforge replay --run-id <id>` (stream events), `personaforge inspect --run-id <id>` (per-node summary), `personaforge export --run-id <id> [--out file]` (dump to JSON), `personaforge diff --run-id-a <id> --run-id-b <id>` (compare two runs; exits `1` if divergent)
 - Benchmark suite under `benchmarks/` with 4 files targeting: executor (<1ms), event-store (>5 k writes/sec), replay (>10 k events/sec), graph-compile (<5ms); run via `bun run bench`
 - ESLint layer-boundaries config (`eslint.config.js`) using `eslint-plugin-boundaries` to block illegal cross-layer imports
 
@@ -320,7 +320,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-#### Testing Module (`confused-ai/testing`)
+#### Testing Module (`personaforge/testing`)
 - `MockToolRegistry` — records all tool invocations for assertion in tests; supports `calls()`, `lastCall()`, `reset()`, `register()`, `toTools()`
 - `createTestAgent()` — zero-config test harness that auto-wires `MockLLMProvider` + `MockSessionStore`
 - `createTestHttpService()` — integration test helper that starts a real HTTP server on a random port with `.request()`, `.close()`, `.port`, `.baseUrl`
@@ -336,11 +336,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `algorithm` option on `JwtAuthOptions` for explicit algorithm selection
 
 #### CLI
-- `confused-ai serve <file>` — new command; imports an agent file and starts the HTTP service on a configurable port; graceful SIGINT/SIGTERM handling
-- `confused-ai eval <dataset> --agent <file>` — new command; runs a JSON dataset against an agent and reports accuracy; CI-friendly exit code
-- `confused-ai run --watch` — fully implemented watch mode using `fs.watch()` with 150ms debounce and module cache busting
-- `confused-ai doctor` — complete rewrite: checks Node.js version, all LLM provider API keys, 7 optional packages, and network connectivity
-- `confused-ai create` — complete rewrite: multi-template scaffold (`basic`, `http`) generating `agent.ts`, `package.json`, `tsconfig.json`, `.env.example`, `README.md`
+- `personaforge serve <file>` — new command; imports an agent file and starts the HTTP service on a configurable port; graceful SIGINT/SIGTERM handling
+- `personaforge eval <dataset> --agent <file>` — new command; runs a JSON dataset against an agent and reports accuracy; CI-friendly exit code
+- `personaforge run --watch` — fully implemented watch mode using `fs.watch()` with 150ms debounce and module cache busting
+- `personaforge doctor` — complete rewrite: checks Node.js version, all LLM provider API keys, 7 optional packages, and network connectivity
+- `personaforge create` — complete rewrite: multi-template scaffold (`basic`, `http`) generating `agent.ts`, `package.json`, `tsconfig.json`, `.env.example`, `README.md`
 
 #### Package Exports
 - Added `./testing`, `./learning`, `./video`, `./config` subpaths to package.json
@@ -439,4 +439,4 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Initial release
 - Basic agent with single LLM call
 - OpenAI provider
-- CLI scaffold (`confused-ai create`)
+- CLI scaffold (`personaforge create`)

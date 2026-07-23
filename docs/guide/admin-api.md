@@ -9,8 +9,8 @@ outline: [2, 3]
 The Admin API is an operational overlay mounted inside `createHttpService`. It exposes read-only visibility into agent health, audit logs, active sessions, pending approvals, and throughput statistics.
 
 ```ts
-import { createHttpService } from 'confused-ai/serve';
-import { createSqliteAuditStore, createSqliteCheckpointStore } from 'confused-ai/production';
+import { createHttpService } from 'personaforge/serve';
+import { createSqliteAuditStore, createSqliteCheckpointStore } from 'personaforge/production';
 ```
 
 ---
@@ -18,9 +18,9 @@ import { createSqliteAuditStore, createSqliteCheckpointStore } from 'confused-ai
 ## Enable the Admin API
 
 ```ts
-import { createHttpService } from 'confused-ai/serve';
-import { apiKeyAuth } from 'confused-ai/serve';
-import { createSqliteAuditStore, createSqliteCheckpointStore } from 'confused-ai/production';
+import { createHttpService } from 'personaforge/serve';
+import { apiKeyAuth } from 'personaforge/serve';
+import { createSqliteAuditStore, createSqliteCheckpointStore } from 'personaforge/production';
 
 const svc = createHttpService({
   agents: { assistant },
@@ -112,12 +112,12 @@ interface AdminApiOptions {
 ## Full `createHttpService` example
 
 ```ts
-import { createHttpService, listenService, apiKeyAuth } from 'confused-ai/serve';
+import { createHttpService, listenService, apiKeyAuth } from 'personaforge/serve';
 import {
   createSqliteAuditStore,
   createSqliteIdempotencyStore,
   createOpenAIRateLimiter,
-} from 'confused-ai/production';
+} from 'personaforge/production';
 
 const svc = createHttpService({
   agents: { assistant, coder },

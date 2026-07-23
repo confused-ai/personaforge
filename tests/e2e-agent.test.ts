@@ -29,20 +29,20 @@ import { describe, it, expect, vi, afterAll, beforeAll } from 'vitest';
 import { z } from 'zod';
 import http from 'node:http';
 
-import { AgenticRunner, createAgenticAgent, toToolRegistry } from '@confused-ai/agentic';
+import { AgenticRunner, createAgenticAgent, toToolRegistry } from '@personaforge/agentic';
 import type {
     AgenticRunnerConfig,
     AgenticRunConfig,
     AgenticLifecycleHooks,
-} from '@confused-ai/agentic';
-import type { LLMProvider, GenerateResult, Message } from '@confused-ai/core';
-import { InMemorySessionStore } from '@confused-ai/session';
+} from '@personaforge/agentic';
+import type { LLMProvider, GenerateResult, Message } from '@personaforge/core';
+import { InMemorySessionStore } from '@personaforge/session';
 import {
     GuardrailValidator,
     detectPromptInjection,
     createPromptInjectionRule,
-} from '@confused-ai/guardrails';
-import { InMemoryEvalStore, runEvalSuite } from '@confused-ai/eval';
+} from '@personaforge/guardrails';
+import { InMemoryEvalStore, runEvalSuite } from '@personaforge/eval';
 import { canListenOnLoopback } from './support/network.js';
 
 const CAN_LISTEN_ON_LOOPBACK = await canListenOnLoopback();

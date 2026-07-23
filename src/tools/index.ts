@@ -1,12 +1,12 @@
 /**
- * @confused-ai/tools — safe default tool surface.
+ * @personaforge/tools — safe default tool surface.
  *
  * This entry point intentionally exports only core infrastructure and zero-dep
  * built-ins. Provider-backed tools live behind explicit category subpaths:
  *
- *   import { TavilySearchTool } from 'confused-ai/tools/search'
- *   import { PlaywrightPageTitleTool } from 'confused-ai/tools/scraping'
- *   import { StripeCreateCustomerTool } from 'confused-ai/tools/finance'
+ *   import { TavilySearchTool } from 'personaforge/tools/search'
+ *   import { PlaywrightPageTitleTool } from 'personaforge/tools/scraping'
+ *   import { StripeCreateCustomerTool } from 'personaforge/tools/finance'
  */
 
 // ── Core: tool infrastructure ─────────────────────────────────────────────

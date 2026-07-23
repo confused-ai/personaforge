@@ -1,5 +1,5 @@
 /**
- * @confused-ai/memory — agent-driven memory tools.
+ * @personaforge/memory — agent-driven memory tools.
  *
  * Provides two LLM-callable tools that let an agent manage its own long-term
  * memory across sessions without developer intervention:
@@ -30,7 +30,7 @@ import type { MemoryStore } from './types.js';
 import { MemoryType }       from './types.js';
 
 // ── Minimal defineTool shim ───────────────────────────────────────────────────
-// Avoid importing from @confused-ai/tools to prevent a circular dep.
+// Avoid importing from @personaforge/tools to prevent a circular dep.
 // The shape is identical to what defineTool produces.
 
 interface Tool<TInput, TOutput> {

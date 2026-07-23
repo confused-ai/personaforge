@@ -129,7 +129,7 @@ export class PgvectorKnowledgeAdapter implements VectorStore {
         // @ts-ignore -- pg is an optional peer dependency
         const pg = await import('pg').catch(() => {
             throw new Error(
-                '@confused-ai/knowledge PgvectorKnowledgeAdapter requires "pg". ' +
+                '@personaforge/knowledge PgvectorKnowledgeAdapter requires "pg". ' +
                 'Install it with: pnpm add pg',
             );
         }) as { default?: { Pool: new (opts: { connectionString: string }) => PgPool }; Pool?: new (opts: { connectionString: string }) => PgPool };

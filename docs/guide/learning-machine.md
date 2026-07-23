@@ -9,7 +9,7 @@ outline: [2, 3]
 `LearningMachine` coordinates multiple memory store types under a single API. It retrieves relevant context before each LLM call and extracts new learnings after each turn — keeping agents adaptive without making the system opaque.
 
 ```ts
-import { LearningMachine } from 'confused-ai';
+import { LearningMachine } from 'personaforge';
 ```
 
 ---
@@ -17,9 +17,9 @@ import { LearningMachine } from 'confused-ai';
 ## Quick start
 
 ```ts
-import { LearningMachine } from 'confused-ai';
-import { SqliteAgentDb } from 'confused-ai';
-import { createAgent } from 'confused-ai';
+import { LearningMachine } from 'personaforge';
+import { SqliteAgentDb } from 'personaforge';
+import { createAgent } from 'personaforge';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
 
@@ -138,7 +138,7 @@ interface LearningMachineConfig {
 Give the agent tools to update its own memory during a run:
 
 ```ts
-import { tool } from 'confused-ai';
+import { tool } from 'personaforge';
 import { z } from 'zod';
 
 const machine = new LearningMachine({ db });

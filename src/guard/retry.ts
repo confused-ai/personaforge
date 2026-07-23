@@ -1,5 +1,5 @@
  
-import { ConfusedAIError, isConfusedAIError } from '../contracts/index.js';
+import { PersonaForgeError, isPersonaForgeError } from '../contracts/index.js';
 
 export interface RetryPolicy {
   maxAttempts: number;
@@ -19,13 +19,13 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   maxDelayMs: 30_000,
   multiplier: 2,
   jitter: true,
-  retryOn: (e) => isConfusedAIError(e) && e.retryable,
+  retryOn: (e) => isPersonaForgeError(e) && e.retryable,
 };
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-const defaultRetryOn = (error: unknown): boolean => isConfusedAIError(error) && error.retryable;
+const defaultRetryOn = (error: unknown): boolean => isPersonaForgeError(error) && error.retryable;
 
 /** HTTP status codes that are safe to retry (rate-limit + transient server/gateway errors). */
 const TRANSIENT_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
@@ -33,7 +33,7 @@ const TRANSIENT_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 /**
  * Extract an HTTP status code from a provider/SDK error, checking the common
  * shapes: `error.status`, `error.statusCode`, `error.response.status`, and the
- * ConfusedAIError `context.status` bag.
+ * PersonaForgeError `context.status` bag.
  */
 function extractStatus(error: unknown): number | undefined {
   if (!error || typeof error !== 'object') return undefined;
@@ -53,12 +53,12 @@ function extractStatus(error: unknown): number | undefined {
  * Retries on:
  *   - HTTP 408/425/429/500/502/503/504 (rate-limit + transient server errors)
  *   - Network errors (ECONNRESET / ETIMEDOUT / ECONNREFEUSED / EAI_AGAIN / fetch failed)
- *   - ConfusedAIError with `retryable: true`
+ *   - PersonaForgeError with `retryable: true`
  *
  * Never retries 400/401/403/404/422 client/validation errors — they replay identically.
  */
 export function isTransientLLMError(error: unknown): boolean {
-  if (isConfusedAIError(error) && error.retryable) return true;
+  if (isPersonaForgeError(error) && error.retryable) return true;
 
   const status = extractStatus(error);
   if (status !== undefined) return TRANSIENT_STATUS.has(status);
@@ -135,7 +135,7 @@ function extractRetryAfterMs(error: unknown): number | null {
  * over the computed back-off (reducing unnecessary wait by 30–70%).
  *
  * The call is **not** retried when `policy.retryOn` returns `false` (default:
- * only retries `ConfusedAIError`s with `retryable: true`).
+ * only retries `PersonaForgeError`s with `retryable: true`).
  *
  * @param fn     - Async operation to retry.
  * @param policy - Partial override of {@link DEFAULT_RETRY_POLICY}.
@@ -171,7 +171,7 @@ export async function withRetry<T>(
   }
   throw lastError instanceof Error
     ? lastError
-    : new ConfusedAIError({
+    : new PersonaForgeError({
         code: 'LLM_PROVIDER_ERROR',
         message: 'Retry exhausted with non-error throw',
         retryable: false,

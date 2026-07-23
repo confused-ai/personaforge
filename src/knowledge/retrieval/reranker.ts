@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — reranker interface + adapters.
+ * @personaforge/knowledge — reranker interface + adapters.
  *
  * A reranker takes a candidate list from cheap retrieval (dense/BM25/hybrid)
  * and re-scores it with a more expensive model that has access to the *pair*

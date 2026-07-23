@@ -6,7 +6,7 @@ outline: [2, 3]
 
 # Orchestration API
 
-`confused-ai/orchestration` is the multi-agent coordination layer. Use it when a single agent is no longer sufficient — when work needs to be split across specialists, delegated explicitly, routed by capability, or supervised by a coordinator.
+`personaforge/orchestration` is the multi-agent coordination layer. Use it when a single agent is no longer sufficient — when work needs to be split across specialists, delegated explicitly, routed by capability, or supervised by a coordinator.
 
 ```ts
 import {
@@ -18,7 +18,7 @@ import {
   createRunnableAgent,
   AgentState,
   CoordinationType,
-} from 'confused-ai/orchestration';
+} from 'personaforge/orchestration';
 ```
 
 ---
@@ -28,7 +28,7 @@ import {
 A role is an agent with a clear identity: what it knows, what it's for, and how it generates text.
 
 ```ts
-import { defineRole } from 'confused-ai/orchestration';
+import { defineRole } from 'personaforge/orchestration';
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -74,7 +74,7 @@ const researcher = defineRole({
 A task describes what should be done, what the expected output is, which role handles it, and optionally which previous tasks it depends on.
 
 ```ts
-import { defineTask } from 'confused-ai/orchestration';
+import { defineTask } from 'personaforge/orchestration';
 
 const researchTask = defineTask({
   name: 'Research',
@@ -109,7 +109,7 @@ const writeTask = defineTask({
 `createTeam()` coordinates roles and tasks into a runnable workflow.
 
 ```ts
-import { createTeam } from 'confused-ai/orchestration';
+import { createTeam } from 'personaforge/orchestration';
 
 const team = createTeam({
   name: 'SupportTeam',
@@ -169,7 +169,7 @@ import {
   createRunnableAgent,
   AgentState,
   CoordinationType,
-} from 'confused-ai/orchestration';
+} from 'personaforge/orchestration';
 
 // Create runnable worker agents
 const researchWorker = createRunnableAgent({
@@ -268,7 +268,7 @@ When a linear `compose()` or `pipe()` pipeline is sufficient, prefer that — it
 Initializes a GSD Coordinator instance.
 
 ```ts
-import { createGSDCoordinator } from 'confused-ai/orchestration';
+import { createGSDCoordinator } from 'personaforge/orchestration';
 
 const gsd = createGSDCoordinator({
   projectDir: './my-project',
@@ -305,7 +305,7 @@ const gsd = createGSDCoordinator({
 Initializes a Ralph / RALF loop runner.
 
 ```ts
-import { createRalphLoop } from 'confused-ai/orchestration';
+import { createRalphLoop } from 'personaforge/orchestration';
 
 const loop = createRalphLoop({
   agent,
@@ -338,7 +338,7 @@ Each pattern helper returns a standard `OrchestrableAgent` object that can be ru
 ### `createMixtureOfAgents()`
 
 ```ts
-import { createMixtureOfAgents } from 'confused-ai/orchestration';
+import { createMixtureOfAgents } from 'personaforge/orchestration';
 
 const agent = createMixtureOfAgents({
   name: 'MoA',
@@ -355,7 +355,7 @@ const agent = createMixtureOfAgents({
 ### `createActorCritic()`
 
 ```ts
-import { createActorCritic } from 'confused-ai/orchestration';
+import { createActorCritic } from 'personaforge/orchestration';
 
 const agent = createActorCritic({
   name: 'CriticLoop',
@@ -374,7 +374,7 @@ const agent = createActorCritic({
 ### `createSocraticAgent()`
 
 ```ts
-import { createSocraticAgent } from 'confused-ai/orchestration';
+import { createSocraticAgent } from 'personaforge/orchestration';
 
 const agent = createSocraticAgent({
   name: 'Tutor',
@@ -391,7 +391,7 @@ const agent = createSocraticAgent({
 ### `createPromptChain()`
 
 ```ts
-import { createPromptChain } from 'confused-ai/orchestration';
+import { createPromptChain } from 'personaforge/orchestration';
 
 const agent = createPromptChain({
   name: 'Chain',
@@ -407,7 +407,7 @@ const agent = createPromptChain({
 ### `createProgramOfThought()`
 
 ```ts
-import { createProgramOfThought } from 'confused-ai/orchestration';
+import { createProgramOfThought } from 'personaforge/orchestration';
 
 const agent = createProgramOfThought({
   name: 'PoT',
@@ -422,7 +422,7 @@ const agent = createProgramOfThought({
 ### `createSkeletonOfThought()`
 
 ```ts
-import { createSkeletonOfThought } from 'confused-ai/orchestration';
+import { createSkeletonOfThought } from 'personaforge/orchestration';
 
 const agent = createSkeletonOfThought({
   name: 'SoT',
@@ -439,7 +439,7 @@ const agent = createSkeletonOfThought({
 ### `createStepBackAgent()`
 
 ```ts
-import { createStepBackAgent } from 'confused-ai/orchestration';
+import { createStepBackAgent } from 'personaforge/orchestration';
 
 const agent = createStepBackAgent({
   name: 'StepBack',
@@ -454,7 +454,7 @@ const agent = createStepBackAgent({
 ### `createRejectionSampling()`
 
 ```ts
-import { createRejectionSampling } from 'confused-ai/orchestration';
+import { createRejectionSampling } from 'personaforge/orchestration';
 
 const agent = createRejectionSampling({
   name: 'BestOfN',
@@ -471,7 +471,7 @@ const agent = createRejectionSampling({
 ### `createSelfCorrection()`
 
 ```ts
-import { createSelfCorrection } from 'confused-ai/orchestration';
+import { createSelfCorrection } from 'personaforge/orchestration';
 
 const agent = createSelfCorrection({
   name: 'SelfCorrect',

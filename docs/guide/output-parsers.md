@@ -12,7 +12,7 @@ Parsers turn raw LLM text into typed, validated data. Every parser extends `Runn
 import {
   StringOutputParser, JsonOutputParser, CsvListParser, RegexParser,
   OutputFixingParser, RetryWithErrorParser, ParseError,
-} from 'confused-ai/parsers';
+} from 'personaforge/parsers';
 ```
 
 ---

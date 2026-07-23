@@ -1,5 +1,5 @@
 /**
- * @confused-ai/structured — unified native structured-output layer.
+ * @personaforge/structured — unified native structured-output layer.
  *
  * Adds `structuredOutput` to GenerateOptions so agents can request
  * JSON-schema-validated output from the provider's native structured

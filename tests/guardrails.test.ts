@@ -2,11 +2,11 @@
  * Tests: Guardrails — PII detection, prompt injection, content rules
  */
 import { describe, it, expect } from 'vitest';
-import { detectPii, createPiiDetectionRule } from '@confused-ai/guardrails';
-import { detectPromptInjection, createPromptInjectionRule } from '@confused-ai/guardrails';
-import { GuardrailValidator, createContentRule, createMaxLengthRule } from '@confused-ai/guardrails';
-import { createUrlValidationRule } from '@confused-ai/guardrails';
-import type { GuardrailContext } from '@confused-ai/guardrails';
+import { detectPii, createPiiDetectionRule } from '@personaforge/guardrails';
+import { detectPromptInjection, createPromptInjectionRule } from '@personaforge/guardrails';
+import { GuardrailValidator, createContentRule, createMaxLengthRule } from '@personaforge/guardrails';
+import { createUrlValidationRule } from '@personaforge/guardrails';
+import type { GuardrailContext } from '@personaforge/guardrails';
 
 // Minimal context for all rule.check() calls
 const ctx = (output: string): GuardrailContext => ({

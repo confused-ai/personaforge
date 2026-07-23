@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * import { createAdapterRegistry } from 'confused-ai/adapters';
+ * import { createAdapterRegistry } from 'personaforge/adapters';
  *
  * const registry = createAdapterRegistry();
  *

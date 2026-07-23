@@ -1,5 +1,5 @@
 /**
- * @confused-ai/tools — shell execution tool.
+ * @personaforge/tools — shell execution tool.
  *
  * SRP  — this file owns only the shell tool.
  * DIP  — uses defineTool abstraction; no class inheritance.

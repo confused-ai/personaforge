@@ -1,6 +1,6 @@
 /**
- * @confused-ai/session — session store types.
- * Consumed by @confused-ai/core via the SessionStore interface.
+ * @personaforge/session — session store types.
+ * Consumed by @personaforge/core via the SessionStore interface.
  */
 
 export interface SessionData {
@@ -40,7 +40,7 @@ export interface SessionStore {
   delete(id: string): Promise<void>;
 }
 
-// ── Richer session types (used by @confused-ai/production tenant module) ─────
+// ── Richer session types (used by @personaforge/production tenant module) ─────
 
 export type SessionId = string;
 

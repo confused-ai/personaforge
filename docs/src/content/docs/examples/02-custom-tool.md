@@ -19,7 +19,7 @@ The current tools layer is typed against Zod v3 compatibility types. When you au
 
 ```ts
 import { z } from 'zod/v3';
-import { agent, tool } from 'confused-ai';
+import { agent, tool } from 'personaforge';
 
 const getWeather = tool({
   name: 'get_weather',

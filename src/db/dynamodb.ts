@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/dynamodb — DynamoDbAgentDb.
+ * @personaforge/db/dynamodb — DynamoDbAgentDb.
  *
  * Uses AWS SDK v3 `@aws-sdk/client-dynamodb` + `@aws-sdk/lib-dynamodb`.
  * All 6 tables are stored in a single DynamoDB table using a composite
@@ -20,7 +20,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] DynamoDbAgentDb requires @aws-sdk/client-dynamodb and @aws-sdk/lib-dynamodb.\n' +
+  '[personaforge/db] DynamoDbAgentDb requires @aws-sdk/client-dynamodb and @aws-sdk/lib-dynamodb.\n' +
   '  Install: npm install @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb';
 
 // Minimal surface types (avoid hard dep on AWS SDK)

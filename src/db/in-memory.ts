@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/in-memory — InMemoryAgentDb.
+ * @personaforge/db/in-memory — InMemoryAgentDb.
  *
  * Zero-dependency in-memory backend. Good for tests and quick prototypes.
  * All data is lost when the process exits.

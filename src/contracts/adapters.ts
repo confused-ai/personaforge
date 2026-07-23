@@ -2,7 +2,7 @@
  * Adapter interfaces for pluggable persistence layers.
  *
  * Concrete implementations ship in dedicated packages such as
- * `@confused-ai/adapter-redis`, `@confused-ai/adapter-postgres`, etc.
+ * `@personaforge/adapter-redis`, `@personaforge/adapter-postgres`, etc.
  *
  * Re-export canonical interfaces from interfaces.ts
  *

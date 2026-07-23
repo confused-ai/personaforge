@@ -109,7 +109,7 @@ export class ChromaKnowledgeAdapter implements VectorStore {
         // @ts-expect-error — optional peer dependency, may not be installed
         const { ChromaClient: Client } = await import('chromadb').catch(() => {
             throw new Error(
-                '@confused-ai/knowledge ChromaKnowledgeAdapter requires "chromadb". ' +
+                '@personaforge/knowledge ChromaKnowledgeAdapter requires "chromadb". ' +
                 'Install it with: pnpm add chromadb',
             );
         }) as { ChromaClient: new (opts: { path: string }) => ChromaClient };

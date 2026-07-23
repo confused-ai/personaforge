@@ -20,17 +20,17 @@
 
 import { describe, it, expect, vi, type Mock } from 'vitest';
 import { z } from 'zod';
-import { AgenticRunner, background } from '@confused-ai/agentic';
+import { AgenticRunner, background } from '@personaforge/agentic';
 import type {
     AgenticRunnerConfig,
     AgenticRunConfig,
     AgenticStreamHooks,
     AgenticLifecycleHooks,
     AgenticRunResult,
-} from '@confused-ai/agentic';
-import type { GenerateOptions, GenerateResult, LLMProvider, Message, ToolCall as LLMToolCall } from '@confused-ai/core';
-import type { ToolRegistry, Tool, ToolResult } from '@confused-ai/tools';
-import type { GuardrailEngine, GuardrailContext, GuardrailResult, GuardrailViolation, HumanInTheLoopHooks } from '@confused-ai/guardrails';
+} from '@personaforge/agentic';
+import type { GenerateOptions, GenerateResult, LLMProvider, Message, ToolCall as LLMToolCall } from '@personaforge/core';
+import type { ToolRegistry, Tool, ToolResult } from '@personaforge/tools';
+import type { GuardrailEngine, GuardrailContext, GuardrailResult, GuardrailViolation, HumanInTheLoopHooks } from '@personaforge/guardrails';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

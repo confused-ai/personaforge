@@ -1,11 +1,11 @@
 /**
- * CLI — `confused-ai replay` command
+ * CLI — `personaforge replay` command
  *
  * Replays the events of a durable run to stdout as a human-readable timeline.
  *
  * Usage:
- *   confused-ai replay --run-id <executionId> [--db <path>]
- *   confused-ai replay --run-id <executionId> --json
+ *   personaforge replay --run-id <executionId> [--db <path>]
+ *   personaforge replay --run-id <executionId> --json
  */
 
 import type { Command } from 'commander';

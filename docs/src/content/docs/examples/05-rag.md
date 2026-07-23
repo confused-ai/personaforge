@@ -15,8 +15,8 @@ The current RAG surface is centered on `KnowledgeEngine` and the `knowledgebase`
 ## Current pattern
 
 ```ts
-import { agent } from 'confused-ai';
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { agent } from 'personaforge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 const knowledge = createKnowledgeEngine({
   topK: 3,

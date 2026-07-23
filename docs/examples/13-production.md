@@ -9,7 +9,7 @@ outline: [2, 3]
 Production agents need to degrade gracefully under load, recover from transient failures, and respect cost limits. `withResilience()` wraps any agent with these guarantees without touching your agent authoring code.
 
 ```ts
-import { withResilience } from 'confused-ai/production';
+import { withResilience } from 'personaforge/production';
 ```
 
 ---
@@ -26,8 +26,8 @@ import { withResilience } from 'confused-ai/production';
 ## Basic resilience wrapper
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
+import { createAgent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
 
 const baseAgent = createAgent({
   name: 'ops-bot',
@@ -78,8 +78,8 @@ console.log(health);
 Add a `budget` to the underlying agent to hard-cap token or dollar spend.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
+import { createAgent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
 
 const budgetedAgent = createAgent({
   name: 'budget-agent',
@@ -113,8 +113,8 @@ try {
 Add `checkpointStore` to persist run state so long-running agents can resume after a process crash.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { withResilience, SqliteCheckpointStore } from 'confused-ai/production';
+import { createAgent } from 'personaforge';
+import { withResilience, SqliteCheckpointStore } from 'personaforge/production';
 
 const durableAgent = createAgent({
   name: 'durable-ops',
@@ -142,13 +142,13 @@ console.log(result.text);
 When you expose the agent through `createHttpService()`, layer in approval workflows and audit logging.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
-import { createHttpService, listenService } from 'confused-ai/serve';
+import { createAgent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
+import { createHttpService, listenService } from 'personaforge/serve';
 import {
   createSqliteApprovalStore,
   createSqliteAuditStore,
-} from 'confused-ai/production';
+} from 'personaforge/production';
 
 const agent = createAgent({
   name: 'ops-agent',

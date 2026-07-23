@@ -7,8 +7,8 @@
  *
  * @example
  * ```ts
- * import { createHttpService } from 'confused-ai/runtime';
- * import { createSqliteAuditStore } from 'confused-ai/production';
+ * import { createHttpService } from 'personaforge/runtime';
+ * import { createSqliteAuditStore } from 'personaforge/production';
  *
  * createHttpService({
  *   agents: { assistant },

@@ -10,7 +10,7 @@
  * Usage:
  * ```ts
  * import { webResearchSkill } from './index.js';
- * import { agent } from 'confused-ai';
+ * import { agent } from 'personaforge';
  *
  * const bot = agent({
  *   name: 'Researcher',
@@ -55,7 +55,7 @@ const fetchPageTool: Tool = {
     try {
       const res = await fetch(url, {
         signal: ac.signal,
-        headers: { 'User-Agent': 'confused-ai/web-research-skill' },
+        headers: { 'User-Agent': 'personaforge/web-research-skill' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
       const html = await res.text();

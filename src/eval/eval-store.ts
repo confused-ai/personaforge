@@ -3,11 +3,11 @@
  *
  * Turns `runLlmAsJudge` / `EvalAggregator` into a full evaluation pipeline with
  * persistent history, baseline snapshots, and CI-friendly regression detection.
- * This makes confused-ai the only framework with built-in, self-hosted eval tracking.
+ * This makes personaforge the only framework with built-in, self-hosted eval tracking.
  *
  * @example
  * ```ts
- * import { createSqliteEvalStore, runEvalSuite } from 'confused-ai/observability';
+ * import { createSqliteEvalStore, runEvalSuite } from 'personaforge/observability';
  *
  * const store = createSqliteEvalStore('./agent.db');
  *

@@ -1,5 +1,5 @@
 ---
-# Kubernetes manifests for confused-ai agent deployment
+# Kubernetes manifests for personaforge agent deployment
 # Apply: kubectl apply -f k8s.yaml
 # Replace all <placeholders> before applying.
 
@@ -23,19 +23,19 @@ stringData:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: confused-ai-agent
+  name: personaforge-agent
   namespace: agents
   labels:
-    app: confused-ai-agent
+    app: personaforge-agent
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: confused-ai-agent
+      app: personaforge-agent
   template:
     metadata:
       labels:
-        app: confused-ai-agent
+        app: personaforge-agent
     spec:
       securityContext:
         runAsNonRoot: true
@@ -43,7 +43,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: agent
-          image: <your-registry>/confused-ai-agent:latest
+          image: <your-registry>/personaforge-agent:latest
           ports:
             - containerPort: 8787
               name: http
@@ -98,11 +98,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: confused-ai-agent
+  name: personaforge-agent
   namespace: agents
 spec:
   selector:
-    app: confused-ai-agent
+    app: personaforge-agent
   ports:
     - name: http
       port: 80
@@ -113,13 +113,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: confused-ai-agent-hpa
+  name: personaforge-agent-hpa
   namespace: agents
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: confused-ai-agent
+    name: personaforge-agent
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -155,12 +155,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: confused-ai-agent-netpol
+  name: personaforge-agent-netpol
   namespace: agents
 spec:
   podSelector:
     matchLabels:
-      app: confused-ai-agent
+      app: personaforge-agent
   policyTypes:
     - Ingress
     - Egress
@@ -195,10 +195,10 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: confused-ai-agent-pdb
+  name: personaforge-agent-pdb
   namespace: agents
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: confused-ai-agent
+      app: personaforge-agent

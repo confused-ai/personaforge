@@ -7,9 +7,9 @@
  *
  * @example
  * ```ts
- * import { createAgent } from 'confused-ai';
- * import { createTenantContext } from 'confused-ai/production';
- * import { createSqliteSessionStore } from 'confused-ai/session';
+ * import { createAgent } from 'personaforge';
+ * import { createTenantContext } from 'personaforge/production';
+ * import { createSqliteSessionStore } from 'personaforge/session';
  *
  * const baseSessionStore = await createSqliteSessionStore('./agent.db');
  *

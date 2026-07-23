@@ -1,5 +1,5 @@
 /**
- * @confused-ai/skills — Reference skills for the confused-ai framework.
+ * @personaforge/skills — Reference skills for the personaforge framework.
  *
  * Each skill is a self-contained capability bundle (instructions + tools)
  * that can be attached to any agent via the `skills` option.
@@ -7,7 +7,7 @@
  * @example
  * ```ts
  * import { webResearchSkill, codeReviewerSkill } from './index.js';
- * import { agent } from 'confused-ai';
+ * import { agent } from 'personaforge';
  *
  * const bot = agent({
  *   name: 'MyAgent',

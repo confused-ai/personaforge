@@ -1,5 +1,5 @@
 /**
- * @confused-ai/tools — built-in HTTP client tool.
+ * @personaforge/tools — built-in HTTP client tool.
  *
  * SRP  — this file owns only the HTTP tool.
  * DIP  — returns the Tool interface; no class inheritance.

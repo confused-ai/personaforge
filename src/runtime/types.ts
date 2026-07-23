@@ -17,7 +17,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { apiKeyAuth } from 'confused-ai/runtime';
+     * import { apiKeyAuth } from 'personaforge/runtime';
      * createHttpService({ agents, auth: { strategy: 'api-key', keys: ['sk-prod-abc'] } });
      * ```
      */
@@ -43,7 +43,7 @@ export interface CreateHttpServiceOptions {
      * Checkpoint/snapshot hook invoked by `close()` after in-flight requests
      * drain (or the drain timeout elapses). Use it to persist agent/checkpoint
      * state so a graceful shutdown does not abandon work. Pairs with
-     * `GracefulShutdown.onDrain(svc.close)` from `confused-ai/production`.
+     * `GracefulShutdown.onDrain(svc.close)` from `personaforge/production`.
      */
     onShutdown?: () => Promise<void> | void;
     /**
@@ -69,7 +69,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { createSqliteIdempotencyStore } from 'confused-ai/production';
+     * import { createSqliteIdempotencyStore } from 'personaforge/production';
      * createHttpService({
      *   agents: { assistant },
      *   idempotency: { store: createSqliteIdempotencyStore('./agent.db'), ttlMs: 24 * 60 * 60 * 1000 },
@@ -83,7 +83,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { createSqliteAuditStore } from 'confused-ai/production';
+     * import { createSqliteAuditStore } from 'personaforge/production';
      * createHttpService({
      *   agents: { assistant },
      *   auditStore: createSqliteAuditStore('./agent.db'),
@@ -108,7 +108,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { createSqliteAuditStore, createSqliteCheckpointStore } from 'confused-ai/production';
+     * import { createSqliteAuditStore, createSqliteCheckpointStore } from 'personaforge/production';
      * createHttpService({
      *   agents: { assistant },
      *   adminApi: {
@@ -128,7 +128,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { createSqliteApprovalStore } from 'confused-ai/production';
+     * import { createSqliteApprovalStore } from 'personaforge/production';
      * createHttpService({
      *   agents: { assistant },
      *   approvalStore: createSqliteApprovalStore('./agent.db'),
@@ -144,7 +144,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { RateLimiter } from 'confused-ai/production';
+     * import { RateLimiter } from 'personaforge/production';
      * createHttpService({
      *   agents: { assistant },
      *   rateLimit: new RateLimiter({ name: 'http', maxRequests: 100, intervalMs: 60_000 }),
@@ -212,7 +212,7 @@ export interface CreateHttpServiceOptions {
      *
      * @example
      * ```ts
-     * import { SlackInterface, TelegramInterface } from 'confused-ai/interfaces';
+     * import { SlackInterface, TelegramInterface } from 'personaforge/interfaces';
      * createHttpService({
      *   agents: { assistant },
      *   interfaces: [

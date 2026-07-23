@@ -5,8 +5,8 @@
  *
  * @example
  * ```ts
- * import { createAgent } from 'confused-ai';
- * import { createSqliteUserProfileStore } from 'confused-ai/learning';
+ * import { createAgent } from 'personaforge';
+ * import { createSqliteUserProfileStore } from 'personaforge/learning';
  *
  * const agent = createAgent({
  *   name: 'PersonalAssistant',

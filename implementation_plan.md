@@ -1,6 +1,6 @@
 # Multi-Agent Framework Architecture & Implementation Plan
 
-This implementation plan outlines the architecture, SDK design, memory engine, workflow capabilities, event systems, security layers, and distributed deployment blueprints for the production-grade multi-agent framework implemented under `confused-ai`.
+This implementation plan outlines the architecture, SDK design, memory engine, workflow capabilities, event systems, security layers, and distributed deployment blueprints for the production-grade multi-agent framework implemented under `personaforge`.
 
 ---
 
@@ -11,7 +11,7 @@ The framework is structured as a modular, layered system designed to run as a li
 ```
                   ┌────────────────────────────────────────────────────────┐
                   │                      Developer API                     │
-                  │  (import { Agent, Team, Workflow } from 'confused-ai') │
+                  │  (import { Agent, Team, Workflow } from 'personaforge') │
                   └───────────────────────────┬────────────────────────────┘
                                               │
                   ┌───────────────────────────▼────────────────────────────┐
@@ -94,7 +94,7 @@ agent-framework/
 The SDK is designed to be fluent, type-safe, and intuitive. It supports both a quick functional setup and a fully configurable builder.
 
 ```ts
-import { agent, tool } from 'confused-ai';
+import { agent, tool } from 'personaforge';
 import { z } from 'zod';
 
 // Define a type-safe tool
@@ -181,7 +181,7 @@ The Memory system utilizes a **four-layer architecture** to store and retrieve d
 The graph workflow engine allows developers to build complex DAG (Directed Acyclic Graph) models:
 
 ```ts
-import { createGraph, DAGEngine } from 'confused-ai/workflow';
+import { createGraph, DAGEngine } from 'personaforge/workflow';
 
 const pipeline = createGraph('order-processing')
   .task('validate', async (ctx) => checkOrder(ctx.input))
@@ -219,7 +219,7 @@ Full Model Context Protocol (MCP) support allows seamless integration between ag
 Implements Google's Agent-to-Agent protocol spec. Exposes agents over HTTP/SSE endpoints, supporting agent capability registries, negotiation, and cross-framework message delegation.
 
 ```ts
-import { A2AServer, createHttpA2AClient } from 'confused-ai/workflow';
+import { A2AServer, createHttpA2AClient } from 'personaforge/workflow';
 
 // Server Exposing Agent A
 const a2aServer = new A2AServer({ agent: agentA, port: 4000 });
@@ -237,7 +237,7 @@ const delegateResult = await caller.run({ prompt: 'Generate financial report' })
 Built as an event-driven architecture. Emits structured state-change records that are dispatched to in-memory, Redis, or Kafka backends.
 
 ```ts
-import { KafkaBackgroundQueue } from 'confused-ai/background';
+import { KafkaBackgroundQueue } from 'personaforge/background';
 
 const queue = new KafkaBackgroundQueue({
   brokers: ['kafka-cluster:9092'],
@@ -256,8 +256,8 @@ queue.publish('ToolExecuted', { toolName: 'search', status: 'success' });
 ### Complex Swarm: Multi-Agent Software Development
 
 ```ts
-import { Team, createAgent } from 'confused-ai';
-import { githubTool } from 'confused-ai/tools/devtools';
+import { Team, createAgent } from 'personaforge';
+import { githubTool } from 'personaforge/tools/devtools';
 
 const coder = createAgent({
   name: 'Coder',
@@ -314,7 +314,7 @@ Provides declarative configuration under `templates/k8s.yaml` to deploy scaling 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: confused-ai-agent-worker
+  name: personaforge-agent-worker
   labels:
     app: agent-worker
 spec:
@@ -329,7 +329,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: confused-ai/agent-worker:latest
+        image: personaforge/agent-worker:latest
         ports:
         - containerPort: 8787
         env:
@@ -363,7 +363,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: confused-ai-agent-worker
+    name: personaforge-agent-worker
   minReplicas: 2
   maxReplicas: 10
   metrics:

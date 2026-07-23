@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — package barrel.
+ * @personaforge/knowledge — package barrel.
  */
 
 export { KnowledgeEngine, createKnowledgeEngine, withEmbeddingCache } from './knowledge-engine.js';

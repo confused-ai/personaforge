@@ -1,5 +1,5 @@
 /**
- * Standard OpenTelemetry metric counters/histograms used across confused-ai.
+ * Standard OpenTelemetry metric counters/histograms used across personaforge.
  *
  * Importers should ensure an OTEL meter provider is registered before reading
  * these — without one, the no-op default provider is used and writes are
@@ -9,7 +9,7 @@
  */
 import { metrics } from '@opentelemetry/api';
 
-const meter = metrics.getMeter('confused-ai');
+const meter = metrics.getMeter('personaforge');
 
 export const Metrics = {
   // ── Agent runs ──────────────────────────────────────────────────────────

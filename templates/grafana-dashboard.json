@@ -3,7 +3,7 @@
     {
       "name": "DS_PROMETHEUS",
       "label": "Prometheus",
-      "description": "Prometheus datasource for confused-ai OTLP metrics",
+      "description": "Prometheus datasource for personaforge OTLP metrics",
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
@@ -11,7 +11,7 @@
     {
       "name": "DS_LOKI",
       "label": "Loki",
-      "description": "Loki datasource for confused-ai structured logs",
+      "description": "Loki datasource for personaforge structured logs",
       "type": "datasource",
       "pluginId": "loki",
       "pluginName": "Loki"
@@ -40,7 +40,7 @@
       }
     ]
   },
-  "description": "confused-ai agent framework — production observability dashboard",
+  "description": "personaforge agent framework — production observability dashboard",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -79,7 +79,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(confused_ai_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
+          "expr": "sum(rate(personaforge_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
           "legendFormat": "req/s",
           "refId": "A"
         }
@@ -112,7 +112,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "100 * sum(rate(confused_ai_http_requests_total{job=~\"$job\",status_code=~\"5..\"}[$__rate_interval])) / sum(rate(confused_ai_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
+          "expr": "100 * sum(rate(personaforge_http_requests_total{job=~\"$job\",status_code=~\"5..\"}[$__rate_interval])) / sum(rate(personaforge_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
           "legendFormat": "error %",
           "refId": "A"
         }
@@ -143,7 +143,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.95, sum(rate(confused_ai_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(personaforge_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
           "legendFormat": "p95",
           "refId": "A"
         }
@@ -174,7 +174,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum(rate(confused_ai_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(personaforge_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
           "legendFormat": "p99",
           "refId": "A"
         }
@@ -194,7 +194,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (agent_name) (rate(confused_ai_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
+          "expr": "sum by (agent_name) (rate(personaforge_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{agent_name}}",
           "refId": "A"
         }
@@ -214,19 +214,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.50, sum(rate(confused_ai_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(personaforge_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.95, sum(rate(confused_ai_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(personaforge_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum(rate(confused_ai_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(personaforge_http_request_duration_ms_bucket{job=~\"$job\"}[$__rate_interval])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -252,13 +252,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (model) (rate(confused_ai_llm_tokens_total{job=~\"$job\",token_type=\"input\"}[$__rate_interval]))",
+          "expr": "sum by (model) (rate(personaforge_llm_tokens_total{job=~\"$job\",token_type=\"input\"}[$__rate_interval]))",
           "legendFormat": "{{model}} (input)",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (model) (rate(confused_ai_llm_tokens_total{job=~\"$job\",token_type=\"output\"}[$__rate_interval]))",
+          "expr": "sum by (model) (rate(personaforge_llm_tokens_total{job=~\"$job\",token_type=\"output\"}[$__rate_interval]))",
           "legendFormat": "{{model}} (output)",
           "refId": "B"
         }
@@ -277,7 +277,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (model) (rate(confused_ai_llm_cost_usd_total{job=~\"$job\"}[$__rate_interval])) * 60",
+          "expr": "sum by (model) (rate(personaforge_llm_cost_usd_total{job=~\"$job\"}[$__rate_interval])) * 60",
           "legendFormat": "{{model}}",
           "refId": "A"
         }
@@ -310,7 +310,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (service) (rate(confused_ai_circuit_breaker_opens_total{job=~\"$job\"}[$__rate_interval]))",
+          "expr": "sum by (service) (rate(personaforge_circuit_breaker_opens_total{job=~\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -329,7 +329,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (provider, error_type) (rate(confused_ai_llm_errors_total{job=~\"$job\"}[$__rate_interval]))",
+          "expr": "sum by (provider, error_type) (rate(personaforge_llm_errors_total{job=~\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{provider}} / {{error_type}}",
           "refId": "A"
         }
@@ -355,7 +355,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (rule, severity) (rate(confused_ai_guardrail_violations_total{job=~\"$job\"}[$__rate_interval]))",
+          "expr": "sum by (rule, severity) (rate(personaforge_guardrail_violations_total{job=~\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{rule}} ({{severity}})",
           "refId": "A"
         }
@@ -374,7 +374,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (agent_name) (rate(confused_ai_http_requests_total{job=~\"$job\",status_code=\"429\"}[$__rate_interval]))",
+          "expr": "sum by (agent_name) (rate(personaforge_http_requests_total{job=~\"$job\",status_code=\"429\"}[$__rate_interval]))",
           "legendFormat": "{{agent_name}}",
           "refId": "A"
         }
@@ -405,13 +405,13 @@
   ],
   "refresh": "30s",
   "schemaVersion": 38,
-  "tags": ["confused-ai", "agent", "llm", "observability"],
+  "tags": ["personaforge", "agent", "llm", "observability"],
   "templating": {
     "list": [
       {
         "current": {},
         "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-        "definition": "label_values(confused_ai_http_requests_total, job)",
+        "definition": "label_values(personaforge_http_requests_total, job)",
         "hide": 0,
         "includeAll": true,
         "label": "Job",
@@ -419,7 +419,7 @@
         "name": "job",
         "options": [],
         "query": {
-          "query": "label_values(confused_ai_http_requests_total, job)",
+          "query": "label_values(personaforge_http_requests_total, job)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -432,8 +432,8 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "confused-ai — Agent Observability",
-  "uid": "confused-ai-v1",
+  "title": "personaforge — Agent Observability",
+  "uid": "personaforge-v1",
   "version": 1,
   "weekStart": ""
 }

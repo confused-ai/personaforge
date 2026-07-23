@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { handleToolGatewayRequest } from '@confused-ai/tools';
-import { CalculatorAddTool } from '@confused-ai/tools';
+import { handleToolGatewayRequest } from '@personaforge/tools';
+import { CalculatorAddTool } from '@personaforge/tools';
 
 describe('handleToolGatewayRequest', () => {
     const tools = [

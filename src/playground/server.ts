@@ -1,8 +1,8 @@
 /**
- * @confused-ai/playground — Interactive agent playground UI.
+ * @personaforge/playground — Interactive agent playground UI.
  *
  * Serves a zero-dependency HTML/CSS/JS web interface that lets users chat
- * with registered confused-ai agents directly from a browser.
+ * with registered personaforge agents directly from a browser.
  *
  * Architecture:
  *   createPlayground(agents, options) → PlaygroundServer

@@ -1,7 +1,7 @@
 /**
- * Canonical error types for confused-ai.
+ * Canonical error types for personaforge.
  *
- * All framework-thrown errors should be subclasses of `ConfusedAIError` so callers
+ * All framework-thrown errors should be subclasses of `PersonaForgeError` so callers
  * can pattern-match on `error.code`, decide retryability, and forward structured
  * context to observability backends.
  *
@@ -41,7 +41,7 @@ export const ERROR_CODES = {
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
-export interface ConfusedAIErrorOptions {
+export interface PersonaForgeErrorOptions {
   code: ErrorCode;
   message: string;
   retryable?: boolean;
@@ -49,7 +49,7 @@ export interface ConfusedAIErrorOptions {
   cause?: unknown;
 }
 
-export interface SerializedConfusedAIError {
+export interface SerializedPersonaForgeError {
   name: string;
   code: ErrorCode;
   message: string;
@@ -59,28 +59,28 @@ export interface SerializedConfusedAIError {
 }
 
 /**
- * Base error class for all confused-ai exceptions.
+ * Base error class for all personaforge exceptions.
  *
  * Always carries a structured `code`, `retryable` flag, and freeform
  * `context` bag so observability backends can index and alert on error types
  * without parsing message strings.
  */
-export class ConfusedAIError extends Error {
+export class PersonaForgeError extends Error {
   readonly code: ErrorCode;
   readonly retryable: boolean;
   readonly context: Record<string, unknown>;
   readonly timestamp: string;
 
-  constructor(opts: ConfusedAIErrorOptions) {
+  constructor(opts: PersonaForgeErrorOptions) {
     super(opts.message, opts.cause === undefined ? undefined : { cause: opts.cause });
-    this.name = 'ConfusedAIError';
+    this.name = 'PersonaForgeError';
     this.code = opts.code;
     this.retryable = opts.retryable ?? false;
     this.context = opts.context ?? {};
     this.timestamp = new Date().toISOString();
   }
 
-  toJSON(): SerializedConfusedAIError {
+  toJSON(): SerializedPersonaForgeError {
     return {
       name: this.name,
       code: this.code,
@@ -94,7 +94,7 @@ export class ConfusedAIError extends Error {
 
 // --- Typed sub-classes for `instanceof` checks ----------------------------
 
-export class BudgetExceededError extends ConfusedAIError {
+export class BudgetExceededError extends PersonaForgeError {
   constructor(opts: { limitUsd: number; spentUsd: number; scope: string }) {
     super({
       code: ERROR_CODES.BUDGET_EXCEEDED,
@@ -106,7 +106,7 @@ export class BudgetExceededError extends ConfusedAIError {
   }
 }
 
-export class CircuitOpenError extends ConfusedAIError {
+export class CircuitOpenError extends PersonaForgeError {
   constructor(service: string, resetAfterMs: number) {
     super({
       code: ERROR_CODES.CIRCUIT_OPEN,
@@ -118,7 +118,7 @@ export class CircuitOpenError extends ConfusedAIError {
   }
 }
 
-export class GuardrailViolatedError extends ConfusedAIError {
+export class GuardrailViolatedError extends PersonaForgeError {
   constructor(rule: string, detail: string) {
     super({
       code: ERROR_CODES.GUARDRAIL_VIOLATED,
@@ -130,7 +130,7 @@ export class GuardrailViolatedError extends ConfusedAIError {
   }
 }
 
-export class ToolTimeoutError extends ConfusedAIError {
+export class ToolTimeoutError extends PersonaForgeError {
   constructor(toolName: string, timeoutMs: number) {
     super({
       code: ERROR_CODES.TOOL_TIMEOUT,
@@ -142,7 +142,7 @@ export class ToolTimeoutError extends ConfusedAIError {
   }
 }
 
-export class ToolValidationError extends ConfusedAIError {
+export class ToolValidationError extends PersonaForgeError {
   constructor(toolName: string, detail: string, context: Record<string, unknown> = {}) {
     super({
       code: ERROR_CODES.TOOL_VALIDATION_FAILED,
@@ -154,7 +154,7 @@ export class ToolValidationError extends ConfusedAIError {
   }
 }
 
-export class ExecutionTimeoutError extends ConfusedAIError {
+export class ExecutionTimeoutError extends PersonaForgeError {
   constructor(timeoutMs: number, scope: string) {
     super({
       code: ERROR_CODES.EXECUTION_TIMEOUT,
@@ -166,7 +166,7 @@ export class ExecutionTimeoutError extends ConfusedAIError {
   }
 }
 
-export class ValidationError extends ConfusedAIError {
+export class ValidationError extends PersonaForgeError {
   constructor(detail: string, context: Record<string, unknown> = {}) {
     super({
       code: ERROR_CODES.VALIDATION_FAILED,
@@ -178,7 +178,7 @@ export class ValidationError extends ConfusedAIError {
   }
 }
 
-export class UnauthorizedError extends ConfusedAIError {
+export class UnauthorizedError extends PersonaForgeError {
   constructor(detail = 'Authentication required') {
     super({
       code: ERROR_CODES.UNAUTHORIZED,
@@ -189,7 +189,7 @@ export class UnauthorizedError extends ConfusedAIError {
   }
 }
 
-export class ForbiddenError extends ConfusedAIError {
+export class ForbiddenError extends PersonaForgeError {
   constructor(detail: string, requiredRole?: string) {
     super({
       code: ERROR_CODES.FORBIDDEN,
@@ -201,7 +201,7 @@ export class ForbiddenError extends ConfusedAIError {
   }
 }
 
-export class ToolNotAuthorizedError extends ConfusedAIError {
+export class ToolNotAuthorizedError extends PersonaForgeError {
   constructor(toolName: string, tenantId?: string) {
     super({
       code: ERROR_CODES.TOOL_NOT_AUTHORIZED,
@@ -215,11 +215,11 @@ export class ToolNotAuthorizedError extends ConfusedAIError {
 
 // --- Type guards ----------------------------------------------------------
 
-/** Type guard — returns `true` when `e` is any `ConfusedAIError` subclass. */
-export function isConfusedAIError(e: unknown): e is ConfusedAIError {
-  return e instanceof ConfusedAIError;
+/** Type guard — returns `true` when `e` is any `PersonaForgeError` subclass. */
+export function isPersonaForgeError(e: unknown): e is PersonaForgeError {
+  return e instanceof PersonaForgeError;
 }
 
 export function isRetryable(e: unknown): boolean {
-  return isConfusedAIError(e) && e.retryable;
+  return isPersonaForgeError(e) && e.retryable;
 }

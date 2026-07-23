@@ -28,13 +28,13 @@ config({
     quiet: true,
 });
 
-import { ReasoningManager } from 'confused-ai/reasoning';
+import { ReasoningManager } from 'personaforge/reasoning';
 import {
     NextAction,
     ReasoningEventType,
     type ReasoningEvent,
     type ReasoningStep,
-} from 'confused-ai/reasoning';
+} from 'personaforge/reasoning';
 
 // ── Mock LLM (deterministic — no API key needed) ──────────────────────────
 
@@ -42,7 +42,7 @@ import {
  * Simulates an LLM that produces structured ReasoningStep JSON.
  * In production replace with:
  *
- *   import { OpenAIProvider } from 'confused-ai';
+ *   import { OpenAIProvider } from 'personaforge';
  *   const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o' });
  *   const generate = async (messages) => {
  *     const r = await llm.generate(messages.map(m => ({ role: m.role as any, content: m.content })));
@@ -128,7 +128,7 @@ function formatConfidence(c?: number): string {
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
-    console.log('confused-ai — Reasoning Agent: Production Incident Triage\n');
+    console.log('personaforge — Reasoning Agent: Production Incident Triage\n');
     console.log('Incident:\n' + INCIDENT);
 
     const manager = new ReasoningManager({

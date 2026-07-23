@@ -1,5 +1,5 @@
 /**
- * @confused-ai/control-plane — AgentOS dashboard server.
+ * @personaforge/control-plane — AgentOS dashboard server.
  *
  * Zero-dependency Node.js HTTP server providing:
  *   - Sessions browser
@@ -183,7 +183,7 @@ function getDashboardHtml(): string {
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>confused-ai Control Plane</title>
+<title>personaforge Control Plane</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#0f1117;color:#e0e0e8;display:flex;height:100vh}
@@ -207,7 +207,7 @@ button.action{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font
 </head>
 <body>
 <nav>
-<div style="padding:12px 20px 24px;color:#fff;font-weight:700;font-size:16px">confused-ai</div>
+<div style="padding:12px 20px 24px;color:#fff;font-weight:700;font-size:16px">personaforge</div>
 <button onclick="show('sessions')" id="tab-sessions">Sessions</button>
 <button onclick="show('memory')" id="tab-memory">Memory</button>
 <button onclick="show('evals')" id="tab-evals">Evals</button>

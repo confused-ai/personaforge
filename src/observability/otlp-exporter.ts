@@ -7,10 +7,10 @@
  * - W3C trace context propagation
  * - Automatic retry with backoff
  *
- * @deprecated The live OpenTelemetry export path is `@confused-ai/observe`
+ * @deprecated The live OpenTelemetry export path is `@personaforge/observe`
  *   (`src/observe/tracing.ts` + `src/observe/prometheus.ts`). This hand-rolled OTLP
- *   exporter is retained only for the legacy `confused-ai/observability` path and has
- *   no active importers. Migrate to `confused-ai/observe`.
+ *   exporter is retained only for the legacy `personaforge/observability` path and has
+ *   no active importers. Migrate to `personaforge/observe`.
  */
 
 import type { TraceSpan, SpanStatus, MetricValue } from './types.js';

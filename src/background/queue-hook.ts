@@ -9,8 +9,8 @@
  * ### Usage
  *
  * ```ts
- * import { agent } from 'confused-ai';
- * import { queueHook, BullMQBackgroundQueue } from 'confused-ai/background';
+ * import { agent } from 'personaforge';
+ * import { queueHook, BullMQBackgroundQueue } from 'personaforge/background';
  *
  * const queue = new BullMQBackgroundQueue({
  *   redis: process.env.REDIS_URL!,

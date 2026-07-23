@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core — ReAct-style agentic runner.
+ * @personaforge/core — ReAct-style agentic runner.
  *
  * SOLID principles enforced:
  *   SRP  — AgentRunner owns only the loop. Message building, retry, and
@@ -32,7 +32,7 @@ import { LLMError } from '../errors.js';
 import { createRequire } from 'node:module';
 const _require = createRequire(import.meta.url);
 
-// ── Built-in fallback resilience (used when @confused-ai/guard not installed) ─
+// ── Built-in fallback resilience (used when @personaforge/guard not installed) ─
 
 /** O(1) sleep — avoids busy-waiting. */
 const sleep = (ms: number): Promise<void> =>
@@ -69,7 +69,7 @@ async function withRetryFallback<T>(fn: () => Promise<T>, policy: RetryPolicy): 
     throw lastError;
 }
 
-// ── Optional peer-dep integration (@confused-ai/guard and @confused-ai/observe) ──
+// ── Optional peer-dep integration (@personaforge/guard and @personaforge/observe) ──
 
 type SpanHandle = { setAttribute(key: string, value: unknown): void };
 type WithSpanFn = <T>(name: string, attrs: Record<string, unknown>, fn: (span: SpanHandle) => Promise<T>) => Promise<T>;

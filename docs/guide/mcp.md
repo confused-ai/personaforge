@@ -17,7 +17,7 @@ import {
   createMcpServer,             // expose your tools as an MCP server
   McpHttpServer,
   runMcpStdioToolServer,       // stdio transport (for Claude Desktop, etc.)
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -27,7 +27,7 @@ import {
 The easiest way to use a remote MCP server — load its tools and hand them straight to `createAgent()`:
 
 ```ts
-import { createAgent, loadMcpToolsFromUrl } from 'confused-ai';
+import { createAgent, loadMcpToolsFromUrl } from 'personaforge';
 
 // Load all tools exposed by a remote MCP HTTP server
 const mcpTools = await loadMcpToolsFromUrl(
@@ -51,7 +51,7 @@ const result = await agent.run('Run the analysis job for project #42.');
 ## Full HTTP client (`HttpMcpClient`)
 
 ```ts
-import { HttpMcpClient } from 'confused-ai';
+import { HttpMcpClient } from 'personaforge';
 
 const client = new HttpMcpClient({
   url: 'https://mcp.example.com',
@@ -73,7 +73,7 @@ const result = await client.callTool('run_analysis', { projectId: '42', format: 
 Use the [MCP Streamable HTTP 2024-11-05](https://modelcontextprotocol.io/) transport for servers that push real-time notifications:
 
 ```ts
-import { connectMcpServer } from 'confused-ai';
+import { connectMcpServer } from 'personaforge';
 
 const { client, tools } = await connectMcpServer('https://mcp.example.com/mcp', {
   headers: { 'Authorization': `Bearer ${process.env.MCP_TOKEN}` },
@@ -102,7 +102,7 @@ const agent = createAgent({
 Turn any local tools into an MCP server that Claude Desktop, other agents, or any MCP client can connect to:
 
 ```ts
-import { createMcpServer } from 'confused-ai';
+import { createMcpServer } from 'personaforge';
 import { searchTool, analysisTool, calculatorTool } from './tools.js';
 
 const server = createMcpServer(
@@ -139,7 +139,7 @@ The server exposes these JSON-RPC 2.0 methods:
 For Claude Desktop and other stdio-based MCP clients:
 
 ```ts
-import { runMcpStdioToolServer } from 'confused-ai';
+import { runMcpStdioToolServer } from 'personaforge';
 import { searchTool, calculatorTool } from './tools.js';
 
 // Reads from stdin, writes to stdout — launch from claude_desktop_config.json
@@ -167,7 +167,7 @@ await runMcpStdioToolServer({
 ## MCP resources and prompts
 
 ```ts
-import { McpResourceRegistry, McpPromptRegistry } from 'confused-ai';
+import { McpResourceRegistry, McpPromptRegistry } from 'personaforge';
 
 const resources = new McpResourceRegistry();
 resources.define({

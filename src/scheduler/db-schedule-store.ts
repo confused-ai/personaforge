@@ -1,9 +1,9 @@
 /**
- * @confused-ai/scheduler — DbScheduleStore
+ * @personaforge/scheduler — DbScheduleStore
  *
  * Implements `ScheduleStore` on top of any `AgentDb` backend.
  * Bridges the ScheduleManager's scheduling API with the unified
- * `agent_schedules` table managed by @confused-ai/db.
+ * `agent_schedules` table managed by @personaforge/db.
  *
  * Mapping between domain types:
  *   Schedule.id          ↔  ScheduleRow.id

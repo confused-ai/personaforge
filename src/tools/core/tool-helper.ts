@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { tool } from 'confused-ai';
+ * import { tool } from 'personaforge';
  * import { z } from 'zod';
  *
  * const weatherTool = tool({
@@ -483,7 +483,7 @@ interface ToolBuilderState<TSchema extends ToolObjectSchemaLike<Record<string, u
  *
  * @example
  * ```ts
- * import { defineTool } from 'confused-ai';
+ * import { defineTool } from 'personaforge';
  * import { z } from 'zod';
  *
  * const searchTool = defineTool()
@@ -635,7 +635,7 @@ export class ToolBuilder<
  *
  * @example
  * ```ts
- * import { defineTool } from 'confused-ai';
+ * import { defineTool } from 'personaforge';
  * import { z } from 'zod';
  *
  * const myTool = defineTool()
@@ -736,8 +736,8 @@ export interface ExtendToolOptions<TSchema extends ToolObjectSchemaLike<Record<s
  *
  * @example
  * ```ts
- * import { extendTool } from 'confused-ai';
- * import { webSearchTool } from 'confused-ai/tools';
+ * import { extendTool } from 'personaforge';
+ * import { webSearchTool } from 'personaforge/tools';
  *
  * // Add logging + result trimming to the built-in web search tool
  * const cachedSearch = extendTool(webSearchTool, {
@@ -814,7 +814,7 @@ export function extendTool<TSchema extends ToolObjectSchemaLike<Record<string, u
  *
  * @example
  * ```ts
- * import { wrapTool } from 'confused-ai';
+ * import { wrapTool } from 'personaforge';
  *
  * const safeTool = wrapTool(myTool, [
  *   // Auth check
@@ -866,7 +866,7 @@ export function wrapTool<TSchema extends ToolObjectSchemaLike<Record<string, unk
  *
  * @example
  * ```ts
- * import { pipeTools, fetchUrlTool, myParserTool } from 'confused-ai';
+ * import { pipeTools, fetchUrlTool, myParserTool } from 'personaforge';
  *
  * const fetchAndParse = pipeTools(fetchUrlTool, myParserTool, {
  *   name: 'fetchAndParse',

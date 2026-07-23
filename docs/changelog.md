@@ -5,22 +5,22 @@ description: All notable changes to Confused-AI
 
 # Changelog
 
-All notable changes to `confused-ai` are documented here.  
+All notable changes to `personaforge` are documented here.  
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · [Semantic Versioning](https://semver.org/)
 
 ::: tip Full changelog
 The authoritative `CHANGELOG.md` lives in the repository root.  
-[View on GitHub →](https://github.com/confused-ai/confused-ai/blob/main/CHANGELOG.md)
+[View on GitHub →](https://github.com/personaforge/personaforge/blob/main/CHANGELOG.md)
 :::
 
 ## v2.3.0 — Current
 
 ### Added
 
-- **9 Extended Multi-Agent Orchestration Patterns** (`@confused-ai/orchestration`) — Mixture-of-Agents (MoA), Actor-Critic loops, Socratic tutor guiding, Prompt Chaining pipelines, Program-of-Thought code sandbox runtimes, Skeleton-of-Thought parallel generation, Step-Back conceptual abstraction solvers, Rejection Sampling (Best-of-N) evaluations, and validation-driven Self-Correction.
+- **9 Extended Multi-Agent Orchestration Patterns** (`@personaforge/orchestration`) — Mixture-of-Agents (MoA), Actor-Critic loops, Socratic tutor guiding, Prompt Chaining pipelines, Program-of-Thought code sandbox runtimes, Skeleton-of-Thought parallel generation, Step-Back conceptual abstraction solvers, Rejection Sampling (Best-of-N) evaluations, and validation-driven Self-Correction.
 - **`createGSDCoordinator()` (Get Shit Done)** — spec-driven workflow coordinator that executes project goals inPlan-Execute-Verify phases, using a workspace `.planning` folder to isolate contexts.
 - **`createRalphLoop()` (RALF)** — autonomous cycle executor that leverages fresh session isolation to prevent context bloat while propagating iteration summaries.
-- **`Mastermind` Context Compression** (`@confused-ai/compression`) — a multi-stage intelligent context compression suite featuring:
+- **`Mastermind` Context Compression** (`@personaforge/compression`) — a multi-stage intelligent context compression suite featuring:
   - `CacheAligner` (KV-cache prefix alignment).
   - Specialized crushers (`smart-crusher` for JSON, minifiers for Code, log timestamp/duplicate aggregators, XML, CSV).
   - Sliding-window group budget enforcers to prevent orphaned tool call/result pairs.
@@ -33,13 +33,13 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 
 ### Added
 
-- **`DbScheduleStore`** (`@confused-ai/scheduler`) — bridges `ScheduleManager` with any `AgentDb` backend. Persist schedules to SQLite, Postgres, MySQL, MongoDB, Redis, DynamoDB, or Turso with no custom glue code. See [Scheduler → Production persistence](./guide/scheduler.md).
+- **`DbScheduleStore`** (`@personaforge/scheduler`) — bridges `ScheduleManager` with any `AgentDb` backend. Persist schedules to SQLite, Postgres, MySQL, MongoDB, Redis, DynamoDB, or Turso with no custom glue code. See [Scheduler → Production persistence](./guide/scheduler.md).
 - **DB health in `/health` endpoint** — `createHttpService` now accepts a `db?: AgentDb` option. When provided, `GET /health` (and `/v1/health`) runs a live `db.health()` probe. Returns HTTP 503 with `{ status: 'degraded' }` when the database is unreachable.
 
 ### Fixed
 
-- **`@confused-ai/db` — `uuid()` security** — all 8 backends (InMemory, SQLite, Postgres, MongoDB, Redis, JSON, MySQL, DynamoDB, Turso) now generate IDs with `crypto.randomUUID()` instead of the previous `Math.random()`-based implementation.
-- **`@confused-ai/db` — `init()` race condition** — concurrent callers no longer double-initialize the connection. All async backends (Postgres, MongoDB, MySQL, DynamoDB, Turso) now share a single `_initPromise` guard.
+- **`@personaforge/db` — `uuid()` security** — all 8 backends (InMemory, SQLite, Postgres, MongoDB, Redis, JSON, MySQL, DynamoDB, Turso) now generate IDs with `crypto.randomUUID()` instead of the previous `Math.random()`-based implementation.
+- **`@personaforge/db` — `init()` race condition** — concurrent callers no longer double-initialize the connection. All async backends (Postgres, MongoDB, MySQL, DynamoDB, Turso) now share a single `_initPromise` guard.
 - **`PostgresAgentDb`** — `getKnowledgeItems()`, `getTrace()`, and `getTraces()` now correctly re-serialize JSONB `content` and `metadata` columns to string (the `pg` driver returns these as parsed objects).
 - **`MongoAgentDb`** — all `findOne` and `find` calls now include `{ projection: { _id: 0 } }` so MongoDB's internal `_id` field is never included in returned rows.
 - **`DynamoDbAgentDb`** — constructor now calls `validateTableNames()` to catch invalid table names at construction time instead of silently failing at runtime.
@@ -70,7 +70,7 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 - **`adapter-redis/session-store`** — removed unnecessary optional chain on non-null `hGetAll` result; fixed template literal number type.
 - **`tools/types.ts`** — migrated from deprecated `ZodTypeAny` → `z.ZodType`; `_def` private field access replaced with `.def`.
 - Removed 33 broken package copies that had relative `src/`-path imports causing circular resolution failures.
-- Documentation URLs updated from `rvuyyuru2.github.io/agent-framework` to `confused-ai.github.io/confused-ai` throughout all docs.
+- Documentation URLs updated from `rvuyyuru2.github.io/agent-framework` to `personaforge.github.io/personaforge` throughout all docs.
 - Version consistency: `ARCHITECTURE.md` and `SECURITY.md` now match the `package.json` version.
 
 ### Security
@@ -197,7 +197,7 @@ for await (const chunk of agent.stream('Explain quantum computing')) {
 
 ### Added
 
-#### Testing Module (`confused-ai/testing`)
+#### Testing Module (`personaforge/testing`)
 - `MockToolRegistry` — records all invocations; `calls()`, `lastCall()`, `reset()`
 - `createTestAgent()` — zero-config test harness with `MockLLMProvider` + `MockSessionStore`
 - `createTestHttpService()` — integration test helper on a random port
@@ -209,11 +209,11 @@ for await (const chunk of agent.stream('Explain quantum computing')) {
 - WebSocket transport (`websocket: true`) — attaches to existing `http.Server`
 - Admin API (`adminApi: true`) — `/admin/health`, `/admin/agents`, `/admin/audit`, `/admin/stats`, `/admin/checkpoints`
 
-#### Adapter System (`confused-ai/adapters`)
+#### Adapter System (`personaforge/adapters`)
 - 20-category adapter system covering SQL, NoSQL, vector, cache, object storage, message queues, observability, embedding, session, memory, guardrail, RAG, tool registry, auth, rate limiting, audit log
 - `createProductionSetup()` — opinionated full-stack wiring with progressive upgrade path
 
-#### LLM Router (`confused-ai/llm`)
+#### LLM Router (`personaforge/llm`)
 - `LLMRouter` — intelligent routing by task type, complexity, and strategy
 - Four strategies: `balanced`, `cost`, `quality`, `speed`
 - Factories: `createBalancedRouter`, `createCostOptimizedRouter`, `createQualityFirstRouter`, `createSpeedOptimizedRouter`
@@ -231,7 +231,7 @@ for await (const chunk of agent.stream('Explain quantum computing')) {
 - `withResilience()` — circuit breaker + rate limiter + retry + health check wrapper
 - `RedisRateLimiter` — distributed rate limiting via Redis
 
-#### Secret Manager (`confused-ai/config`)
+#### Secret Manager (`personaforge/config`)
 - `createSecretManager()` with adapters: `EnvSecretManagerAdapter`, `AwsSecretsManagerAdapter`, `AzureKeyVaultAdapter`, `VaultAdapter`, `GcpSecretManagerAdapter`
 
 #### Orchestration Extensions
@@ -248,8 +248,8 @@ for await (const chunk of agent.stream('Explain quantum computing')) {
 - `createSqliteSessionStoreSync` — sync init, safe for factory use
 - Persistent user profiles and learning modes
 - Eval dataset persistence — `EvalStore`, `InMemoryEvalStore`, `SqliteEvalStore`, `runEvalSuite`
-- Plugin system — `confused-ai/plugins` with built-in logging, rate-limit, telemetry plugins
-- Contracts layer — `confused-ai/contracts` for shared interfaces without runtime code
+- Plugin system — `personaforge/plugins` with built-in logging, rate-limit, telemetry plugins
+- Contracts layer — `personaforge/contracts` for shared interfaces without runtime code
 
 ---
 

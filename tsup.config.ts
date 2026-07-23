@@ -39,7 +39,7 @@ export default defineConfig({
         serve: 'src/serve.ts',
         observe: 'src/observe.ts',
         test: 'src/test.ts',
-        /** Subpath `confused-ai/create-agent` — lean entry without pulling the full umbrella bundle */
+        /** Subpath `personaforge/create-agent` — lean entry without pulling the full umbrella bundle */
         'create-agent': 'src/create-agent.ts',
         cli: 'src/cli/index.ts',
         /** Shell tools — separate entry to avoid accidental exposure */

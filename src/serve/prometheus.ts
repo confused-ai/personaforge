@@ -1,5 +1,5 @@
 /**
- * Prometheus `/metrics` endpoint for confused-ai HTTP service.
+ * Prometheus `/metrics` endpoint for personaforge HTTP service.
  *
  * Zero external dependencies — renders OTEL metrics in Prometheus
  * text exposition format (version 0.0.4) by reading from the global
@@ -8,7 +8,7 @@
  * Usage:
  * ```ts
  * import express from 'express';
- * import { prometheusMetricsHandler } from 'confused-ai/serve';
+ * import { prometheusMetricsHandler } from 'personaforge/serve';
  *
  * const app = express();
  * app.get('/metrics', prometheusMetricsHandler());
@@ -21,7 +21,7 @@
  * ```
  *
  * The handler collects the current snapshot of all Metrics defined in
- * `@confused-ai/observe` via a lightweight in-process registry. For
+ * `@personaforge/observe` via a lightweight in-process registry. For
  * production-scale deployments, replace with `@opentelemetry/exporter-prometheus`
  * which integrates directly with the OTEL SDK pipeline.
  *
@@ -33,8 +33,8 @@
 export interface PrometheusMetricsOptions {
   /**
    * Path prefix to strip from metric names before rendering.
-   * E.g. `'confused_ai_'` → `agent_runs_total` becomes `confused_ai_agent_runs_total`.
-   * Default: `'confused_ai_'`.
+   * E.g. `'personaforge_'` → `agent_runs_total` becomes `personaforge_agent_runs_total`.
+   * Default: `'personaforge_'`.
    */
   prefix?: string;
   /**
@@ -118,7 +118,7 @@ export class PrometheusRegistry {
   }
 
   render(opts: PrometheusMetricsOptions = {}): string {
-    const prefix = opts.prefix ?? 'confused_ai_';
+    const prefix = opts.prefix ?? 'personaforge_';
     const metadata = opts.includeMetadata !== false;
     const lines: string[] = [];
 
@@ -135,10 +135,10 @@ export class PrometheusRegistry {
 
     // Append scrape timestamp
     if (metadata) {
-      lines.push(`# HELP confused_ai_scrape_time_seconds Unix timestamp of last scrape`);
-      lines.push(`# TYPE confused_ai_scrape_time_seconds gauge`);
+      lines.push(`# HELP personaforge_scrape_time_seconds Unix timestamp of last scrape`);
+      lines.push(`# TYPE personaforge_scrape_time_seconds gauge`);
     }
-    lines.push(`confused_ai_scrape_time_seconds ${(Date.now() / 1000).toFixed(3)}`);
+    lines.push(`personaforge_scrape_time_seconds ${(Date.now() / 1000).toFixed(3)}`);
 
     return lines.join('\n') + '\n';
   }
@@ -158,7 +158,7 @@ export class PrometheusRegistry {
  */
 export const defaultRegistry = new PrometheusRegistry();
 
-// Pre-register the core confused-ai metrics so scrapers always see HELP/TYPE.
+// Pre-register the core personaforge metrics so scrapers always see HELP/TYPE.
 const CORE_METRICS: MetricSample[] = [
   { name: 'agent.runs.total',            type: 'counter',   help: 'Total agent runs initiated',              unit: 'count', samples: [] },
   { name: 'agent.run.duration_ms',       type: 'histogram', help: 'Wall-clock duration of agent runs (ms)',  unit: 'ms',    samples: [] },

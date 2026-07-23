@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/postgres — PostgresAgentDb.
+ * @personaforge/db/postgres — PostgresAgentDb.
  *
  * Uses the `pg` package (node-postgres) with a connection pool.
  * Peer dep: `pg` (optional — install only if you want Postgres).
@@ -17,7 +17,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] PostgresAgentDb requires pg.\n' +
+  '[personaforge/db] PostgresAgentDb requires pg.\n' +
   '  Install: npm install pg\n' +
   '           npm install -D @types/pg';
 

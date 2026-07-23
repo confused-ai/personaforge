@@ -1,5 +1,5 @@
 /**
- * @confused-ai/runnable — LCEL-style composable primitives.
+ * @personaforge/runnable — LCEL-style composable primitives.
  *
  * A `Runnable<I, O>` is the universal unit of composition:
  *   .invoke(input)                 — single call

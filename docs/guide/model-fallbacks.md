@@ -9,7 +9,7 @@ outline: [2, 3]
 `withFallbacks` and `withRetry` are one-liner resilience wrappers around any `LLMProvider`. They compose, so you can retry the primary and then fall back to a different vendor.
 
 ```ts
-import { withFallbacks, withRetry } from 'confused-ai/models';
+import { withFallbacks, withRetry } from 'personaforge/models';
 ```
 
 ---

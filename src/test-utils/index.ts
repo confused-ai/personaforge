@@ -1,5 +1,5 @@
 /**
- * @confused-ai/test-utils — Testing utilities for the confused-ai framework.
+ * @personaforge/test-utils — Testing utilities for the personaforge framework.
  *
  * SOLID:
  *   SRP  — each exported function serves one testing concern.

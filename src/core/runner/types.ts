@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core — internal runner types.
+ * @personaforge/core — internal runner types.
  *
  * Not exported from the package barrel — internal use only.
  */

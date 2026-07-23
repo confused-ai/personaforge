@@ -11,7 +11,7 @@ Reasoning-as-tools makes step-by-step thinking an explicit tool call rather than
 ```ts
 import {
   ReasoningScratchpad, createReasoningTools,
-} from 'confused-ai/reasoning';
+} from 'personaforge/reasoning';
 ```
 
 ---
@@ -19,7 +19,7 @@ import {
 ## Quick start
 
 ```ts
-import { agent } from 'confused-ai';
+import { agent } from 'personaforge';
 
 const scratchpad = new ReasoningScratchpad();
 const { think, analyze } = createReasoningTools(scratchpad);

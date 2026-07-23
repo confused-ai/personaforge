@@ -17,7 +17,7 @@ import {
   createRole,
   createRunnableAgent,
   createSupervisor,
-} from 'confused-ai/orchestration';
+} from 'personaforge/orchestration';
 
 function worker(name: string, summary: string) {
   return createRunnableAgent({

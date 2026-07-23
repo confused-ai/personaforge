@@ -8,7 +8,7 @@
  *
  * Design:
  *   - One LLM call, structured JSON output with graceful fallback.
- *   - Zero external dependencies beyond `@confused-ai/agentic` LLM types.
+ *   - Zero external dependencies beyond `@personaforge/agentic` LLM types.
  *   - Returns a typed `ExecutionPlan` usable both programmatically
  *     and as a human-readable string.
  */

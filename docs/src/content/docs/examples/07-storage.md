@@ -15,7 +15,7 @@ title: "07 · Storage Patterns"
 ## Current pattern
 
 ```ts
-import { createStorage } from 'confused-ai/storage';
+import { createStorage } from 'personaforge/storage';
 
 const cache = createStorage();
 

@@ -12,7 +12,7 @@
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
-Email: **security@confused-ai.dev** (or substitute your actual security contact).
+Email: **security@personaforge.dev** (or substitute your actual security contact).
 
 Include:
 - Description of the vulnerability
@@ -26,7 +26,7 @@ We target a **72-hour acknowledgement** and **14-day patch cycle** for critical 
 
 ### ShellTool — Sandbox Requirements
 
-`shell` (from `@confused-ai/tools`) executes arbitrary system commands. It is **not
+`shell` (from `@personaforge/tools`) executes arbitrary system commands. It is **not
 included** in the default tool barrel to reduce supply-chain risk, but if you use it
 you **must** apply the following isolation:
 
@@ -39,7 +39,7 @@ you **must** apply the following isolation:
 
 ```ts
 // Explicit import required — NOT in the default barrel
-import { shell } from '@confused-ai/tools/shell';
+import { shell } from '@personaforge/tools/shell';
 ```
 
 If you cannot provide container isolation, disable ShellTool entirely and use
@@ -57,13 +57,13 @@ If you cannot provide container isolation, disable ShellTool entirely and use
 
 - Store LLM provider keys (OpenAI, Anthropic, etc.) in environment variables — never hardcode in source.
 - Use `.env.example` (committed) and `.env` (gitignored) pattern.
-- The `confused-ai doctor` command validates that required keys are present without logging their values.
+- The `personaforge doctor` command validates that required keys are present without logging their values.
 
 ### Rate Limiting
 
 - Wire `rateLimit` into `createHttpService` to prevent abuse:
   ```ts
-  import { RateLimiter } from 'confused-ai/guard';
+  import { RateLimiter } from 'personaforge/guard';
 
   createHttpService({
     rateLimit: new RateLimiter({ name: 'http', maxRequests: 100, intervalMs: 60_000 }),
@@ -71,7 +71,7 @@ If you cannot provide container isolation, disable ShellTool entirely and use
   ```
 - **Multi-instance deployments**: The default `RateLimiter` is in-process only — two replicas means double the effective limit. Use `RedisRateLimiter` for distributed enforcement:
   ```ts
-  import { RedisRateLimiter } from '@confused-ai/adapter-redis';
+  import { RedisRateLimiter } from '@personaforge/adapter-redis';
 
   createHttpService({
     rateLimit: new RedisRateLimiter({ client: redisClient, maxRequests: 100, windowMs: 60_000 }),
@@ -107,5 +107,5 @@ If you cannot provide container isolation, disable ShellTool entirely and use
 - [ ] Use HTTPS termination at the load balancer / reverse proxy
 - [ ] Rotate secrets on a regular schedule
 - [ ] Monitor the `/v1/admin/health` endpoint for circuit breaker state
-- [ ] Run `confused-ai doctor` in CI to validate env vars before deploy
+- [ ] Run `personaforge doctor` in CI to validate env vars before deploy
 - [ ] If using ShellTool: run agent in isolated container with restricted PATH and non-root user

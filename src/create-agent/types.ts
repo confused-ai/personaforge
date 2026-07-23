@@ -137,7 +137,7 @@ export interface CreateAgentOptions extends AgentContextOptions {
      * @example
      * ```ts
      * // Option A — registry (auto-selects first adapter per category)
-     * import { createAdapterRegistry, InMemoryCacheAdapter } from 'confused-ai/adapters';
+     * import { createAdapterRegistry, InMemoryCacheAdapter } from 'personaforge/adapters';
      * const registry = createAdapterRegistry();
      * registry.register(new RedisAdapter({ url: process.env.REDIS_URL! }));
      * registry.register(new PineconeAdapter({ apiKey: process.env.PINECONE_API_KEY! }));
@@ -182,7 +182,7 @@ export interface CreateAgentOptions extends AgentContextOptions {
      *
      * @example
      * ```ts
-     * import { createSqliteCheckpointStore } from 'confused-ai/production';
+     * import { createSqliteCheckpointStore } from 'personaforge/production';
      * createAgent({
      *   checkpointStore: createSqliteCheckpointStore('./agent.db'),
      * });
@@ -196,7 +196,7 @@ export interface CreateAgentOptions extends AgentContextOptions {
      *
      * @example
      * ```ts
-     * import { createSqliteIdempotencyStore } from 'confused-ai/production';
+     * import { createSqliteIdempotencyStore } from 'personaforge/production';
      *
      * const agent = createAgent({
      *   name: 'Safe',
@@ -253,7 +253,7 @@ export interface CreateAgentOptions extends AgentContextOptions {
      *
      * @example
      * ```ts
-     * import { RunRecorder, InMemoryEventStore } from '@confused-ai/core';
+     * import { RunRecorder, InMemoryEventStore } from '@personaforge/core';
      * const store = new InMemoryEventStore();
      * createAgent({ recorder: new RunRecorder(store), ... });
      * ```
@@ -314,7 +314,7 @@ export interface CreateAgentResult {
      * await agent.run('What is TypeScript?');
      *
      * // With an image (vision)
-     * import { multiModal, imageUrl } from 'confused-ai';
+     * import { multiModal, imageUrl } from 'personaforge';
      * await agent.run(await multiModal('Describe this image', imageUrl('https://...')));
      */
     run(prompt: string | MultiModalInput, options?: AgentRunOptions): Promise<AgentRunResult>;

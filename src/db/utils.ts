@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db — shared internal utilities.
+ * @personaforge/db — shared internal utilities.
  *
  * Centralised here so every backend uses the same implementations and there is
  * no risk of divergence (e.g. a backend accidentally using Math.random() for IDs).

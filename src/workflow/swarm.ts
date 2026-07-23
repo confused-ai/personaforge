@@ -1,5 +1,5 @@
 /**
- * @confused-ai/workflow — swarm pattern.
+ * @personaforge/workflow — swarm pattern.
  * Round-robin O(1) routing, sliding window O(n/concurrency) parallel batching.
  */
 

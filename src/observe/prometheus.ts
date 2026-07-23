@@ -8,7 +8,7 @@
  *
  * ### Bun.serve
  * ```ts
- * import { createPrometheusHandler } from 'confused-ai/observe';
+ * import { createPrometheusHandler } from 'personaforge/observe';
  *
  * const handler = createPrometheusHandler();
  *
@@ -24,7 +24,7 @@
  * ### Node.js http
  * ```ts
  * import http from 'node:http';
- * import { scrapePrometheusMetrics } from 'confused-ai/observe';
+ * import { scrapePrometheusMetrics } from 'personaforge/observe';
  *
  * http.createServer(async (req, res) => {
  *   if (req.url === '/metrics') {
@@ -81,7 +81,7 @@ async function trySdkScrape(): Promise<string | null> {
  */
 function buildExporterNotWiredBody(): string {
   return [
-    '# confused-ai metrics — exporter not wired',
+    '# personaforge metrics — exporter not wired',
     '#',
     '# No @opentelemetry/exporter-prometheus reader is registered, so real',
     '# counter/histogram values cannot be introspected from this process.',

@@ -281,7 +281,7 @@ export function createHttpService(
             if (method === 'GET' && (path === '/health' || path === '/v1/health')) {
                 const healthBody: Record<string, unknown> = {
                     status: 'ok',
-                    service: 'confused-ai',
+                    service: 'personaforge',
                     time: new Date().toISOString(),
                 };
                 if (agentDb) {

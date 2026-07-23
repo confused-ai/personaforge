@@ -1,5 +1,5 @@
 /**
- * @confused-ai/session — Redis session store (distributed, horizontally scalable).
+ * @personaforge/session — Redis session store (distributed, horizontally scalable).
  *
  * SRP  — owns only Redis session persistence.
  * DIP  — implements SessionStore interface.
@@ -50,20 +50,20 @@ export interface RedisClient {
 type RedisConstructor = new (options?: string | object) => RedisClientLike;
 
 const MISSING_SDK_MSG =
-  '[confused-ai] Redis session store requires ioredis.\n' +
+  '[personaforge] Redis session store requires ioredis.\n' +
   '  Install: npm install ioredis';
 
 export interface RedisSessionStoreOptions {
   /** ioredis connection URL or options. Defaults to redis://localhost:6379. */
   redis?: string | object;
-  /** Key prefix for namespacing. Default: "confused-ai:session:". */
+  /** Key prefix for namespacing. Default: "personaforge:session:". */
   keyPrefix?: string;
   /** TTL in seconds. Default: 86400 (24 hours). */
   ttl?: number;
 }
 
 export function createRedisStore(opts: RedisSessionStoreOptions = {}): SessionStore {
-  const keyPrefix = opts.keyPrefix ?? 'confused-ai:session:';
+  const keyPrefix = opts.keyPrefix ?? 'personaforge:session:';
   const ttl       = opts.ttl ?? 86_400;
   const maxWriteRetries = 5;
 
@@ -126,7 +126,7 @@ export function createRedisStore(opts: RedisSessionStoreOptions = {}): SessionSt
       if (result !== null) return updated;
     }
 
-    throw new Error(`[confused-ai/session] Failed to update session "${id}" after ${String(maxWriteRetries)} retries.`);
+    throw new Error(`[personaforge/session] Failed to update session "${id}" after ${String(maxWriteRetries)} retries.`);
   }
 
   return {

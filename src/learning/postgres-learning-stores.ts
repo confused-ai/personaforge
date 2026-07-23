@@ -17,7 +17,7 @@ import type {
 // ── Minimal pg typing (avoids hard compile dep) ───────────────────────────────
 
 const MISSING_SDK =
-    '[confused-ai] Postgres learning stores require the `pg` package.\n' +
+    '[personaforge] Postgres learning stores require the `pg` package.\n' +
     '  Install: npm install pg';
 
 interface PgPool {

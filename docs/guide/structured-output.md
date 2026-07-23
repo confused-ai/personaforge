@@ -9,7 +9,7 @@ outline: [2, 3]
 `generateStructured()` gives you validated, typed output from any LLM provider using each provider's native structured-output API when available, and a prompt-plus-retry fallback when it is not.
 
 ```ts
-import { generateStructured, detectProviderKind } from 'confused-ai/structured';
+import { generateStructured, detectProviderKind } from 'personaforge/structured';
 ```
 
 Native paths:
@@ -113,7 +113,7 @@ const result = await generateStructured(llm, msgs, {
 ## Detecting provider capability
 
 ```ts
-import { detectProviderKind } from 'confused-ai/structured';
+import { detectProviderKind } from 'personaforge/structured';
 
 const kind = detectProviderKind(llm);
 // 'openai' | 'anthropic' | 'gemini' | 'bedrock' | 'unknown'

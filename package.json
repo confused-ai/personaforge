@@ -1,5 +1,5 @@
 {
-  "name": "confused-ai",
+  "name": "personaforge",
   "version": "2.4.3",
   "description": "Fast TypeScript AI agent framework — per-request agents, 30+ model providers, 100+ integrations, 20+ vector DBs, 10+ databases, sessions, memory, knowledge, tracing, evals, HITL, teams, and workflows.",
   "type": "module",
@@ -419,7 +419,7 @@
     "example:scheduled": "bun examples/scheduled-agent.ts",
     "example:code-review": "bun examples/code-review-pipeline.ts",
     "example:eval": "bun examples/eval-regression.ts",
-    "example:agno-vs": "bun examples/agno-vs-confused-ai.ts",
+    "example:agno-vs": "bun examples/agno-vs-personaforge.ts",
     "example:agno-server": "python3 examples/run_agno_server.py",
     "build": "tsup",
     "build:dts": "node scripts/gen-root-dts.mjs",
@@ -436,9 +436,9 @@
     "check": "bun run typecheck && bun run lint && bun run test",
     "release:check": "bun run check && bun run build",
     "production:check": "bun run release:check && bun run check:bundle && bun run check:docs && bun run pack:inspect",
-    "check:bundle": "bun run check:bundle:lite && node scripts/check-bundle-size.mjs --entry src/tools/core/index.ts --max-kb 20 --label confused-ai/tools/core && node scripts/check-bundle-size.mjs --entry src/tools/search/index.ts --max-kb 80 --label confused-ai/tools/search && bun run check:bundle:root",
-    "check:bundle:lite": "node scripts/check-bundle-size.mjs --entry src/lite.ts --max-kb 110 --label confused-ai/lite",
-    "check:bundle:root": "node scripts/check-bundle-size.mjs --entry src/index.ts --max-kb 450 --label confused-ai/root-umbrella",
+    "check:bundle": "bun run check:bundle:lite && node scripts/check-bundle-size.mjs --entry src/tools/core/index.ts --max-kb 20 --label personaforge/tools/core && node scripts/check-bundle-size.mjs --entry src/tools/search/index.ts --max-kb 80 --label personaforge/tools/search && bun run check:bundle:root",
+    "check:bundle:lite": "node scripts/check-bundle-size.mjs --entry src/lite.ts --max-kb 110 --label personaforge/lite",
+    "check:bundle:root": "node scripts/check-bundle-size.mjs --entry src/index.ts --max-kb 450 --label personaforge/root-umbrella",
     "check:docs": "node scripts/check-docs-claims.mjs",
     "check:docs:snippets": "node scripts/check-docs-snippets.mjs",
     "docs:dev": "vitepress dev docs",
@@ -536,11 +536,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/confused-ai/confused-ai"
+    "url": "git+https://github.com/personaforge/personaforge"
   },
-  "homepage": "https://confused-ai.github.io/confused-ai/",
+  "homepage": "https://personaforge.github.io/personaforge/",
   "bugs": {
-    "url": "https://github.com/confused-ai/confused-ai/issues"
+    "url": "https://github.com/personaforge/personaforge/issues"
   },
   "funding": {
     "type": "github",
@@ -721,6 +721,6 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "confused-ai": "dist/cli.js"
+    "personaforge": "dist/cli.js"
   }
 }

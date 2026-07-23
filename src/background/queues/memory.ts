@@ -26,7 +26,7 @@ interface PendingTask {
  *
  * @example
  * ```ts
- * import { InMemoryBackgroundQueue } from 'confused-ai/background';
+ * import { InMemoryBackgroundQueue } from 'personaforge/background';
  *
  * const queue = new InMemoryBackgroundQueue({ concurrency: 4 });
  * ```

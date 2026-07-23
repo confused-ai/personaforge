@@ -15,8 +15,8 @@ const ROOT_TSCONFIG = path.join(ROOT, 'tsconfig.json');
 const TSC_BIN = path.join(ROOT, 'node_modules', '.bin', process.platform === 'win32' ? 'tsc.cmd' : 'tsc');
 
 const TS_FENCE_RE = /```(?:ts|tsx|typescript)([^\n]*)\n([\s\S]*?)```/g;
-const PUBLIC_IMPORT_RE = /from\s+['"]confused-ai(?:\/[^'"]+)?['"]|import\s*\(\s*['"]confused-ai(?:\/[^'"]+)?['"]\s*\)/;
-const PRIVATE_IMPORT_RE = /from\s+['"]@confused-ai(?:\/[^'"]+)?['"]|import\s*\(\s*['"]@confused-ai(?:\/[^'"]+)?['"]\s*\)/g;
+const PUBLIC_IMPORT_RE = /from\s+['"]personaforge(?:\/[^'"]+)?['"]|import\s*\(\s*['"]personaforge(?:\/[^'"]+)?['"]\s*\)/;
+const PRIVATE_IMPORT_RE = /from\s+['"]@personaforge(?:\/[^'"]+)?['"]|import\s*\(\s*['"]@personaforge(?:\/[^'"]+)?['"]\s*\)/g;
 
 const SKIP_DIRS = new Set(['.git', '.vitepress', 'dist', 'node_modules', 'public']);
 const SKIP_FILES = new Set([
@@ -194,7 +194,7 @@ function buildPublicPaths() {
     const pkg = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8'));
     const paths = {
         ...inheritedPaths,
-        'confused-ai': ['./src/index.ts'],
+        'personaforge': ['./src/index.ts'],
     };
 
     for (const [exportKey, exportValue] of Object.entries(pkg.exports ?? {})) {
@@ -203,7 +203,7 @@ function buildPublicPaths() {
         }
 
         const publicImport = exportKey.startsWith('./')
-            ? `confused-ai/${exportKey.slice(2)}`
+            ? `personaforge/${exportKey.slice(2)}`
             : null;
 
         if (!publicImport || typeof exportValue !== 'object' || Array.isArray(exportValue)) {
@@ -287,7 +287,7 @@ async function main() {
     }
 
     if (privateImportViolations.length > 0) {
-        console.error('\n✗ docs-snippets: public docs still contain internal @confused-ai/* imports.\n');
+        console.error('\n✗ docs-snippets: public docs still contain internal @personaforge/* imports.\n');
         for (const violation of privateImportViolations) {
             console.error(`- ${violation.docPath}#snippet-${violation.snippetIndex}: ${violation.privateImports.join(', ')}`);
         }

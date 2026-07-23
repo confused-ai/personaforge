@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { createConsensus } from 'confused-ai/orchestration';
+ * import { createConsensus } from 'personaforge/orchestration';
  *
  * const consensus = createConsensus({
  *   agents: { analyst1, analyst2, analyst3 },

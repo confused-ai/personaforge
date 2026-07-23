@@ -212,7 +212,7 @@ export interface PromptInjectionGuardrailOptions {
  *
  * @example
  * ```ts
- * import { createPromptInjectionRule } from 'confused-ai/guardrails';
+ * import { createPromptInjectionRule } from 'personaforge/guardrails';
  * const rule = createPromptInjectionRule({ threshold: 0.7, applyTo: 'input' });
  * ```
  */

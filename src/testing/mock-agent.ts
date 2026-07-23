@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { createMockAgent } from 'confused-ai/testing';
+ * import { createMockAgent } from 'personaforge/testing';
  *
  * const researcher = createMockAgent({
  *   name: 'Researcher',

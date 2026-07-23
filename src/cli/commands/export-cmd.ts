@@ -1,11 +1,11 @@
 /**
- * CLI — `confused-ai export` command
+ * CLI — `personaforge export` command
  *
  * Exports all events for a run to a JSON file (or stdout).
  *
  * Usage:
- *   confused-ai export --run-id <id> [--db <path>] [--out <file>]
- *   confused-ai export --run-id <id> --out -          # stdout
+ *   personaforge export --run-id <id> [--db <path>] [--out <file>]
+ *   personaforge export --run-id <id> --out -          # stdout
  */
 
 import type { Command } from 'commander';

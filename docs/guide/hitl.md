@@ -15,7 +15,7 @@ import {
   createSqliteApprovalStore,
   waitForApproval,
   ApprovalRejectedError,
-} from 'confused-ai/production';
+} from 'personaforge/production';
 ```
 
 ---
@@ -23,8 +23,8 @@ import {
 ## Quick start
 
 ```ts
-import { createAgent, tool } from 'confused-ai';
-import { createSqliteApprovalStore, waitForApproval, ApprovalRejectedError } from 'confused-ai/production';
+import { createAgent, tool } from 'personaforge';
+import { createSqliteApprovalStore, waitForApproval, ApprovalRejectedError } from 'personaforge/production';
 import { z } from 'zod';
 
 const approvalStore = createSqliteApprovalStore('./agent.db');
@@ -79,7 +79,7 @@ try {
 ### InMemoryApprovalStore (testing)
 
 ```ts
-import { InMemoryApprovalStore } from 'confused-ai/production';
+import { InMemoryApprovalStore } from 'personaforge/production';
 
 const store = new InMemoryApprovalStore();
 ```
@@ -87,7 +87,7 @@ const store = new InMemoryApprovalStore();
 ### SqliteApprovalStore (production)
 
 ```ts
-import { createSqliteApprovalStore } from 'confused-ai/production';
+import { createSqliteApprovalStore } from 'personaforge/production';
 
 const store = createSqliteApprovalStore('./agent.db');
 ```
@@ -135,8 +135,8 @@ interface HitlRequest {
 When you serve your agent with `createHttpService()`, pass an `approvalStore` to expose a built-in REST endpoint:
 
 ```ts
-import { createHttpService } from 'confused-ai/runtime';
-import { createSqliteApprovalStore } from 'confused-ai/production';
+import { createHttpService } from 'personaforge/runtime';
+import { createSqliteApprovalStore } from 'personaforge/production';
 
 const approvalStore = createSqliteApprovalStore('./agent.db');
 
@@ -178,7 +178,7 @@ for (const req of pending) {
 When a human rejects a request, `waitForApproval` throws `ApprovalRejectedError`:
 
 ```ts
-import { ApprovalRejectedError } from 'confused-ai/production';
+import { ApprovalRejectedError } from 'personaforge/production';
 
 try {
   const result = await agent.run(prompt, { runId: 'run-abc' });

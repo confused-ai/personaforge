@@ -1,4 +1,4 @@
-import { agent, defineTool } from 'confused-ai';
+import { agent, defineTool } from 'personaforge';
 import { z } from 'zod';
 
 const getWeather = defineTool()

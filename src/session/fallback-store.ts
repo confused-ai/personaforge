@@ -1,5 +1,5 @@
 /**
- * @confused-ai/session — FallbackSessionStore
+ * @personaforge/session — FallbackSessionStore
  *
  * Wraps a primary `SessionStore` (Redis, SQLite, Postgres …) with automatic
  * degradation to an in-memory store when the primary fails to connect or

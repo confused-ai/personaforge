@@ -9,8 +9,8 @@ outline: [2, 3]
 The graph engine executes arbitrary DAGs — directed acyclic graphs — with node-level retries, conditional edges, parallel fan-out, and durable checkpointing. Use it when a pipeline is no longer enough.
 
 ```ts
-import { createGraph } from 'confused-ai';       // createGraph is root-exported
-import { DAGEngine } from 'confused-ai/graph';    // the graph engine lives on the subpath
+import { createGraph } from 'personaforge';       // createGraph is root-exported
+import { DAGEngine } from 'personaforge/graph';    // the graph engine lives on the subpath
 ```
 
 ---
@@ -18,8 +18,8 @@ import { DAGEngine } from 'confused-ai/graph';    // the graph engine lives on t
 ## Quick start
 
 ```ts
-import { createGraph } from 'confused-ai';
-import { DAGEngine } from 'confused-ai/graph';
+import { createGraph } from 'personaforge';
+import { DAGEngine } from 'personaforge/graph';
 
 const graph = createGraph('content-pipeline', { version: '1.0' })
   .addNode('fetch',    { kind: 'task', execute: (ctx) => fetchContent(ctx.state.variables.input as string) })
@@ -167,7 +167,7 @@ tool loop, not a graph runner. Pass an `EventStore` to `execute()` and the engin
 records every state change, so an interrupted run can be reconstructed and resumed:
 
 ```ts
-import { DAGEngine, SqliteEventStore } from 'confused-ai/graph';
+import { DAGEngine, SqliteEventStore } from 'personaforge/graph';
 
 const engine = new DAGEngine(graph);
 const execution = await engine.execute({
@@ -182,7 +182,7 @@ const execution = await engine.execute({
 `DurableExecutor` wraps this pattern and adds crash recovery from the log:
 
 ```ts
-import { DurableExecutor, SqliteEventStore } from 'confused-ai/graph';
+import { DurableExecutor, SqliteEventStore } from 'personaforge/graph';
 
 const store   = new SqliteEventStore('./graph-events.db');
 const durable = new DurableExecutor(graph, store);
@@ -197,13 +197,13 @@ const recovered = await durable.resume(first.executionId);   // rebuilt via repl
 ## Event sourcing, replay, and audit
 
 The graph engine is event-sourced end to end. Everything below is exported from
-`confused-ai/graph` (`createGraph` and `SqliteEventStore` are also re-exported at
+`personaforge/graph` (`createGraph` and `SqliteEventStore` are also re-exported at
 the package root).
 
 ### Event stores
 
 ```ts
-import { InMemoryEventStore, SqliteEventStore, BatchingEventStore } from 'confused-ai/graph';
+import { InMemoryEventStore, SqliteEventStore, BatchingEventStore } from 'personaforge/graph';
 
 const dev   = new InMemoryEventStore();          // tests / ephemeral
 const store = new SqliteEventStore('./events.db'); // durable, file-backed
@@ -216,7 +216,7 @@ Re-run a recorded execution with **zero external calls** — recorded LLM result
 and tool outputs are served from the log in order (time-travel debugging, sims):
 
 ```ts
-import { replay, buildReplayProvider, buildReplayTools, replayState } from 'confused-ai/graph';
+import { replay, buildReplayProvider, buildReplayTools, replayState } from 'personaforge/graph';
 
 const result = await replay(store, executionId, {
   name: 'researcher',
@@ -237,7 +237,7 @@ const state  = replayState(events, graph);
 Record with a hash chain, then verify the log hasn't been altered:
 
 ```ts
-import { verifyChain } from 'confused-ai/graph';
+import { verifyChain } from 'personaforge/graph';
 
 const events = await store.load(executionId);
 const check = verifyChain(events);   // ChainVerification { valid, brokenAt?, reason? }
@@ -253,7 +253,7 @@ optional secret/PII redaction and hash chaining. `EventStore.purge()` erases eve
 event for one execution (GDPR right-to-erasure):
 
 ```ts
-import { RunRecorder, redactSecrets, redactPII, combineRedactors, SqliteEventStore } from 'confused-ai/graph';
+import { RunRecorder, redactSecrets, redactPII, combineRedactors, SqliteEventStore } from 'personaforge/graph';
 
 const store = new SqliteEventStore('./events.db');
 const recorder = new RunRecorder(store, {
@@ -272,7 +272,7 @@ Fan a graph across workers with a shared task queue:
 ```ts
 import {
   DefaultScheduler, GraphWorker, DistributedEngine, RedisTaskQueue, computeWaves,
-} from 'confused-ai/graph';
+} from 'personaforge/graph';
 
 const waves     = computeWaves(graph);                  // topological execution waves
 const queue     = new RedisTaskQueue('redis://localhost:6379');
@@ -286,7 +286,7 @@ const engine    = new DistributedEngine({ graph, scheduler, queue });
 Attach cross-cutting telemetry and audit hooks via `execute({ plugins })`:
 
 ```ts
-import { TelemetryPlugin, AuditPlugin, OpenTelemetryPlugin } from 'confused-ai/graph';
+import { TelemetryPlugin, AuditPlugin, OpenTelemetryPlugin } from 'personaforge/graph';
 
 await engine.execute({
   plugins: [

@@ -16,7 +16,7 @@ import {
   DbScheduleStore,
   validateCronExpr,
   computeNextRun,
-} from 'confused-ai/scheduler';
+} from 'personaforge/scheduler';
 ```
 
 ---
@@ -24,8 +24,8 @@ import {
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { ScheduleManager } from 'confused-ai/scheduler';
+import { createAgent } from 'personaforge';
+import { ScheduleManager } from 'personaforge/scheduler';
 
 const agent = createAgent({
   name: 'daily-reporter',
@@ -65,7 +65,7 @@ process.on('SIGTERM', () => scheduler.stop());
 ## Cron expression examples
 
 ```ts
-import { validateCronExpr, computeNextRun } from 'confused-ai';
+import { validateCronExpr, computeNextRun } from 'personaforge';
 
 // Standard 5-field cron (min hour dom mon dow)
 validateCronExpr('*/5 * * * *');    // every 5 minutes — valid
@@ -145,8 +145,8 @@ for (const run of runs) {
 ## Durable schedule store (survives restarts)
 
 ```ts
-import { DbScheduleStore } from 'confused-ai/scheduler';
-import { SqliteAgentDb } from 'confused-ai/db';
+import { DbScheduleStore } from 'personaforge/scheduler';
+import { SqliteAgentDb } from 'personaforge/db';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
 const scheduleStore = new DbScheduleStore(db);
@@ -170,8 +170,8 @@ await scheduler.trigger(id);
 `SchedulerTools` wraps a `ScheduleManager` as agent-callable tools, so an agent can create, list, update, and delete its own schedules from chat. Register the array returned by `getTools()`:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { SchedulerTools, ScheduleManager } from 'confused-ai/scheduler';
+import { createAgent } from 'personaforge';
+import { SchedulerTools, ScheduleManager } from 'personaforge/scheduler';
 
 const manager = new ScheduleManager();
 

@@ -1,8 +1,8 @@
 /**
- * confused-ai/workflow — Multi-agent pipelines, graphs, and orchestration.
+ * personaforge/workflow — Multi-agent pipelines, graphs, and orchestration.
  *
  * ```ts
- * import { compose, pipe, graph, orchestrate } from 'confused-ai/workflow'
+ * import { compose, pipe, graph, orchestrate } from 'personaforge/workflow'
  * ```
  */
 

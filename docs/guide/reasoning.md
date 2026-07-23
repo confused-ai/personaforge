@@ -16,7 +16,7 @@ import {
   TreeOfThoughtEngine,
   ReasoningEventType,
   NextAction,
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -24,8 +24,8 @@ import {
 ## Chain-of-Thought with `ReasoningManager`
 
 ```ts
-import { createAgent, OpenAIProvider } from 'confused-ai';
-import { ReasoningManager, ReasoningEventType } from 'confused-ai';
+import { createAgent, OpenAIProvider } from 'personaforge';
+import { ReasoningManager, ReasoningEventType } from 'personaforge';
 
 const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o' });
 
@@ -90,8 +90,8 @@ Each step emitted by `ReasoningManager` contains:
 Pass a `ReasoningManager` to `createAgent()` for automatic CoT on every run:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { ReasoningManager } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import { ReasoningManager } from 'personaforge';
 
 const agent = createAgent({
   name: 'reasoning-agent',
@@ -118,7 +118,7 @@ console.log(result.text);            // final answer
 `TreeOfThoughtEngine` explores multiple reasoning branches and picks the best path:
 
 ```ts
-import { TreeOfThoughtEngine } from 'confused-ai';
+import { TreeOfThoughtEngine } from 'personaforge';
 
 const tot = new TreeOfThoughtEngine({
   generate: async (messages) => llm.generate(messages),

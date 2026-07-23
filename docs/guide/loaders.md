@@ -18,7 +18,7 @@ import {
   loadSitemap,
   loadGithubRepo,
   loadS3,
-} from 'confused-ai/knowledge';
+} from 'personaforge/knowledge';
 ```
 
 ---
@@ -90,8 +90,8 @@ Fetches a repository's file tree from the GitHub API and loads text files.
 
 ```ts
 const docs = await loadGithubRepo({
-  owner: 'confused-ai',
-  repo: 'confused-ai',
+  owner: 'personaforge',
+  repo: 'personaforge',
   branch: 'main',
   extensions: ['.md', '.ts'],
   maxFiles: 200,
@@ -132,7 +132,7 @@ Every loader accepts a `metadata?: Record<string, unknown>` option that is merge
 Pass documents through a [text splitter](/guide/retrieval-advanced) and then into a vector store:
 
 ```ts
-import { RecursiveCharacterSplitter, createKnowledgeEngine } from 'confused-ai/knowledge';
+import { RecursiveCharacterSplitter, createKnowledgeEngine } from 'personaforge/knowledge';
 
 const docs = await loadMarkdown('./docs.md');
 const splitter = new RecursiveCharacterSplitter({ chunkSize: 800 });

@@ -23,7 +23,7 @@ import {
   type LLMOptions,
   type LLMResponse,
   type NodeContext,
-} from 'confused-ai/graph';
+} from 'personaforge/graph';
 
 // ── Mock LLM Provider ───────────────────────────────────────────────────────
 

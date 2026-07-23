@@ -9,7 +9,7 @@
  */
 
 import { z } from 'zod';
-import { agent, tool } from 'confused-ai';
+import { agent, tool } from 'personaforge';
 
 // ── Define a tool ────────────────────────────────────────────────────────────
 

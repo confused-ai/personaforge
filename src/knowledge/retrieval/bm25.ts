@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — BM25 keyword index.
+ * @personaforge/knowledge — BM25 keyword index.
  *
  * Zero-dependency Okapi BM25. Complements dense (vector) retrieval so exact
  * term matches (names, IDs, error codes) are never lost in embedding space.

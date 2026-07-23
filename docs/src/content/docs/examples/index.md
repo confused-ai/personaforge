@@ -4,7 +4,7 @@ title: "Examples Playbook"
 
 # Examples Playbook
 
-Real-world examples covering **every feature** of confused-ai. Pick your level.
+Real-world examples covering **every feature** of personaforge. Pick your level.
 
 ---
 
@@ -58,11 +58,11 @@ Runnable counterparts in the repo:
 ## Quick Start (30 seconds)
 
 ```bash
-npm install confused-ai
+npm install personaforge
 ```
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'my-first-agent',

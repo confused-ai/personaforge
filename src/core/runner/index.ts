@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core/runner — public barrel.
+ * @personaforge/core/runner — public barrel.
  *
  * Only AgentRunner and its required types are exported.
  * Internal loop helpers stay private.

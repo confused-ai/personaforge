@@ -1,5 +1,5 @@
 /**
- * @confused-ai/production — cascade session deletion.
+ * @personaforge/production — cascade session deletion.
  *
  * `deleteSession(sessionId, deps)` removes a session and all associated data
  * (memory entries, audit logs) in a single coordinated call.
@@ -10,7 +10,7 @@
  *
  * Usage:
  * ```ts
- * import { deleteSession } from 'confused-ai/production';
+ * import { deleteSession } from 'personaforge/production';
  *
  * await deleteSession(sessionId, {
  *   sessionStore,

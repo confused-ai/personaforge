@@ -1,12 +1,12 @@
 /**
- * @confused-ai/models — Google Gemini adapter. Lazy SDK import.
+ * @personaforge/models — Google Gemini adapter. Lazy SDK import.
  */
 
 import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../core/index.js';
 import type { ModelAdapterConfig } from './types.js';
 
 const MISSING_SDK_MSG =
-  '[confused-ai] Google adapter requires the @google/generative-ai package.\n' +
+  '[personaforge] Google adapter requires the @google/generative-ai package.\n' +
   '  Install: npm install @google/generative-ai';
 
 const DEFAULT_MODEL = 'gemini-2.0-flash';

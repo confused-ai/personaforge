@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
 
       - run: bun install --frozen-lockfile
@@ -58,7 +58,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
 
       - run: bun install --frozen-lockfile
@@ -92,7 +92,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-node${{ matrix.node-version }}-${{ hashFiles('bun.lockb') }}
+          key: ${{ runner.os }}-bun-node${{ matrix.node-version }}-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-node${{ matrix.node-version }}-
 
       - run: bun install --frozen-lockfile
@@ -125,7 +125,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
 
       - run: bun install --frozen-lockfile

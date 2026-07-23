@@ -9,7 +9,7 @@ outline: [2, 3]
 Memory lets an agent remember things between sessions — user preferences, learned facts, past decisions. Unlike sessions (which preserve conversation turns), memory stores selected content that the agent can retrieve and reason about at any future point.
 
 ```ts
-import { agent, InMemoryStore, MemoryType } from 'confused-ai';
+import { agent, InMemoryStore, MemoryType } from 'personaforge';
 ```
 
 ---
@@ -26,7 +26,7 @@ import { agent, InMemoryStore, MemoryType } from 'confused-ai';
 ## Basic memory-enabled agent
 
 ```ts
-import { agent, InMemoryStore, MemoryType } from 'confused-ai';
+import { agent, InMemoryStore, MemoryType } from 'personaforge';
 
 // Create the store
 const memoryStore = new InMemoryStore();
@@ -98,7 +98,7 @@ await memoryStore.update('entry-id-here', {
 `MemoryType` categorises what kind of information is being stored:
 
 ```ts
-import { MemoryType } from 'confused-ai';
+import { MemoryType } from 'personaforge';
 
 // Long-term: persistent facts and preferences
 await memoryStore.store({
@@ -127,8 +127,8 @@ await memoryStore.store({
 ## Multi-session memory continuity
 
 ```ts
-import { agent, InMemoryStore, MemoryType } from 'confused-ai';
-import { InMemorySessionStore } from 'confused-ai/session';
+import { agent, InMemoryStore, MemoryType } from 'personaforge';
+import { InMemorySessionStore } from 'personaforge/session';
 
 const memoryStore = new InMemoryStore();
 const sessionStore = new InMemorySessionStore();
@@ -165,8 +165,8 @@ console.log(result.text);
 `InMemoryStore` is for development. Switch to a durable store before deploying.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createDbMemoryStore } from 'confused-ai';  // persistent backend
+import { createAgent } from 'personaforge';
+import { createDbMemoryStore } from 'personaforge';  // persistent backend
 
 const memoryStore = createDbMemoryStore({
   db: yourDatabaseConnection,

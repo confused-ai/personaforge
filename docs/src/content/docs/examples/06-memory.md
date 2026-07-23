@@ -15,7 +15,7 @@ The current memory surface uses `memoryStore` on the agent and the exported memo
 ## Current pattern
 
 ```ts
-import { agent, InMemoryStore, MemoryType } from 'confused-ai';
+import { agent, InMemoryStore, MemoryType } from 'personaforge';
 
 const memoryStore = new InMemoryStore();
 

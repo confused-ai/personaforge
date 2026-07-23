@@ -24,8 +24,8 @@ import {
     ScheduleManager,
     InMemoryScheduleStore,
     InMemoryScheduleRunStore,
-} from 'confused-ai/scheduler';
-import type { CreateScheduleInput } from 'confused-ai/scheduler';
+} from 'personaforge/scheduler';
+import type { CreateScheduleInput } from 'personaforge/scheduler';
 
 // ── Simulated market data ─────────────────────────────────────────────────
 
@@ -85,7 +85,7 @@ function divider(title: string) {
 }
 
 async function main() {
-    console.log('confused-ai — Scheduled Agent: Nightly Market Digest\n');
+    console.log('personaforge — Scheduled Agent: Nightly Market Digest\n');
 
     // ── 1. Create the manager with in-memory stores ───────────────────────
     const scheduleStore = new InMemoryScheduleStore();

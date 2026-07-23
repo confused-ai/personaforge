@@ -1,6 +1,6 @@
 /**
- * @confused-ai/production — Production-grade runtime, resilience, and control-plane
- * utilities for confused-ai agents.
+ * @personaforge/production — Production-grade runtime, resilience, and control-plane
+ * utilities for personaforge agents.
  */
 
 // ── Primitive types ──────────────────────────────────────────────────────────

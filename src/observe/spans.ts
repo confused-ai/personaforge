@@ -1,5 +1,5 @@
 /**
- * Canonical span names for the confused-ai observability layer.
+ * Canonical span names for the personaforge observability layer.
  *
  * Use these constants everywhere a span name is needed so that dashboards,
  * alerts, and trace correlation queries never break when we rename a module.

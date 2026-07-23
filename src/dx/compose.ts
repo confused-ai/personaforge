@@ -9,14 +9,14 @@
  * - **compose() / pipe()** — Best for linear, sequential pipelines where each
  *   agent processes the previous agent's output. Lightweight, no extra deps.
  *
- * - **graph engine** (`confused-ai/graph`) — Best for complex orchestration:
+ * - **graph engine** (`personaforge/graph`) — Best for complex orchestration:
  *   supervisor patterns, consensus voting, competitive racing, DAG workflows
  *   with branching/joining, distributed execution, and durable checkpointing.
- *   See `MultiAgentOrchestrator` and `AgentRuntime` in `confused-ai/graph`.
+ *   See `MultiAgentOrchestrator` and `AgentRuntime` in `personaforge/graph`.
  *
  * @example
  * ```ts
- * import { agent, compose } from 'confused-ai';
+ * import { agent, compose } from 'personaforge';
  *
  * const researcher = agent('You research topics and return raw findings.');
  * const writer     = agent('You turn research findings into polished reports.');

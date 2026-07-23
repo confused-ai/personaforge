@@ -11,8 +11,8 @@ Every provider implements the same `LLMProvider` interface. Swapping one for ano
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { OpenAIProvider } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import { OpenAIProvider } from 'personaforge';
 
 const agent = createAgent({
   name: 'assistant',
@@ -35,7 +35,7 @@ These providers use their official SDKs at runtime (peer dependencies — instal
 ### OpenAI
 
 ```ts
-import { OpenAIProvider } from 'confused-ai';
+import { OpenAIProvider } from 'personaforge';
 
 const llm = new OpenAIProvider({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -52,7 +52,7 @@ const llm = new OpenAIProvider({
 ### Anthropic
 
 ```ts
-import { AnthropicProvider } from 'confused-ai';
+import { AnthropicProvider } from 'personaforge';
 
 const llm = new AnthropicProvider({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -67,7 +67,7 @@ const llm = new AnthropicProvider({
 ### Google Gemini
 
 ```ts
-import { GoogleProvider } from 'confused-ai';
+import { GoogleProvider } from 'personaforge';
 
 const llm = new GoogleProvider({
   apiKey: process.env.GOOGLE_API_KEY!,
@@ -82,7 +82,7 @@ const llm = new GoogleProvider({
 ### Amazon Bedrock
 
 ```ts
-import { BedrockConverseProvider } from 'confused-ai';
+import { BedrockConverseProvider } from 'personaforge';
 
 const llm = new BedrockConverseProvider({
   region: 'us-east-1',
@@ -104,7 +104,7 @@ Uses the default AWS credential chain (env vars, instance profile, etc.).
 Access every major model through one API key and one endpoint.
 
 ```ts
-import { createOpenRouterProvider } from 'confused-ai';
+import { createOpenRouterProvider } from 'personaforge';
 
 const llm = createOpenRouterProvider({
   apiKey: process.env.OPENROUTER_API_KEY!,
@@ -121,7 +121,7 @@ const llm = createOpenRouterProvider({
 ### Groq (LPU)
 
 ```ts
-import { createGroqProvider } from 'confused-ai';
+import { createGroqProvider } from 'personaforge';
 
 const llm = createGroqProvider({
   apiKey: process.env.GROQ_API_KEY,
@@ -134,7 +134,7 @@ const llm = createGroqProvider({
 ### Cerebras
 
 ```ts
-import { createCerebrasProvider } from 'confused-ai';
+import { createCerebrasProvider } from 'personaforge';
 
 const llm = createCerebrasProvider({
   apiKey: process.env.CEREBRAS_API_KEY,
@@ -145,7 +145,7 @@ const llm = createCerebrasProvider({
 ### Fireworks AI
 
 ```ts
-import { createFireworksProvider } from 'confused-ai';
+import { createFireworksProvider } from 'personaforge';
 
 const llm = createFireworksProvider({
   apiKey: process.env.FIREWORKS_API_KEY,
@@ -156,7 +156,7 @@ const llm = createFireworksProvider({
 ### SambaNova
 
 ```ts
-import { createSambaNovaProvider } from 'confused-ai';
+import { createSambaNovaProvider } from 'personaforge';
 
 const llm = createSambaNovaProvider({
   apiKey: process.env.SAMBANOVA_API_KEY,
@@ -171,7 +171,7 @@ const llm = createSambaNovaProvider({
 ### xAI (Grok)
 
 ```ts
-import { createXAIProvider } from 'confused-ai';
+import { createXAIProvider } from 'personaforge';
 
 const llm = createXAIProvider({
   apiKey: process.env.XAI_API_KEY,
@@ -182,7 +182,7 @@ const llm = createXAIProvider({
 ### Together AI
 
 ```ts
-import { createTogetherProvider } from 'confused-ai';
+import { createTogetherProvider } from 'personaforge';
 
 const llm = createTogetherProvider({
   apiKey: process.env.TOGETHER_API_KEY,
@@ -193,7 +193,7 @@ const llm = createTogetherProvider({
 ### DeepSeek
 
 ```ts
-import { createDeepSeekProvider } from 'confused-ai';
+import { createDeepSeekProvider } from 'personaforge';
 
 const llm = createDeepSeekProvider({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -205,7 +205,7 @@ const llm = createDeepSeekProvider({
 ### Mistral AI
 
 ```ts
-import { createMistralProvider } from 'confused-ai';
+import { createMistralProvider } from 'personaforge';
 
 const llm = createMistralProvider({
   apiKey: process.env.MISTRAL_API_KEY,
@@ -216,7 +216,7 @@ const llm = createMistralProvider({
 ### Perplexity (web-grounded)
 
 ```ts
-import { createPerplexityProvider } from 'confused-ai';
+import { createPerplexityProvider } from 'personaforge';
 
 const llm = createPerplexityProvider({
   apiKey: process.env.PERPLEXITY_API_KEY,
@@ -227,7 +227,7 @@ const llm = createPerplexityProvider({
 ### Cohere (Command R)
 
 ```ts
-import { createCohereProvider } from 'confused-ai';
+import { createCohereProvider } from 'personaforge';
 
 const llm = createCohereProvider({
   apiKey: process.env.COHERE_API_KEY,
@@ -238,7 +238,7 @@ const llm = createCohereProvider({
 ### NVIDIA NIM
 
 ```ts
-import { createNvidiaProvider } from 'confused-ai';
+import { createNvidiaProvider } from 'personaforge';
 
 const llm = createNvidiaProvider({
   apiKey: process.env.NVIDIA_API_KEY,
@@ -249,7 +249,7 @@ const llm = createNvidiaProvider({
 ### Hyperbolic
 
 ```ts
-import { createHyperbolicProvider } from 'confused-ai';
+import { createHyperbolicProvider } from 'personaforge';
 
 const llm = createHyperbolicProvider({
   apiKey: process.env.HYPERBOLIC_API_KEY,
@@ -260,7 +260,7 @@ const llm = createHyperbolicProvider({
 ### Deep Infra
 
 ```ts
-import { createDeepInfraProvider } from 'confused-ai';
+import { createDeepInfraProvider } from 'personaforge';
 
 const llm = createDeepInfraProvider({
   apiKey: process.env.DEEPINFRA_API_KEY,
@@ -271,7 +271,7 @@ const llm = createDeepInfraProvider({
 ### Hugging Face Inference API
 
 ```ts
-import { createHuggingFaceProvider } from 'confused-ai';
+import { createHuggingFaceProvider } from 'personaforge';
 
 const llm = createHuggingFaceProvider({
   apiKey: process.env.HF_API_KEY,
@@ -282,7 +282,7 @@ const llm = createHuggingFaceProvider({
 ### Replicate
 
 ```ts
-import { createReplicateProvider } from 'confused-ai';
+import { createReplicateProvider } from 'personaforge';
 
 const llm = createReplicateProvider({
   apiKey: process.env.REPLICATE_API_KEY,
@@ -297,7 +297,7 @@ const llm = createReplicateProvider({
 ### Azure OpenAI
 
 ```ts
-import { createAzureOpenAIProvider } from 'confused-ai';
+import { createAzureOpenAIProvider } from 'personaforge';
 
 const llm = createAzureOpenAIProvider({
   apiKey: process.env.AZURE_OPENAI_API_KEY,
@@ -310,7 +310,7 @@ const llm = createAzureOpenAIProvider({
 ### IBM watsonx.ai
 
 ```ts
-import { createWatsonxProvider } from 'confused-ai';
+import { createWatsonxProvider } from 'personaforge';
 
 const llm = createWatsonxProvider({
   apiKey: process.env.WATSONX_API_KEY,
@@ -321,7 +321,7 @@ const llm = createWatsonxProvider({
 ### Snowflake Cortex
 
 ```ts
-import { createSnowflakeProvider } from 'confused-ai';
+import { createSnowflakeProvider } from 'personaforge';
 
 const llm = createSnowflakeProvider({
   apiKey: process.env.SNOWFLAKE_API_KEY,
@@ -332,7 +332,7 @@ const llm = createSnowflakeProvider({
 ### Cloudflare AI
 
 ```ts
-import { createCloudflareProvider } from 'confused-ai';
+import { createCloudflareProvider } from 'personaforge';
 
 const llm = createCloudflareProvider({
   apiKey: process.env.CLOUDFLARE_API_KEY,
@@ -347,7 +347,7 @@ const llm = createCloudflareProvider({
 ### Ollama
 
 ```ts
-import { OpenAIProvider } from 'confused-ai';
+import { OpenAIProvider } from 'personaforge';
 
 // Ollama exposes an OpenAI-compatible API on port 11434
 const llm = new OpenAIProvider({
@@ -360,7 +360,7 @@ const llm = new OpenAIProvider({
 ### vLLM
 
 ```ts
-import { createVllmProvider } from 'confused-ai';
+import { createVllmProvider } from 'personaforge';
 
 const llm = createVllmProvider({
   baseURL: 'http://localhost:8000/v1',  // default (VLLM_BASE_URL env)
@@ -372,7 +372,7 @@ const llm = createVllmProvider({
 ### LM Studio
 
 ```ts
-import { createLmStudioProvider } from 'confused-ai';
+import { createLmStudioProvider } from 'personaforge';
 
 const llm = createLmStudioProvider({
   baseURL: 'http://localhost:1234/v1',  // default
@@ -383,7 +383,7 @@ const llm = createLmStudioProvider({
 ### Generic OpenAI-compatible endpoint
 
 ```ts
-import { createOpenAICompatibleProvider } from 'confused-ai';
+import { createOpenAICompatibleProvider } from 'personaforge';
 
 const llm = createOpenAICompatibleProvider({
   baseURL: 'https://my-gateway.internal/v1',
@@ -408,7 +408,7 @@ import {
   createDashScopeProvider,   // Alibaba DashScope (Qwen)
   createZhipuProvider,       // Zhipu AI (GLM)
   createYiProvider,          // 01.AI (Yi)
-} from 'confused-ai';
+} from 'personaforge';
 
 const llm = createDashScopeProvider({
   apiKey: process.env.DASHSCOPE_API_KEY,
@@ -423,7 +423,7 @@ const llm = createDashScopeProvider({
 Chain multiple providers so failures cascade automatically.
 
 ```ts
-import { FallbackChainProvider, FallbackStrategy } from 'confused-ai';
+import { FallbackChainProvider, FallbackStrategy } from 'personaforge';
 
 const llm = new FallbackChainProvider({
   providers: [

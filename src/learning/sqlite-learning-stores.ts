@@ -17,7 +17,7 @@ import type {
 // ── Shared SQLite bootstrap ────────────────────────────────────────────────────
 
 const MISSING_SDK =
-    '[confused-ai] SQLite learning stores require better-sqlite3.\n' +
+    '[personaforge] SQLite learning stores require better-sqlite3.\n' +
     '  Install: npm install better-sqlite3';
 
 interface Stmt<T = unknown> { get(...a: unknown[]): T | undefined; run(...a: unknown[]): unknown; all(...a: unknown[]): T[]; }

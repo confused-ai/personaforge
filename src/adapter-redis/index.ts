@@ -1,7 +1,7 @@
 /**
- * @confused-ai/adapter-redis
+ * @personaforge/adapter-redis
  *
- * Drop-in Redis backends for confused-ai agents:
+ * Drop-in Redis backends for personaforge agents:
  * - `RedisSessionStore` — distributed conversation session persistence
  * - `RedisRateLimiter` — sliding-window rate limiter
  *

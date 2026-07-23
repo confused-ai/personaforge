@@ -9,8 +9,8 @@ outline: [2, 3]
 Tools are how agents interact with real systems. A tool gives the model a named, schema-validated function it can call when it needs live data, wants to trigger a side effect, or must perform a calculation that goes beyond its training knowledge.
 
 ```ts
-import { tool, extendTool, wrapTool, pipeTools, versionTool, createTools } from 'confused-ai';
-import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer } from 'confused-ai/tool';
+import { tool, extendTool, wrapTool, pipeTools, versionTool, createTools } from 'personaforge';
+import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer } from 'personaforge/tool';
 ```
 
 ---
@@ -21,7 +21,7 @@ The primary tool authoring function. All tool inputs are validated with a Zod sc
 
 ```ts
 import { z } from 'zod/v3';
-import { tool } from 'confused-ai';
+import { tool } from 'personaforge';
 
 const getWeather = tool({
   name: 'get_weather',
@@ -74,8 +74,8 @@ const sendEmail = tool({
 Attach an `approvalStore` to the HTTP service to expose the pending approval queue:
 
 ```ts
-import { createHttpService } from 'confused-ai/serve';
-import { createSqliteApprovalStore } from 'confused-ai/production';
+import { createHttpService } from 'personaforge/serve';
+import { createSqliteApprovalStore } from 'personaforge/production';
 
 const service = createHttpService({
   agents: { myAgent },
@@ -90,7 +90,7 @@ const service = createHttpService({
 Extend an existing tool without modifying its source. Add input normalisation, output transformation, logging, and error fallbacks.
 
 ```ts
-import { extendTool } from 'confused-ai';
+import { extendTool } from 'personaforge';
 
 const smartWeather = extendTool(getWeather, {
   name: 'smart_weather',
@@ -125,7 +125,7 @@ const smartWeather = extendTool(getWeather, {
 Wrap a tool with a stack of middleware functions. Each middleware receives `params`, `ctx`, and `next` — similar to Express-style middleware.
 
 ```ts
-import { wrapTool } from 'confused-ai';
+import { wrapTool } from 'personaforge';
 
 const cache = new Map<string, unknown>();
 
@@ -159,7 +159,7 @@ const cachedWeather = wrapTool(
 Compose two tools into one. The output of the first tool is adapted into the input of the second.
 
 ```ts
-import { pipeTools } from 'confused-ai';
+import { pipeTools } from 'personaforge';
 
 const fetchUrl = tool({
   name: 'fetch_url',
@@ -189,7 +189,7 @@ const fetchAndRead = pipeTools(fetchUrl, extractText, {
 Tag a tool with a semantic version and optional changelog. Useful for tracking which tool version is in production.
 
 ```ts
-import { versionTool } from 'confused-ai';
+import { versionTool } from 'personaforge';
 
 const fetchAndReadV2 = versionTool(fetchAndRead, '2.0', {
   changelog: 'Combines URL fetch and HTML extraction into a single tool call.',
@@ -206,7 +206,7 @@ console.log(fetchAndReadV2.changelog);  // → 'Combines URL ...'
 Group related tools into a named registry for organised sharing.
 
 ```ts
-import { createTools } from 'confused-ai';
+import { createTools } from 'personaforge';
 
 const weatherTools = createTools('weather', [getWeather, cachedWeather, smartWeather]);
 
@@ -231,12 +231,12 @@ const agent2 = createAgent({
 
 ---
 
-## MCP tools — `confused-ai/tool`
+## MCP tools — `personaforge/tool`
 
 Load tools from a remote MCP server or expose your own:
 
 ```ts
-import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer, McpHttpServer, runMcpStdioToolServer } from 'confused-ai/tool';
+import { loadMcpToolsFromUrl, HttpMcpClient, createMcpServer, McpHttpServer, runMcpStdioToolServer } from 'personaforge/tool';
 
 // Load all tools from a remote server
 const remoteTools = await loadMcpToolsFromUrl('http://localhost:3100/mcp', {

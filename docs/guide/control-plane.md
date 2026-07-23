@@ -9,7 +9,7 @@ outline: [2, 3]
 `createControlPlane` starts a zero-dependency HTTP dashboard for operating your agents: sessions, memory, evals, traces, HITL approvals, knowledge, and a chat playground — all from one browser tab.
 
 ```ts
-import { createControlPlane } from 'confused-ai/control-plane';
+import { createControlPlane } from 'personaforge/control-plane';
 ```
 
 ---

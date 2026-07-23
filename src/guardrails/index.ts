@@ -1,5 +1,5 @@
 /**
- * @confused-ai/guardrails — Production guardrails for AI agents.
+ * @personaforge/guardrails — Production guardrails for AI agents.
  *
  * Capabilities:
  *   - Input/output validation with Zod schemas

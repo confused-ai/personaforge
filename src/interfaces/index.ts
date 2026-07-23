@@ -1,8 +1,8 @@
 /**
- * confused-ai/interfaces — surface adapters for messaging platforms and protocols.
+ * personaforge/interfaces — surface adapters for messaging platforms and protocols.
  *
  * ```ts
- * import { SlackInterface, TelegramInterface, A2AInterface, AGUIInterface } from 'confused-ai/interfaces';
+ * import { SlackInterface, TelegramInterface, A2AInterface, AGUIInterface } from 'personaforge/interfaces';
  * ```
  */
 

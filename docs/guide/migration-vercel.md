@@ -1,18 +1,18 @@
 ---
 title: Migrate From Vercel AI SDK
-description: Port Vercel AI SDK's streamText, generateText, streamObject, and useChat to confused-ai. tool() is the same signature. Streaming maps to agent.stream(). React hooks become direct agent calls.
+description: Port Vercel AI SDK's streamText, generateText, streamObject, and useChat to personaforge. tool() is the same signature. Streaming maps to agent.stream(). React hooks become direct agent calls.
 outline: [2, 3]
 ---
 
 # Migrate From Vercel AI SDK
 
-Vercel AI SDK focuses on streaming primitives and UI integration. `confused-ai` provides the same streaming surface with persistence, multi-step reasoning, tools, sessions, and production middleware built in.
+Vercel AI SDK focuses on streaming primitives and UI integration. `personaforge` provides the same streaming surface with persistence, multi-step reasoning, tools, sessions, and production middleware built in.
 
 ---
 
 ## Quick comparison
 
-| Vercel AI SDK | confused-ai equivalent |
+| Vercel AI SDK | personaforge equivalent |
 |---|---|
 | `generateText({ model, prompt })` | `agent.run(prompt)` → `result.text` |
 | `streamText({ model, prompt })` | `agent.stream(prompt)` → `AsyncIterable<string>` |
@@ -39,8 +39,8 @@ const { text } = await generateText({
   prompt: 'Write a haiku about recursion.',
 });
 
-// confused-ai
-import { createAgent } from 'confused-ai';
+// personaforge
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'writer',
@@ -63,7 +63,7 @@ import { streamText } from 'ai';
 const { textStream } = await streamText({ model: openai('gpt-4o'), prompt });
 for await (const chunk of textStream) process.stdout.write(chunk);
 
-// confused-ai
+// personaforge
 for await (const chunk of agent.stream('Explain async/await in simple terms')) {
   process.stdout.write(chunk);
 }
@@ -86,8 +86,8 @@ const getWeather = tool({
   execute: async ({ city }) => fetchWeather(city),
 });
 
-// confused-ai (only difference: add `name`, rename `parameters` → `schema`)
-import { tool } from 'confused-ai';
+// personaforge (only difference: add `name`, rename `parameters` → `schema`)
+import { tool } from 'personaforge';
 import { z } from 'zod';
 
 const getWeather = tool({
@@ -111,7 +111,7 @@ const { text } = await generateText({
   prompt: 'What is the weather in Paris and London?',
 });
 
-// confused-ai
+// personaforge
 const agent = createAgent({
   name: 'weather-agent',
   instructions: 'Answer weather questions using the available tools.',
@@ -132,7 +132,7 @@ const result = await agent.run('What is the weather in Paris and London?');
 import { useChat } from 'ai/react';
 const { messages, input, handleSubmit } = useChat({ api: '/api/chat' });
 
-// confused-ai (route handler)
+// personaforge (route handler)
 // app/api/chat/route.ts
 export async function POST(req: Request) {
   const { message, sessionId } = await req.json();
@@ -162,7 +162,7 @@ for await (const part of fullStream) {
   if (part.type === 'text-delta') process.stdout.write(part.textDelta);
 }
 
-// confused-ai
+// personaforge
 for await (const event of agent.streamEvents('Plan my vacation to Japan')) {
   if (event.type === 'text-delta') process.stdout.write(event.delta ?? '');
   if (event.type === 'tool-call')  console.log('Calling tool:', event.tool?.name);
@@ -182,7 +182,7 @@ const { object } = await generateObject({
   prompt: 'Classify this article',
 });
 
-// confused-ai — instruct the agent to return JSON, then parse
+// personaforge — instruct the agent to return JSON, then parse
 const agent = createAgent({
   name: 'classifier',
   instructions: 'Classify the article. Return ONLY a JSON object: { "title": string, "tags": string[] }',

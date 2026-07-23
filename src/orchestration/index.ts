@@ -1,5 +1,5 @@
 /**
- * @confused-ai/orchestration — Multi-agent coordination patterns.
+ * @personaforge/orchestration — Multi-agent coordination patterns.
  *
  * Capabilities:
  *   - Team: Named agents collaborating with shared context

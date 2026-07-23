@@ -37,7 +37,7 @@ export interface BaseToolConfig<TParams extends ToolParameters> {
 /**
  * Abstract base class for tools.
  *
- * @deprecated Prefer the `tool()` helper from `@confused-ai/tools` for new
+ * @deprecated Prefer the `tool()` helper from `@personaforge/tools` for new
  * tool definitions. `BaseTool` requires a class and `EntityId` boilerplate;
  * `tool()` is a plain function with the same Zod validation and auto-execution.
  *

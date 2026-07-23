@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/mysql — MysqlAgentDb.
+ * @personaforge/db/mysql — MysqlAgentDb.
  *
  * Uses the `mysql2` package with a connection pool (promise API).
  * Peer dep: `mysql2` (optional — install only if you want MySQL/MariaDB).
@@ -16,7 +16,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] MysqlAgentDb requires mysql2.\n' +
+  '[personaforge/db] MysqlAgentDb requires mysql2.\n' +
   '  Install: npm install mysql2';
 
 

@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db — AgentDb abstract base class.
+ * @personaforge/db — AgentDb abstract base class.
  *
  * A single unified interface that covers all agent persistence:
  * sessions, memories, learnings, knowledge, traces, and schedules.
@@ -69,7 +69,7 @@ const TABLE_NAME_RE = /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/;
 /** Validate a SQL table/collection name to prevent injection. */
 export function validateTableName(name: string): string {
   if (!TABLE_NAME_RE.test(name)) {
-    throw new Error(`[confused-ai/db] Invalid table name: "${name}". Must match /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.`);
+    throw new Error(`[personaforge/db] Invalid table name: "${name}". Must match /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.`);
   }
   return name;
 }

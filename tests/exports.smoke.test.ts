@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 
 // ── Root entry point ─────────────────────────────────────────────────────────
 
-describe('confused-ai root (src/index.ts)', () => {
+describe('personaforge root (src/index.ts)', () => {
     it('exports agent (headline API)', async () => {
         const m = await import('../src/index.js');
         expect(m.agent).toBeDefined();
@@ -38,7 +38,7 @@ describe('confused-ai root (src/index.ts)', () => {
 
 // ── Subpath: ./model ─────────────────────────────────────────────────────────
 
-describe('confused-ai/model (src/model.ts)', () => {
+describe('personaforge/model (src/model.ts)', () => {
     it('exports openai provider factory', async () => {
         const m = await import('../src/model.js');
         expect(m.openai).toBeDefined();
@@ -47,7 +47,7 @@ describe('confused-ai/model (src/model.ts)', () => {
 
 // ── Subpath: ./observe ───────────────────────────────────────────────────────
 
-describe('confused-ai/observe (src/observe.ts)', () => {
+describe('personaforge/observe (src/observe.ts)', () => {
     it('exports ConsoleLogger', async () => {
         const m = await import('../src/observe.js');
         expect(m.ConsoleLogger).toBeDefined();
@@ -56,7 +56,7 @@ describe('confused-ai/observe (src/observe.ts)', () => {
 
 // ── Subpath: ./serve (src/serve.ts) ─────────────────────────────────────────
 
-describe('confused-ai/serve (src/serve.ts)', () => {
+describe('personaforge/serve (src/serve.ts)', () => {
     it('exports createHttpService', async () => {
         const m = await import('../src/serve.js');
         expect(m.createHttpService).toBeDefined();
@@ -65,7 +65,7 @@ describe('confused-ai/serve (src/serve.ts)', () => {
 
 // ── Subpath: ./tool ──────────────────────────────────────────────────────────
 
-describe('confused-ai/tool (src/tool.ts)', () => {
+describe('personaforge/tool (src/tool.ts)', () => {
     it('exports tool() builder', async () => {
         const m = await import('../src/tool.js');
         expect(m.tool).toBeDefined();
@@ -80,7 +80,7 @@ describe('confused-ai/tool (src/tool.ts)', () => {
 
 // ── Subpath: ./guard ─────────────────────────────────────────────────────────
 
-describe('confused-ai/guard (src/guard.ts)', () => {
+describe('personaforge/guard (src/guard.ts)', () => {
     it('exports BudgetEnforcer', async () => {
         const m = await import('../src/guard.js');
         expect(m.BudgetEnforcer).toBeDefined();
@@ -94,7 +94,7 @@ describe('confused-ai/guard (src/guard.ts)', () => {
 
 // ── Subpath: ./workflow ──────────────────────────────────────────────────────
 
-describe('confused-ai/workflow (src/workflow.ts)', () => {
+describe('personaforge/workflow (src/workflow.ts)', () => {
     it('exports createGraph builder', async () => {
         const m = await import('../src/workflow.js');
         expect(m.createGraph).toBeDefined();
@@ -103,7 +103,7 @@ describe('confused-ai/workflow (src/workflow.ts)', () => {
 
 // ── Subpath: ./test ──────────────────────────────────────────────────────────
 
-describe('confused-ai/test (src/test.ts)', () => {
+describe('personaforge/test (src/test.ts)', () => {
     it('exports mockAgent', async () => {
         const m = await import('../src/test.js');
         expect(m.mockAgent).toBeDefined();
@@ -112,7 +112,7 @@ describe('confused-ai/test (src/test.ts)', () => {
 
 // ── Subpath: ./create-agent ──────────────────────────────────────────────────
 
-describe('confused-ai/create-agent (src/create-agent.ts)', () => {
+describe('personaforge/create-agent (src/create-agent.ts)', () => {
     it('exports createAgent', async () => {
         const m = await import('../src/create-agent.js');
         expect(m.createAgent).toBeDefined();
@@ -121,7 +121,7 @@ describe('confused-ai/create-agent (src/create-agent.ts)', () => {
 
 // ── Subpath: ./lite ──────────────────────────────────────────────────────────
 
-describe('confused-ai/lite (src/lite.ts)', () => {
+describe('personaforge/lite (src/lite.ts)', () => {
     it('exports the minimal modern agent surface', async () => {
         const m = await import('../src/lite.js');
         expect(m.agent).toBeDefined();
@@ -138,7 +138,7 @@ describe('confused-ai/lite (src/lite.ts)', () => {
 
 // ── Granular tool category subpaths ─────────────────────────────────────────
 
-describe('confused-ai/tools/* category subpaths', () => {
+describe('personaforge/tools/* category subpaths', () => {
     it('search exports search tools without communication tools', async () => {
         const m = await import('../src/tools/search/index.js');
         expect(m.TavilySearchTool).toBeDefined();
@@ -159,16 +159,16 @@ describe('confused-ai/tools/* category subpaths', () => {
 
 // ── Subpath: ./playground ────────────────────────────────────────────────────
 
-describe('confused-ai/playground (src/playground.ts)', () => {
+describe('personaforge/playground (src/playground.ts)', () => {
     it('exports createPlayground', async () => {
         const m = await import('../src/playground.js');
         expect(m.createPlayground).toBeDefined();
     });
 });
 
-// ── Package subpaths (src/ re-exports to @confused-ai/* packages) ────────────
+// ── Package subpaths (src/ re-exports to @personaforge/* packages) ────────────
 
-describe('src/index.ts → @confused-ai packages (via re-export)', () => {
+describe('src/index.ts → @personaforge packages (via re-export)', () => {
     it('agentic: AgenticRunner exported from root', async () => {
         const m = await import('../src/index.js');
         expect(m.AgenticRunner).toBeDefined();
@@ -195,51 +195,51 @@ describe('src/index.ts → @confused-ai packages (via re-export)', () => {
     });
 });
 
-// ── Direct @confused-ai/* package entry points ───────────────────────────────
+// ── Direct @personaforge/* package entry points ───────────────────────────────
 
-describe('@confused-ai/contracts', () => {
+describe('@personaforge/contracts', () => {
     it('exports newId', async () => {
-        const m = await import('@confused-ai/contracts');
+        const m = await import('@personaforge/contracts');
         expect(m.newId).toBeDefined();
     });
 });
 
-describe('@confused-ai/core', () => {
+describe('@personaforge/core', () => {
     it('exports AgentState', async () => {
-        const m = await import('@confused-ai/core');
+        const m = await import('@personaforge/core');
         expect(m.AgentState).toBeDefined();
     });
 });
 
-describe('@confused-ai/agentic', () => {
+describe('@personaforge/agentic', () => {
     it('exports AgenticRunner', async () => {
-        const m = await import('@confused-ai/agentic');
+        const m = await import('@personaforge/agentic');
         expect(m.AgenticRunner).toBeDefined();
     });
 });
 
-describe('@confused-ai/session', () => {
+describe('@personaforge/session', () => {
     it('exports InMemorySessionStore', async () => {
-        const m = await import('@confused-ai/session');
+        const m = await import('@personaforge/session');
         expect(m.InMemorySessionStore).toBeDefined();
     });
 });
 
-describe('@confused-ai/tools', () => {
+describe('@personaforge/tools', () => {
     it('exports tool()', async () => {
-        const m = await import('@confused-ai/tools');
+        const m = await import('@personaforge/tools');
         expect(m.tool).toBeDefined();
     });
 
     it('exports createShellTool (not shell singleton)', async () => {
-        const m = await import('@confused-ai/tools');
+        const m = await import('@personaforge/tools');
         expect(m.createShellTool).toBeDefined();
         // The unrestricted singleton must NOT be exported from the barrel
         expect((m as Record<string, unknown>)['shell']).toBeUndefined();
     });
 
     it('does not export optional provider-backed tools from the safe barrel', async () => {
-        const m = await import('@confused-ai/tools');
+        const m = await import('@personaforge/tools');
         expect((m as Record<string, unknown>).CalculatorAddTool).toBeDefined();
         expect((m as Record<string, unknown>).PlaywrightPageTitleTool).toBeUndefined();
         expect((m as Record<string, unknown>).StripeCreateCustomerTool).toBeUndefined();
@@ -247,125 +247,125 @@ describe('@confused-ai/tools', () => {
     });
 });
 
-describe('@confused-ai/tools/search', () => {
+describe('@personaforge/tools/search', () => {
     it('exports search tools without pulling the whole tools barrel', async () => {
-        const m = await import('@confused-ai/tools/search');
+        const m = await import('@personaforge/tools/search');
         expect(m.TavilySearchTool).toBeDefined();
         expect((m as Record<string, unknown>).SlackSendMessageTool).toBeUndefined();
     });
 });
 
-describe('@confused-ai/graph', () => {
+describe('@personaforge/graph', () => {
     it('exports DAGEngine', async () => {
-        const m = await import('@confused-ai/graph');
+        const m = await import('@personaforge/graph');
         expect(m.DAGEngine).toBeDefined();
     });
 });
 
-describe('@confused-ai/workflow', () => {
+describe('@personaforge/workflow', () => {
     it('exports compose', async () => {
-        const m = await import('@confused-ai/workflow');
+        const m = await import('@personaforge/workflow');
         expect(m.compose).toBeDefined();
     });
 });
 
-describe('@confused-ai/orchestration', () => {
+describe('@personaforge/orchestration', () => {
     it('exports OrchestratorImpl', async () => {
-        const m = await import('@confused-ai/orchestration');
+        const m = await import('@personaforge/orchestration');
         expect(m.OrchestratorImpl).toBeDefined();
     });
 });
 
-describe('@confused-ai/memory', () => {
+describe('@personaforge/memory', () => {
     it('exports InMemoryStore', async () => {
-        const m = await import('@confused-ai/memory');
+        const m = await import('@personaforge/memory');
         expect(m.InMemoryStore).toBeDefined();
     });
 });
 
-describe('@confused-ai/knowledge', () => {
+describe('@personaforge/knowledge', () => {
     it('exports KnowledgeEngine', async () => {
-        const m = await import('@confused-ai/knowledge');
+        const m = await import('@personaforge/knowledge');
         expect(m.KnowledgeEngine).toBeDefined();
     });
 });
 
-describe('@confused-ai/guardrails', () => {
+describe('@personaforge/guardrails', () => {
     it('exports GuardrailValidator', async () => {
-        const m = await import('@confused-ai/guardrails');
+        const m = await import('@personaforge/guardrails');
         expect(m.GuardrailValidator).toBeDefined();
     });
 });
 
-describe('@confused-ai/production', () => {
+describe('@personaforge/production', () => {
     it('exports CircuitBreaker', async () => {
-        const m = await import('@confused-ai/production');
+        const m = await import('@personaforge/production');
         expect(m.CircuitBreaker).toBeDefined();
     });
 
     it('exports ResilientAgent', async () => {
-        const m = await import('@confused-ai/production');
+        const m = await import('@personaforge/production');
         expect(m.ResilientAgent).toBeDefined();
     });
 
     it('exports TenantScopedSessionStore', async () => {
-        const m = await import('@confused-ai/production');
+        const m = await import('@personaforge/production');
         expect(m.TenantScopedSessionStore).toBeDefined();
     });
 });
 
-describe('@confused-ai/observe', () => {
+describe('@personaforge/observe', () => {
     it('exports createLogger', async () => {
-        const m = await import('@confused-ai/observe');
+        const m = await import('@personaforge/observe');
         expect(m.createLogger).toBeDefined();
     });
 });
 
-describe('@confused-ai/models', () => {
+describe('@personaforge/models', () => {
     it('exports openai provider factory', async () => {
-        const m = await import('@confused-ai/models');
+        const m = await import('@personaforge/models');
         expect(m.openai).toBeDefined();
     });
 });
 
-describe('@confused-ai/shared', () => {
+describe('@personaforge/shared', () => {
     it('exports DebugLogger', async () => {
-        const m = await import('@confused-ai/shared');
+        const m = await import('@personaforge/shared');
         expect(m.DebugLogger).toBeDefined();
     });
 });
 
-describe('@confused-ai/guard', () => {
+describe('@personaforge/guard', () => {
     it('exports CircuitBreaker', async () => {
-        const m = await import('@confused-ai/guard');
+        const m = await import('@personaforge/guard');
         expect(m.CircuitBreaker).toBeDefined();
     });
 });
 
-describe('@confused-ai/planner', () => {
+describe('@personaforge/planner', () => {
     it('exports ClassicalPlanner', async () => {
-        const m = await import('@confused-ai/planner');
+        const m = await import('@personaforge/planner');
         expect(m.ClassicalPlanner).toBeDefined();
     });
 });
 
-describe('@confused-ai/execution', () => {
+describe('@personaforge/execution', () => {
     it('exports ExecutionEngineImpl', async () => {
-        const m = await import('@confused-ai/execution');
+        const m = await import('@personaforge/execution');
         expect(m.ExecutionEngineImpl).toBeDefined();
     });
 });
 
-describe('@confused-ai/sdk', () => {
+describe('@personaforge/sdk', () => {
     it('exports defineAgent', async () => {
-        const m = await import('@confused-ai/sdk');
+        const m = await import('@personaforge/sdk');
         expect(m.defineAgent).toBeDefined();
     });
 });
 
-describe('@confused-ai/test-utils', () => {
+describe('@personaforge/test-utils', () => {
     it('exports createMockLLM', async () => {
-        const m = await import('@confused-ai/test-utils');
+        const m = await import('@personaforge/test-utils');
         expect(m.createMockLLM).toBeDefined();
     });
 });

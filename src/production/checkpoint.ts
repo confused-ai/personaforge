@@ -7,8 +7,8 @@
  *
  * @example
  * ```ts
- * import { createAgent } from 'confused-ai';
- * import { createSqliteCheckpointStore } from 'confused-ai/production';
+ * import { createAgent } from 'personaforge';
+ * import { createSqliteCheckpointStore } from 'personaforge/production';
  *
  * const agent = createAgent({
  *   name: 'LongTask',

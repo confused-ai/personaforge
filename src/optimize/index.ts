@@ -1,5 +1,5 @@
 /**
- * @confused-ai/optimize — programmatic prompt optimization (DSPy-style).
+ * @personaforge/optimize — programmatic prompt optimization (DSPy-style).
  *
  * Implements **bootstrap few-shot**, the core DSPy primitive: instead of
  * hand-writing examples, you provide a training set and a scorer, and the

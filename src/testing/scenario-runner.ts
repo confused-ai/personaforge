@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * import { createScenarioRunner, createTestAgent } from 'confused-ai/testing';
+ * import { createScenarioRunner, createTestAgent } from 'personaforge/testing';
  *
  * const { agent } = await createTestAgent({ responses: ['Hello!', 'Your name is Alice.'] });
  * const results = await createScenarioRunner(agent)

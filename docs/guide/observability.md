@@ -6,14 +6,14 @@ outline: [2, 3]
 
 # Observability
 
-The framework ships a full observability stack: structured logging, distributed tracing (OTLP), Prometheus metrics, W3C trace context propagation, and native integrations with Langfuse and LangSmith. Import from `confused-ai` or `confused-ai/observe`.
+The framework ships a full observability stack: structured logging, distributed tracing (OTLP), Prometheus metrics, W3C trace context propagation, and native integrations with Langfuse and LangSmith. Import from `personaforge` or `personaforge/observe`.
 
 ## Logging
 
 ### `ConsoleLogger`
 
 ```ts
-import { ConsoleLogger } from 'confused-ai';
+import { ConsoleLogger } from 'personaforge';
 
 const logger = new ConsoleLogger({ level: 'info' });
 // levels: 'debug' | 'info' | 'warn' | 'error'
@@ -26,7 +26,7 @@ logger.error('Tool call failed', { tool: 'search', error: err.message });
 ### Attach logger to an agent
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'production-agent',
@@ -44,7 +44,7 @@ const agent = createAgent({
 ### `InMemoryTracer` (development)
 
 ```ts
-import { InMemoryTracer } from 'confused-ai';
+import { InMemoryTracer } from 'personaforge';
 
 const tracer = new InMemoryTracer();
 
@@ -62,7 +62,7 @@ console.log(tracer.getSpans());
 Export traces to any OpenTelemetry-compatible backend (Grafana Tempo, Jaeger, Honeycomb, Datadog, etc.):
 
 ```ts
-import { OTLPTraceExporter } from 'confused-ai';
+import { OTLPTraceExporter } from 'personaforge';
 
 const exporter = new OTLPTraceExporter({
   endpoint: process.env.OTLP_ENDPOINT!,  // e.g. http://otel-collector:4318/v1/traces
@@ -83,7 +83,7 @@ const tracer = exporter.createTracer();
 ### `MetricsCollectorImpl`
 
 ```ts
-import { MetricsCollectorImpl } from 'confused-ai';
+import { MetricsCollectorImpl } from 'personaforge';
 
 const metrics = new MetricsCollectorImpl();
 
@@ -103,7 +103,7 @@ const snapshot = metrics.snapshot();
 ### OTLP Metrics export
 
 ```ts
-import { OTLPMetricsExporter } from 'confused-ai';
+import { OTLPMetricsExporter } from 'personaforge';
 
 const metricsExporter = new OTLPMetricsExporter({
   endpoint: process.env.OTLP_METRICS_ENDPOINT!,
@@ -125,7 +125,7 @@ import {
   injectTraceHeaders,
   extractTraceContext,
   childSpan,
-} from 'confused-ai';
+} from 'personaforge';
 
 // Generate a new root trace
 const traceparent = generateTraceparent();
@@ -151,7 +151,7 @@ const incoming = extractTraceContext(req.headers);
 Send traces and evals to [Langfuse](https://langfuse.com):
 
 ```ts
-import { sendLangfuseBatch } from 'confused-ai';
+import { sendLangfuseBatch } from 'personaforge';
 
 await sendLangfuseBatch({
   publicKey: process.env.LANGFUSE_PUBLIC_KEY!,
@@ -175,7 +175,7 @@ await sendLangfuseBatch({
 ## LangSmith integration
 
 ```ts
-import { sendLangSmithRunBatch } from 'confused-ai';
+import { sendLangSmithRunBatch } from 'personaforge';
 
 await sendLangSmithRunBatch({
   apiKey: process.env.LANGSMITH_API_KEY!,
@@ -199,7 +199,7 @@ await sendLangSmithRunBatch({
 ## Complete observability setup
 
 ```ts
-import { createAgent, ConsoleLogger, OTLPTraceExporter, OTLPMetricsExporter, MetricsCollectorImpl } from 'confused-ai';
+import { createAgent, ConsoleLogger, OTLPTraceExporter, OTLPMetricsExporter, MetricsCollectorImpl } from 'personaforge';
 
 // Tracing
 const traceExporter = new OTLPTraceExporter({

@@ -9,7 +9,7 @@ outline: [2, 3]
 The knowledge layer provides retrieval-augmented generation (RAG): ingest documents into a searchable index, retrieve relevant chunks at run time, and inject them into the agent's context automatically. Attach a `KnowledgeEngine` to any agent with the `knowledgebase` option.
 
 ```ts
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 ```
 
 ---
@@ -17,7 +17,7 @@ import { createKnowledgeEngine } from 'confused-ai/knowledge';
 ## `createKnowledgeEngine()` — create an engine
 
 ```ts
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 const knowledge = createKnowledgeEngine({
   topK: 3,               // retrieve up to 3 most relevant chunks per query
@@ -110,8 +110,8 @@ console.log(context);
 Pass the engine as `knowledgebase` on any agent. The engine's context is injected into the system prompt before every run.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createAgent } from 'personaforge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 const knowledge = createKnowledgeEngine({ topK: 3, maxContextChars: 1_500 });
 await knowledge.addDocuments([...]);
@@ -151,7 +151,7 @@ Bring your own embeddings — useful for switching to a specific model or using 
 
 ```ts
 import OpenAI from 'openai';
-import { createKnowledgeEngine, type EmbedFn } from 'confused-ai/knowledge';
+import { createKnowledgeEngine, type EmbedFn } from 'personaforge/knowledge';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -173,7 +173,7 @@ const knowledge = createKnowledgeEngine({ topK: 5, maxContextChars: 2_000, embed
 Plug in an external vector database for production-scale retrieval.
 
 ```ts
-import { createKnowledgeEngine, type VectorStore } from 'confused-ai/knowledge';
+import { createKnowledgeEngine, type VectorStore } from 'personaforge/knowledge';
 
 // Minimal VectorStore interface
 const myStore: VectorStore = {

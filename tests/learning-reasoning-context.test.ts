@@ -6,31 +6,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Learning ─────────────────────────────────────────────────────────────────
-import { LearningMachine } from '@confused-ai/learning';
+import { LearningMachine } from '@personaforge/learning';
 import {
     InMemoryUserMemoryStore,
     InMemorySessionContextStore,
     InMemoryLearnedKnowledgeStore,
     InMemoryEntityMemoryStore,
-} from '@confused-ai/learning';
-import { LearningMode } from '@confused-ai/learning';
+} from '@personaforge/learning';
+import { LearningMode } from '@personaforge/learning';
 
 // ── Reasoning ─────────────────────────────────────────────────────────────────
-import { ReasoningManager } from '@confused-ai/reasoning';
-import { NextAction, ReasoningEventType } from '@confused-ai/reasoning';
+import { ReasoningManager } from '@personaforge/reasoning';
+import { NextAction, ReasoningEventType } from '@personaforge/reasoning';
 
 // ── Compression ───────────────────────────────────────────────────────────────
-import { CompressionManager } from '@confused-ai/compression';
+import { CompressionManager } from '@personaforge/compression';
 
 // ── Context ───────────────────────────────────────────────────────────────────
-import { ContextMode } from '@confused-ai/context';
-import { ContextProvider } from '@confused-ai/context';
-import { ContextBackend } from '@confused-ai/context';
-import type { Answer, QueryOptions } from '@confused-ai/context';
+import { ContextMode } from '@personaforge/context';
+import { ContextProvider } from '@personaforge/context';
+import { ContextBackend } from '@personaforge/context';
+import type { Answer, QueryOptions } from '@personaforge/context';
 
 // ── Scheduler ─────────────────────────────────────────────────────────────────
-import { ScheduleManager } from '@confused-ai/scheduler';
-import { computeNextRun, validateCronExpr } from '@confused-ai/scheduler';
+import { ScheduleManager } from '@personaforge/scheduler';
+import { computeNextRun, validateCronExpr } from '@personaforge/scheduler';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Learning

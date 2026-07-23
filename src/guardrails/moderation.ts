@@ -123,7 +123,7 @@ export interface PiiGuardrailOptions {
  *
  * @example
  * ```ts
- * import { createPiiDetectionRule } from 'confused-ai/guardrails';
+ * import { createPiiDetectionRule } from 'personaforge/guardrails';
  * const rule = createPiiDetectionRule({ block: true, types: ['email', 'ssn', 'credit_card'] });
  * ```
  */
@@ -253,7 +253,7 @@ export async function callOpenAiModeration(
  *
  * @example
  * ```ts
- * import { createOpenAiModerationRule } from 'confused-ai/guardrails';
+ * import { createOpenAiModerationRule } from 'personaforge/guardrails';
  * const rule = createOpenAiModerationRule({
  *   thresholds: { hate: 0.5 },
  *   onError: 'fail-closed',

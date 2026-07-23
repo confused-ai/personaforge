@@ -1,6 +1,6 @@
 ---
 title: 18 · Meridian Platform
-description: A realistic multi-agent analytics platform using role-based teams, task dependencies, and planning. Built with confused-ai/orchestration.
+description: A realistic multi-agent analytics platform using role-based teams, task dependencies, and planning. Built with personaforge/orchestration.
 outline: [2, 3]
 ---
 
@@ -22,7 +22,7 @@ Meridian is an analytics intelligence platform where specialist agents collabora
 ## Two-agent analytics team
 
 ```ts
-import { defineRole, defineTask, createTeam } from 'confused-ai/orchestration';
+import { defineRole, defineTask, createTeam } from 'personaforge/orchestration';
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -143,7 +143,7 @@ const sage = defineRole({
 Use `mode: 'route'` when the team should direct each request to the single most appropriate agent rather than running all tasks in sequence:
 
 ```ts
-import { createTeam, defineRole } from 'confused-ai/orchestration';
+import { createTeam, defineRole } from 'personaforge/orchestration';
 
 const analyticsSpec = defineRole({
   role: 'Analytics Specialist',
@@ -187,7 +187,7 @@ import {
   createRunnableAgent,
   AgentState,
   CoordinationType,
-} from 'confused-ai/orchestration';
+} from 'personaforge/orchestration';
 
 const sageWorker = createRunnableAgent({
   name: 'sage-worker',

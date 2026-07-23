@@ -13,7 +13,7 @@ import {
   createAdapterRegistry,
   InMemoryCacheAdapter,
   InMemoryVectorAdapter,
-} from 'confused-ai/adapters';
+} from 'personaforge/adapters';
 ```
 
 ---
@@ -21,8 +21,8 @@ import {
 ## Quick start
 
 ```ts
-import { createAdapterRegistry, InMemoryCacheAdapter } from 'confused-ai/adapters';
-import { createAgent } from 'confused-ai';
+import { createAdapterRegistry, InMemoryCacheAdapter } from 'personaforge/adapters';
+import { createAgent } from 'personaforge';
 
 const registry = createAdapterRegistry();
 
@@ -70,7 +70,7 @@ These ship with the framework and require no external services:
 Wire all core adapters in one call using `createProductionSetup`:
 
 ```ts
-import { createProductionSetup } from 'confused-ai/adapters';
+import { createProductionSetup } from 'personaforge/adapters';
 
 const { registry } = await createProductionSetup({
   postgres: { connectionString: process.env.DATABASE_URL! },
@@ -88,7 +88,7 @@ const agent = createAgent({ adapters: registry, ... });
 Pick the category interface that matches your backend. All adapters share the same base:
 
 ```ts
-import type { CacheAdapter, Adapter } from 'confused-ai/adapters';
+import type { CacheAdapter, Adapter } from 'personaforge/adapters';
 
 class RedisCacheAdapter implements CacheAdapter {
   readonly category = 'cache' as const;

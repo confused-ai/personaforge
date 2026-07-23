@@ -1,6 +1,6 @@
 ---
 title: 17 · Full Framework Showcase
-description: A guided tour of every confused-ai module — what each one does, when to add it, and how the layers fit together in a real application.
+description: A guided tour of every personaforge module — what each one does, when to add it, and how the layers fit together in a real application.
 outline: [2, 3]
 ---
 
@@ -25,9 +25,9 @@ This is the right baseline for most applications: one agent, one tool, session c
 
 ```ts
 import { z } from 'zod/v3';
-import { createAgent, tool } from 'confused-ai';
-import { InMemorySessionStore } from 'confused-ai/session';
-import { createHttpService, listenService } from 'confused-ai/serve';
+import { createAgent, tool } from 'personaforge';
+import { InMemorySessionStore } from 'personaforge/session';
+import { createHttpService, listenService } from 'personaforge/serve';
 
 const lookupStorePolicy = tool({
   name: 'lookup_store_policy',
@@ -73,61 +73,61 @@ console.log('Running on http://localhost:8787');
 
 | Module | Use when |
 |---|---|
-| `tool()` from `confused-ai` | Simple custom tools attached to one agent |
+| `tool()` from `personaforge` | Simple custom tools attached to one agent |
 | `extendTool()` / `wrapTool()` | Add logging, caching, or fallbacks to an existing tool |
-| `loadMcpToolsFromUrl()` from `confused-ai/tool` | Load tools from a remote MCP server |
-| `createMcpServer()` from `confused-ai/tool` | Expose your tool registry to external clients |
+| `loadMcpToolsFromUrl()` from `personaforge/tool` | Load tools from a remote MCP server |
+| `createMcpServer()` from `personaforge/tool` | Expose your tool registry to external clients |
 
 ### State and memory
 
 | Module | Use when |
 |---|---|
-| `confused-ai/session` | Conversation continuity across turns |
+| `personaforge/session` | Conversation continuity across turns |
 | `InMemoryStore` / `memoryStore` | Long-term agent recall (facts, preferences) |
-| `confused-ai/knowledge` | Retrieval-backed answers from documents or policies |
-| `confused-ai/storage` | Durable application state (caches, run metadata, config) |
+| `personaforge/knowledge` | Retrieval-backed answers from documents or policies |
+| `personaforge/storage` | Durable application state (caches, run metadata, config) |
 
 ### HTTP and real-time
 
 | Module | Use when |
 |---|---|
-| `confused-ai/serve` | REST, SSE, and OpenAPI-compatible HTTP runtime |
-| `confused-ai/websocket` | Persistent bidirectional connections |
-| `confused-ai/voice` | Real-time voice interactions |
-| `confused-ai/video` | Video understanding and frame analysis |
+| `personaforge/serve` | REST, SSE, and OpenAPI-compatible HTTP runtime |
+| `personaforge/websocket` | Persistent bidirectional connections |
+| `personaforge/voice` | Real-time voice interactions |
+| `personaforge/video` | Video understanding and frame analysis |
 
 ### Orchestration and workflows
 
 | Module | Use when |
 |---|---|
 | `compose()` / `pipe()` | Sequential agent pipelines with optional branching |
-| `createGraph()` from `confused-ai` | DAG workflows with fan-out, join, retry, and checkpoints |
-| `confused-ai/orchestration` | Multi-agent teams, supervisors, and role-based delegation |
+| `createGraph()` from `personaforge` | DAG workflows with fan-out, join, retry, and checkpoints |
+| `personaforge/orchestration` | Multi-agent teams, supervisors, and role-based delegation |
 
 ### Production and reliability
 
 | Module | Use when |
 |---|---|
-| `withResilience()` from `confused-ai/production` | Circuit breaker, rate limits, retry, and health checks |
+| `withResilience()` from `personaforge/production` | Circuit breaker, rate limits, retry, and health checks |
 | `budget` on `createAgent()` | Hard token and cost caps |
 | `checkpointStore` on `createAgent()` | Durable resume across process restarts |
-| `confused-ai/guard` | Guardrails for input/output safety |
-| `confused-ai/production` (approvals) | Human-in-the-loop approval flows |
+| `personaforge/guard` | Guardrails for input/output safety |
+| `personaforge/production` (approvals) | Human-in-the-loop approval flows |
 
 ### Observability and evaluation
 
 | Module | Use when |
 |---|---|
 | Lifecycle `hooks` on `createAgent()` | Lightweight logging and tracing |
-| `confused-ai/observe` | Metrics, structured traces, eval suites |
+| `personaforge/observe` | Metrics, structured traces, eval suites |
 | `runEvalSuite()` | Regression testing in CI |
 
 ### Schedulers and background work
 
 | Module | Use when |
 |---|---|
-| `confused-ai/scheduler` | Cron-based scheduled agent runs |
-| `confused-ai/queue` | Background job queues for async agent runs |
+| `personaforge/scheduler` | Cron-based scheduled agent runs |
+| `personaforge/queue` | Background job queues for async agent runs |
 
 ---
 
@@ -149,10 +149,10 @@ console.log('Running on http://localhost:8787');
 → Use `createSmartRouter()` or `createCostOptimizedRouter()` as the `llm` option.
 
 **Multiple agents need to collaborate on a task?**
-→ Use `createTeam()` or `createSupervisor()` from `confused-ai/orchestration`.
+→ Use `createTeam()` or `createSupervisor()` from `personaforge/orchestration`.
 
 **A pipeline step should run on a schedule, not on demand?**
-→ Add `ScheduleManager` from `confused-ai/scheduler`.
+→ Add `ScheduleManager` from `personaforge/scheduler`.
 
 **Need to review sensitive tool actions before they execute?**
 → Set `needsApproval: true` on the tool and add `approvalStore` to the HTTP service.

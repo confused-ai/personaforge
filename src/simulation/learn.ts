@@ -6,7 +6,7 @@
  * well and which it failed. The passing outcomes are exactly the labelled
  * examples an optimizer needs: prompt in, good answer out. `trainsetFromReport`
  * turns them into the `OptimizeExample[]` that `bootstrapFewShot` (in
- * @confused-ai/optimize) compiles into a self-tuned few-shot prompt.
+ * @personaforge/optimize) compiles into a self-tuned few-shot prompt.
  *
  * Loop: run → record → simulate → learn → better prompt → run again.
  */

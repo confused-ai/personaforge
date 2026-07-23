@@ -13,7 +13,7 @@ import {
   webResearchSkill,
   codeReviewerSkill,
   pdfSummarizerSkill,
-} from 'confused-ai/skills';
+} from 'personaforge/skills';
 ```
 
 ---
@@ -21,8 +21,8 @@ import {
 ## Attach built-in skills
 
 ```ts
-import { defineAgent } from 'confused-ai';
-import { webResearchSkill, codeReviewerSkill } from 'confused-ai/skills';
+import { defineAgent } from 'personaforge';
+import { webResearchSkill, codeReviewerSkill } from 'personaforge/skills';
 
 const agent = defineAgent('research-reviewer')
   .instructions('Help users research topics and review code.')
@@ -40,7 +40,7 @@ const agent = defineAgent('research-reviewer')
 Gives the agent a `fetch_page` tool that retrieves the visible text from any HTTPS URL:
 
 ```ts
-import { webResearchSkill } from 'confused-ai/skills';
+import { webResearchSkill } from 'personaforge/skills';
 
 const agent = defineAgent('researcher')
   .instructions('Research questions using the web.')
@@ -57,7 +57,7 @@ const result = await agent.run('What is the latest version of Node.js?');
 Gives the agent a `read_source_file` tool that loads source files from disk:
 
 ```ts
-import { codeReviewerSkill } from 'confused-ai/skills';
+import { codeReviewerSkill } from 'personaforge/skills';
 
 const agent = defineAgent('code-reviewer')
   .instructions('Review source code files for bugs and security issues.')
@@ -74,7 +74,7 @@ const result = await agent.run('Review src/runtime/jwt-rbac.ts for security vuln
 Gives the agent the ability to load and summarise PDF documents:
 
 ```ts
-import { pdfSummarizerSkill } from 'confused-ai/skills';
+import { pdfSummarizerSkill } from 'personaforge/skills';
 
 const agent = defineAgent('doc-summarizer')
   .instructions('Summarise documents and answer questions about their content.')
@@ -92,8 +92,8 @@ const result = await agent.run('Summarise the document at ./reports/Q4-2024.pdf'
 A `Skill` is a plain object with `id`, `name`, optional `instructions`, and an array of `tools`:
 
 ```ts
-import type { Skill } from 'confused-ai/contracts';
-import { defineAgent, tool } from 'confused-ai';
+import type { Skill } from 'personaforge/contracts';
+import { defineAgent, tool } from 'personaforge';
 import { z } from 'zod';
 
 const getWeather = tool({

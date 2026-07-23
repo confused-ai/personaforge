@@ -14,12 +14,12 @@ import {
   type Span,
   type SpanOptions,
 } from '@opentelemetry/api';
-import { isConfusedAIError } from '../contracts/index.js';
+import { isPersonaForgeError } from '../contracts/index.js';
 
-export const TRACER_NAME = 'confused-ai';
+export const TRACER_NAME = 'personaforge';
 
 /**
- * Returns (or creates) the named OpenTelemetry tracer for confused-ai.
+ * Returns (or creates) the named OpenTelemetry tracer for personaforge.
  *
  * @param version - Optional semver string; defaults to `npm_package_version` env var.
  */
@@ -104,7 +104,7 @@ function cleanAttributes(attrs: SpanAttributes): Record<string, string | number 
  * Wrap an async function in an active OTEL span.
  *
  * On success the span is marked OK; on failure the error is recorded and
- * `error.code` / `error.retryable` attributes are set for `ConfusedAIError`s.
+ * `error.code` / `error.retryable` attributes are set for `PersonaForgeError`s.
  *
  * @param name       - Span name (e.g. `'agent.run'`, `'tool.call'`).
  * @param attributes - Initial span attributes — `undefined` values are dropped.
@@ -131,7 +131,7 @@ export async function withSpan<T>(
           code: SpanStatusCode.ERROR,
           message: e instanceof Error ? e.message : String(e),
         });
-        if (isConfusedAIError(e)) {
+        if (isPersonaForgeError(e)) {
           span.setAttribute('error.code', e.code);
           span.setAttribute('error.retryable', e.retryable);
         }

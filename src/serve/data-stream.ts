@@ -1,5 +1,5 @@
 /**
- * @confused-ai/serve — agent data-stream protocol.
+ * @personaforge/serve — agent data-stream protocol.
  *
  * Bridges `agent.streamEvents()` (typed {@link StreamChunk}s) to a wire format
  * frontends can consume with zero glue, and back again. SSE on the wire

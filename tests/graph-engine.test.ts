@@ -63,7 +63,7 @@ import {
   type LLMResponse,
   type AgentDef,
   type GraphPlugin,
-} from '@confused-ai/graph';
+} from '@personaforge/graph';
 
 import {
   createTestRunner,

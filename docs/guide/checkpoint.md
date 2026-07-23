@@ -6,12 +6,12 @@ outline: [2, 3]
 
 # Durable Interrupt & Resume
 
-The `confused-ai/checkpoint` module lets any graph node pause execution via `interrupt()`, persist a checkpoint, and resume later when a human (or external system) provides a value. Fork-from-checkpoint clones any saved state into a new thread for time-travel exploration.
+The `personaforge/checkpoint` module lets any graph node pause execution via `interrupt()`, persist a checkpoint, and resume later when a human (or external system) provides a value. Fork-from-checkpoint clones any saved state into a new thread for time-travel exploration.
 
 ```ts
 import {
   DurableExecutor, InMemoryCheckpointStore, InterruptSignal,
-} from 'confused-ai/checkpoint';
+} from 'personaforge/checkpoint';
 ```
 
 ---
@@ -19,7 +19,7 @@ import {
 ## Quick start
 
 ```ts
-import type { NodeFn } from 'confused-ai/checkpoint';
+import type { NodeFn } from 'personaforge/checkpoint';
 
 const askApproval: NodeFn = (input, ctx) => {
   const value = ctx.interrupt({ question: 'Approve this transfer?' });

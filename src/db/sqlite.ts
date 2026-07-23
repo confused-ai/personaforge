@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/sqlite — SqliteAgentDb.
+ * @personaforge/db/sqlite — SqliteAgentDb.
  *
  * Durable, zero-server backend using better-sqlite3.
  * All tables are created lazily on first use.
@@ -17,7 +17,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] SqliteAgentDb requires better-sqlite3.\n' +
+  '[personaforge/db] SqliteAgentDb requires better-sqlite3.\n' +
   '  Install: npm install better-sqlite3\n' +
   '           npm install -D @types/better-sqlite3';
 

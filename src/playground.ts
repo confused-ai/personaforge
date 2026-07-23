@@ -1,8 +1,8 @@
 /**
- * confused-ai/playground — Interactive agent playground UI.
+ * personaforge/playground — Interactive agent playground UI.
  *
  * ```ts
- * import { createPlayground } from 'confused-ai/playground';
+ * import { createPlayground } from 'personaforge/playground';
  *
  * const svc = await createPlayground(
  *     [{ name: 'assistant', run: async (prompt) => agent.run(prompt) }],

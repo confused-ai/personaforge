@@ -1,5 +1,5 @@
 /**
- * @confused-ai/streaming — LangGraph-style event stream protocol.
+ * @personaforge/streaming — LangGraph-style event stream protocol.
  *
  * Stream modes (can be combined):
  *   values   — full state snapshot after each node finishes

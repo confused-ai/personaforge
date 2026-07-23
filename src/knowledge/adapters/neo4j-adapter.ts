@@ -154,7 +154,7 @@ export class Neo4jKnowledgeAdapter implements VectorStore {
 
         const neo4j = await import('neo4j-driver').catch(() => {
             throw new Error(
-                '@confused-ai/knowledge Neo4jKnowledgeAdapter requires "neo4j-driver". ' +
+                '@personaforge/knowledge Neo4jKnowledgeAdapter requires "neo4j-driver". ' +
                 'Install it with: pnpm add neo4j-driver',
             );
         });

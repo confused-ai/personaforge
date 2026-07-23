@@ -1,5 +1,5 @@
 /**
- * @confused-ai/agentic — ReAct-style agentic loop with tool dispatch, guardrails, and HITL
+ * @personaforge/agentic — ReAct-style agentic loop with tool dispatch, guardrails, and HITL
  */
 
 export * from './types.js';

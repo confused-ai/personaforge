@@ -1,7 +1,7 @@
 /**
  * RedisSessionStore — persistent session store backed by Redis.
  *
- * Implements the `SessionStore` interface from `@confused-ai/contracts`.
+ * Implements the `SessionStore` interface from `@personaforge/contracts`.
  * Uses `redis` (node-redis v4) as the client.
  *
  * Design:

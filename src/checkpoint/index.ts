@@ -1,5 +1,5 @@
 /**
- * @confused-ai/checkpoint — durable interrupt, resume, and fork.
+ * @personaforge/checkpoint — durable interrupt, resume, and fork.
  *
  * LangGraph-style control flow. Any node can call `ctx.interrupt(payload)`:
  *   - On first pass, interrupt() throws an InterruptSignal that the executor

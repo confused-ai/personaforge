@@ -1,8 +1,8 @@
 /**
- * confused-ai/guard — Production safety: budget, rate-limiting, circuit breakers, HITL.
+ * personaforge/guard — Production safety: budget, rate-limiting, circuit breakers, HITL.
  *
  * ```ts
- * import { budget, rateLimiter, circuitBreaker, approval } from 'confused-ai/guard'
+ * import { budget, rateLimiter, circuitBreaker, approval } from 'personaforge/guard'
  * ```
  */
 

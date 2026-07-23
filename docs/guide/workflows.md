@@ -6,12 +6,12 @@ outline: [2, 3]
 
 # Workflows
 
-The graph workflow engine lets you build typed, durable DAG workflows with explicit branching, parallel execution, retries, and checkpointing. Import from `confused-ai/workflow`.
+The graph workflow engine lets you build typed, durable DAG workflows with explicit branching, parallel execution, retries, and checkpointing. Import from `personaforge/workflow`.
 
 ## Quick start
 
 ```ts
-import { createGraph, DAGEngine } from 'confused-ai/workflow';
+import { createGraph, DAGEngine } from 'personaforge/workflow';
 
 const graph = createGraph('data-pipeline')
   .addNode('fetch', {
@@ -64,7 +64,7 @@ All graph types are created through the `GraphBuilder` or the `createGraph` help
 ### `task` node
 
 ```ts
-import { GraphBuilder } from 'confused-ai/workflow';
+import { GraphBuilder } from 'personaforge/workflow';
 
 const builder = new GraphBuilder('my-graph');
 
@@ -149,7 +149,7 @@ builder.addNode('await-approval', {
 ## Full DAG example: content pipeline
 
 ```ts
-import { createGraph, DAGEngine } from 'confused-ai/workflow';
+import { createGraph, DAGEngine } from 'personaforge/workflow';
 
 const graph = createGraph('content-pipeline')
   .addNode('plan', {
@@ -190,8 +190,8 @@ console.log(result.state.results['seo']);
 For simple sequential chains without the full graph engine:
 
 ```ts
-import { compose, pipe } from 'confused-ai/workflow';
-import { createAgent } from 'confused-ai';
+import { compose, pipe } from 'personaforge/workflow';
+import { createAgent } from 'personaforge';
 
 // compose: agents in sequence, output → input
 const chain = compose(researchAgent, writeAgent, editAgent);
@@ -231,8 +231,8 @@ builder.addNode('call-external-api', {
 The graph engine emits `GraphEvent`s. Plug in an `EventStore` to replay interrupted workflows:
 
 ```ts
-import { DAGEngine } from 'confused-ai/workflow';
-import { SqliteEventStore } from 'confused-ai';
+import { DAGEngine } from 'personaforge/workflow';
+import { SqliteEventStore } from 'personaforge';
 
 // The event store and checkpoint cadence are passed to execute(), not the constructor.
 const engine = new DAGEngine(graph);

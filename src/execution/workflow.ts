@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { createWorkflow, createStep } from 'confused-ai';
+ * import { createWorkflow, createStep } from 'personaforge';
  * import { z } from 'zod';
  *
  * const fetchData = createStep({

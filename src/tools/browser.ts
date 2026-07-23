@@ -1,5 +1,5 @@
 /**
- * @confused-ai/tools — browser fetch tool.
+ * @personaforge/tools — browser fetch tool.
  *
  * SRP  — this file owns only the browser-fetch tool.
  * DIP  — uses defineTool abstraction; no class inheritance.
@@ -91,7 +91,7 @@ export const browserTool = defineTool({
         method:  'GET',
         headers: {
           'Accept':     'text/html, */*',
-          'User-Agent': 'Mozilla/5.0 (compatible; ConfusedAI/1.0)',
+          'User-Agent': 'Mozilla/5.0 (compatible; PersonaForge/1.0)',
         },
         signal: controller.signal,
       });

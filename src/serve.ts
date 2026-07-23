@@ -1,8 +1,8 @@
 /**
- * confused-ai/serve — HTTP runtime for agents.
+ * personaforge/serve — HTTP runtime for agents.
  *
  * ```ts
- * import { serve, createRouter } from 'confused-ai/serve'
+ * import { serve, createRouter } from 'personaforge/serve'
  * serve(myAgent, { port: 3000 })
  * ```
  */

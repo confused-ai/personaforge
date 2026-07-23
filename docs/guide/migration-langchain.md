@@ -1,18 +1,18 @@
 ---
 title: Migrate From LangChain
-description: Port LangChain chains, agents, tools, memory, and retrievers to confused-ai equivalents. LLMChain becomes compose(). AgentExecutor becomes createAgent(). Document loaders map to RAG ingestion helpers.
+description: Port LangChain chains, agents, tools, memory, and retrievers to personaforge equivalents. LLMChain becomes compose(). AgentExecutor becomes createAgent(). Document loaders map to RAG ingestion helpers.
 outline: [2, 3]
 ---
 
 # Migrate From LangChain
 
-`confused-ai` replaces LangChain's broad toolkit with purpose-built modules. The table below gives the mapping, followed by side-by-side code examples.
+`personaforge` replaces LangChain's broad toolkit with purpose-built modules. The table below gives the mapping, followed by side-by-side code examples.
 
 ---
 
 ## Quick comparison
 
-| LangChain concept | confused-ai equivalent |
+| LangChain concept | personaforge equivalent |
 |---|---|
 | `ChatOpenAI`, `ChatAnthropic` | Model string in `createAgent({ model })` |
 | `LLMChain` | `compose(a, b)` or single `createAgent` call |
@@ -38,8 +38,8 @@ import { ChatOpenAI } from '@langchain/openai';
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const result = await llm.invoke('What is the capital of France?');
 
-// confused-ai
-import { createAgent } from 'confused-ai';
+// personaforge
+import { createAgent } from 'personaforge';
 const agent = createAgent({
   name: 'assistant',
   instructions: 'You are a helpful assistant.',
@@ -64,7 +64,7 @@ const chain = new LLMChain({
 });
 await chain.call({ text: document });
 
-// confused-ai
+// personaforge
 const summarizer = createAgent({
   name: 'summarizer',
   instructions: 'Summarise the provided text concisely.',
@@ -83,8 +83,8 @@ await summarizer.run(`Summarise this: ${document}`);
 const chain = prompt | llm | outputParser;
 const result = await chain.invoke({ input: 'Hello' });
 
-// confused-ai
-import { pipe } from 'confused-ai';
+// personaforge
+import { pipe } from 'personaforge';
 
 const result = await pipe(researchAgent)
   .then(summaryAgent,  { transform: (r) => `Summarise:\n${r.text}` })
@@ -107,8 +107,8 @@ const searchTool = new DynamicStructuredTool({
   func: async ({ query }) => fetchSearchResults(query),
 });
 
-// confused-ai
-import { tool } from 'confused-ai';
+// personaforge
+import { tool } from 'personaforge';
 import { z } from 'zod';
 const searchTool = tool({
   name: 'search',
@@ -129,7 +129,7 @@ const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
 const executor = new AgentExecutor({ agent, tools });
 const result = await executor.invoke({ input: 'What is the weather in London?' });
 
-// confused-ai
+// personaforge
 const weatherAgent = createAgent({
   name: 'weather-agent',
   instructions: 'Answer questions about weather using the available tools.',
@@ -152,7 +152,7 @@ const chain = new ConversationChain({ llm, memory: new ConversationBufferMemory(
 await chain.call({ input: 'My name is Alice' });
 await chain.call({ input: 'What is my name?' }); // remembers Alice
 
-// confused-ai — sessions auto-persist history
+// personaforge — sessions auto-persist history
 const agent = createAgent({ name: 'chat', instructions: 'You are a helpful assistant.', model: 'gpt-4o', apiKey: ... });
 const session = agent.createSession({ sessionId: 'user-123' });
 await session.run('My name is Alice');
@@ -169,8 +169,8 @@ const vectorStore = await MemoryVectorStore.fromTexts(texts, metadata, new OpenA
 const chain = new ConversationalRetrievalChain({ retriever: vectorStore.asRetriever(), llm });
 const result = await chain.call({ question: 'What is the return policy?' });
 
-// confused-ai
-import { createKnowledgeBase } from 'confused-ai';
+// personaforge
+import { createKnowledgeBase } from 'personaforge';
 
 const kb = await createKnowledgeBase({ type: 'memory', embedder: 'openai', apiKey: process.env.OPENAI_API_KEY! });
 await kb.add(documents);
@@ -196,7 +196,7 @@ const handler = new BaseCallbackHandler({
   handleLLMEnd: (output) => console.log('LLM done', output),
 });
 
-// confused-ai
+// personaforge
 const agent = createAgent({
   name: 'traced-agent',
   instructions: '...',

@@ -4,7 +4,7 @@
 
 import type { Logger } from '../observability/types.js';
 
-const P = '[ConfusedAI]';
+const P = '[PersonaForge]';
 
 function formatMeta(meta?: Record<string, unknown>): string {
     if (!meta || Object.keys(meta).length === 0) return '';

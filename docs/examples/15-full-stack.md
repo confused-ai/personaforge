@@ -23,9 +23,9 @@ This example shows a realistic production-shaped application: one agent, an HTTP
 
 ```ts
 import { z } from 'zod/v3';
-import { createAgent, tool } from 'confused-ai';
-import { InMemorySessionStore } from 'confused-ai/session';
-import { createHttpService, listenService } from 'confused-ai/serve';
+import { createAgent, tool } from 'personaforge';
+import { InMemorySessionStore } from 'personaforge/session';
+import { createHttpService, listenService } from 'personaforge/serve';
 
 // ── Tool ────────────────────────────────────────────────────────────────────
 const lookupInventory = tool({
@@ -127,7 +127,7 @@ Once the base service is stable, add modules one at a time:
 ### Add persistent sessions
 
 ```ts
-import { createSqliteSessionStore } from 'confused-ai/session';
+import { createSqliteSessionStore } from 'personaforge/session';
 
 const sessionStore = await createSqliteSessionStore('./agent.db');
 
@@ -140,7 +140,7 @@ const assistant = createAgent({
 ### Add a knowledge base
 
 ```ts
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 const knowledge = createKnowledgeEngine({ topK: 3, maxContextChars: 1_500 });
 
@@ -158,7 +158,7 @@ const assistant = createAgent({
 ### Add production resilience
 
 ```ts
-import { withResilience } from 'confused-ai/production';
+import { withResilience } from 'personaforge/production';
 
 const resilient = withResilience(assistant, {
   circuitBreaker: { failureThreshold: 5, resetTimeoutMs: 30_000 },
@@ -174,7 +174,7 @@ const service = createHttpService({
 ### Add long-term memory
 
 ```ts
-import { InMemoryStore, MemoryType } from 'confused-ai';
+import { InMemoryStore, MemoryType } from 'personaforge';
 
 const memoryStore = new InMemoryStore();
 

@@ -1,4 +1,4 @@
-# fly.toml — Fly.io deployment configuration for confused-ai agents
+# fly.toml — Fly.io deployment configuration for personaforge agents
 # https://fly.io/docs/reference/configuration/
 #
 # Deploy: fly launch --no-deploy && fly deploy

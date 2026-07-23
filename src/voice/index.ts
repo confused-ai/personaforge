@@ -1,5 +1,5 @@
 /**
- * @confused-ai/voice — Voice provider module
+ * @personaforge/voice — Voice provider module
  *
  * @experimental This subsystem is newer and not yet semver-stable — its
  * provider and streaming APIs may change in a minor release.

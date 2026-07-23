@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { handleMcpStdioLine } from '@confused-ai/tools';
-import { CalculatorAddTool } from '@confused-ai/tools';
+import { handleMcpStdioLine } from '@personaforge/tools';
+import { CalculatorAddTool } from '@personaforge/tools';
 
 const serverInfo = { name: 'test-mcp', version: '0.0.1' };
 

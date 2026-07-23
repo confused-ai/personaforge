@@ -15,7 +15,7 @@
  *
  * @example
  * ```ts
- * import { A2AInterface } from 'confused-ai/interfaces';
+ * import { A2AInterface } from 'personaforge/interfaces';
  *
  * new A2AInterface({
  *   agent: assistant,

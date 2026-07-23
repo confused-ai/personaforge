@@ -4,14 +4,14 @@ The absolute simplest agent. No tools. No memory. Just a conversation.
 
 ## What you'll learn
 
-- How to install confused-ai
+- How to install personaforge
 - How to create an agent
 - How to send a message and get a reply
 
 ## Setup
 
 ```bash
-npm install confused-ai
+npm install personaforge
 ```
 
 Create a `.env` file:
@@ -24,7 +24,7 @@ OPENAI_API_KEY=sk-...
 
 ```ts
 // hello-world.ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 // 1. Create the agent
 const agent = createAgent({

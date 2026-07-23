@@ -1,9 +1,9 @@
 /**
- * confused-ai/model — LLM providers
+ * personaforge/model — LLM providers
  *
  * Import your model provider from here:
  * ```ts
- * import { openai, anthropic, ollama } from 'confused-ai/model'
+ * import { openai, anthropic, ollama } from 'personaforge/model'
  * ```
  */
 
@@ -43,7 +43,7 @@ import { AnthropicProvider } from './providers/index.js';
  *
  * @example
  * ```ts
- * import { openai } from 'confused-ai/model'
+ * import { openai } from 'personaforge/model'
  * const model = openai()           // uses OPENAI_API_KEY
  * const model = openai('gpt-4.1')  // specific model
  * ```
@@ -61,7 +61,7 @@ export function openai(model?: string, options?: { apiKey?: string; baseURL?: st
  *
  * @example
  * ```ts
- * import { anthropic } from 'confused-ai/model'
+ * import { anthropic } from 'personaforge/model'
  * const model = anthropic()                    // uses ANTHROPIC_API_KEY
  * const model = anthropic('claude-sonnet-4-20250514')  // specific model
  * ```
@@ -78,7 +78,7 @@ export function anthropic(model?: string, options?: { apiKey?: string }) {
  *
  * @example
  * ```ts
- * import { ollama } from 'confused-ai/model'
+ * import { ollama } from 'personaforge/model'
  * const model = ollama()              // llama3.2 on localhost
  * const model = ollama('mistral')     // specific model
  * ```

@@ -60,11 +60,11 @@ Runnable counterparts in the repo:
 ## Quick start
 
 ```bash
-npm install confused-ai
+npm install personaforge
 ```
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'my-first-agent',

@@ -222,7 +222,7 @@ class AgentBuilder {
      *
      * @example
      * ```ts
-     * import { createSqliteCheckpointStore } from 'confused-ai/production';
+     * import { createSqliteCheckpointStore } from 'personaforge/production';
      * defineAgent()
      *   .instructions('...')
      *   .checkpoint(createSqliteCheckpointStore('./agent.db'))
@@ -239,7 +239,7 @@ class AgentBuilder {
      *
      * @example
      * ```ts
-     * import { createAdapterRegistry } from 'confused-ai/adapters';
+     * import { createAdapterRegistry } from 'personaforge/adapters';
      * defineAgent()
      *   .instructions('...')
      *   .adapters(createAdapterRegistry().register(new RedisAdapter(opts)))

@@ -9,7 +9,7 @@ outline: [2, 3]
 Evals answer one question: "Is this agent still behaving correctly?" `runEvalSuite()` runs a dataset of input/expected-output pairs against your agent, scores each response, tracks a baseline, and fails if the average score drops beyond a threshold. Run it in CI and catch regressions before they reach production.
 
 ```ts
-import { runEvalSuite, wordOverlapF1 } from 'confused-ai/observe';
+import { runEvalSuite, wordOverlapF1 } from 'personaforge/observe';
 ```
 
 ---
@@ -27,13 +27,13 @@ import { runEvalSuite, wordOverlapF1 } from 'confused-ai/observe';
 ## Basic eval suite
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   InMemoryEvalStore,
   runEvalSuite,
   wordOverlapF1,
   type EvalDatasetItem,
-} from 'confused-ai/observe';
+} from 'personaforge/observe';
 
 // ── Dataset ──────────────────────────────────────────────────────────────────
 const dataset: EvalDatasetItem[] = [
@@ -130,12 +130,12 @@ if (!report.passed) {
 `InMemoryEvalStore` loses history on restart. Use `SqliteEvalStore` to persist baselines across CI runs.
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   createSqliteEvalStore,
   runEvalSuite,
   wordOverlapF1,
-} from 'confused-ai/observe';
+} from 'personaforge/observe';
 
 const store = await createSqliteEvalStore('./evals.db');
 

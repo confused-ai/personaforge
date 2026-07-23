@@ -1,5 +1,5 @@
 /**
- * @confused-ai/sdk — High-level SDK for the confused-ai agent framework.
+ * @personaforge/sdk — High-level SDK for the personaforge agent framework.
  *
  * Provides typed agent definitions, multi-step workflows, and orchestration adapters.
  */

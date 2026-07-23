@@ -1,5 +1,5 @@
 /**
- * @confused-ai/memory — tiered, self-editing memory (Letta / MemGPT-style).
+ * @personaforge/memory — tiered, self-editing memory (Letta / MemGPT-style).
  *
  * Two tiers:
  *   - **Core memory**  — a small set of labelled blocks that are ALWAYS rendered

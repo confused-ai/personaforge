@@ -1,5 +1,5 @@
 /**
- * @confused-ai/session — InMemorySessionStore.
+ * @personaforge/session — InMemorySessionStore.
  *
  * SRP  — owns only in-memory session lifecycle.
  * DIP  — implements SessionStore interface.

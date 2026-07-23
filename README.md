@@ -1,12 +1,12 @@
-# confused-ai
-<a href="https://www.producthunt.com/products/confused-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-confused-ai" target="_blank" rel="noopener noreferrer"><img alt="confused-ai - Build AI agents, teams, and workflows in TypeScript | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1146700&theme=light&t=1778823847031"></a>
+# personaforge
+<a href="https://www.producthunt.com/products/personaforge?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-personaforge" target="_blank" rel="noopener noreferrer"><img alt="personaforge - Build AI agents, teams, and workflows in TypeScript | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1146700&theme=light&t=1778823847031"></a>
 
-`confused-ai` is a TypeScript agent framework built around one stable install story: start with a single package, ship one useful agent, then layer tools, retrieval, sessions, serving, orchestration, and production controls without changing frameworks midway through the project.
+`personaforge` is a TypeScript agent framework built around one stable install story: start with a single package, ship one useful agent, then layer tools, retrieval, sessions, serving, orchestration, and production controls without changing frameworks midway through the project.
 
 ## One quick example
 
 ```ts
-import { agent, tool } from 'confused-ai';
+import { agent, tool } from 'personaforge';
 import { z } from 'zod/v3';
 
 const getQuote = tool({
@@ -31,7 +31,7 @@ The intended feel is simple: plain TypeScript, one explicit capability at a time
 
 ## What it is for
 
-Use `confused-ai` when you want to build one of these shapes from the same public API surface:
+Use `personaforge` when you want to build one of these shapes from the same public API surface:
 
 - a single agent that answers, summarizes, or classifies
 - a tool-backed assistant that reads live application data or triggers side effects
@@ -67,18 +67,18 @@ The public install story is intentionally simple.
 
 | Import path | Use it for |
 |---|---|
-| `confused-ai` | core agent authoring, composition, and common entry points |
-| `confused-ai/session` | session stores and continuity |
-| `confused-ai/serve` | HTTP runtime |
-| `confused-ai/tool` | MCP and broader tool infrastructure |
-| `confused-ai/orchestration` | teams, supervisors, roles, and tasks |
-| `confused-ai/reasoning` | explicit reasoning steps and events |
-| `confused-ai/scheduler` | scheduled jobs and run history |
-| `confused-ai/observe` | traces, metrics, and evaluation workflows |
-| `confused-ai/adapters` | infrastructure adapters and bindings |
-| `confused-ai/guard` | runtime control primitives such as circuit breakers |
+| `personaforge` | core agent authoring, composition, and common entry points |
+| `personaforge/session` | session stores and continuity |
+| `personaforge/serve` | HTTP runtime |
+| `personaforge/tool` | MCP and broader tool infrastructure |
+| `personaforge/orchestration` | teams, supervisors, roles, and tasks |
+| `personaforge/reasoning` | explicit reasoning steps and events |
+| `personaforge/scheduler` | scheduled jobs and run history |
+| `personaforge/observe` | traces, metrics, and evaluation workflows |
+| `personaforge/adapters` | infrastructure adapters and bindings |
+| `personaforge/guard` | runtime control primitives such as circuit breakers |
 
-Avoid internal `@confused-ai/*` package imports in application code and public documentation. Those paths describe the monorepo layout, not the intended consumer API.
+Avoid internal `@personaforge/*` package imports in application code and public documentation. Those paths describe the monorepo layout, not the intended consumer API.
 
 ## Core building blocks
 
@@ -110,23 +110,23 @@ Each layer is optional. Most real projects only need a subset.
 | Graph | durable, replayable execution with tamper-evident audit |
 | Compression | keep long-running contexts within model token limits |
 | Learning | simulate runs and improve behavior from recorded outcomes |
-| Advanced Retrieval | text splitters, BM25, hybrid RRF, rerankers, and retriever primitives (`confused-ai/knowledge`) |
-| Runnable / LCEL | composable `Runnable` primitive with pipe/batch/stream/withRetry/withFallbacks/assign (`confused-ai/runnable`) |
-| Output Parsers | JSON (Zod-aware), CSV, Regex, output-fixing, retry-with-error (`confused-ai/parsers`) |
-| Structured Output | unified native JSON-schema output across OpenAI, Anthropic, Gemini (`confused-ai/structured`) |
-| Event Streaming | LangGraph-style values/updates/messages/debug/custom event bus (`confused-ai/streaming`) |
-| Durable Interrupt | `interrupt()` / `resume()` / fork-from-checkpoint (`confused-ai/checkpoint`) |
-| Reasoning Tools | Agno-style `think` / `analyze` scratchpad tools (`confused-ai/reasoning`) |
-| Team Modes | `createModeTeam` with route / coordinate / collaborate (`confused-ai/orchestration`) |
-| Model Fallbacks | `withFallbacks(primary, [alt1, alt2])`, `withRetry(...)` (`confused-ai/models`) |
-| Toolkits | SQL, HTTP, File toolkits with prompt fragments (`confused-ai/toolkits`) |
-| Deep Research | `createDeepAgent` plan-research-synthesize recipe (`confused-ai/skills`) |
-| Trace ↔ Dataset | `spanToSample`, `replayDataset`, `diffResults` for regression eval (`confused-ai/eval`) |
-| Control Plane | zero-dep AgentOS dashboard: sessions, memory, evals, traces, approvals, chat (`confused-ai/control-plane`) |
+| Advanced Retrieval | text splitters, BM25, hybrid RRF, rerankers, and retriever primitives (`personaforge/knowledge`) |
+| Runnable / LCEL | composable `Runnable` primitive with pipe/batch/stream/withRetry/withFallbacks/assign (`personaforge/runnable`) |
+| Output Parsers | JSON (Zod-aware), CSV, Regex, output-fixing, retry-with-error (`personaforge/parsers`) |
+| Structured Output | unified native JSON-schema output across OpenAI, Anthropic, Gemini (`personaforge/structured`) |
+| Event Streaming | LangGraph-style values/updates/messages/debug/custom event bus (`personaforge/streaming`) |
+| Durable Interrupt | `interrupt()` / `resume()` / fork-from-checkpoint (`personaforge/checkpoint`) |
+| Reasoning Tools | Agno-style `think` / `analyze` scratchpad tools (`personaforge/reasoning`) |
+| Team Modes | `createModeTeam` with route / coordinate / collaborate (`personaforge/orchestration`) |
+| Model Fallbacks | `withFallbacks(primary, [alt1, alt2])`, `withRetry(...)` (`personaforge/models`) |
+| Toolkits | SQL, HTTP, File toolkits with prompt fragments (`personaforge/toolkits`) |
+| Deep Research | `createDeepAgent` plan-research-synthesize recipe (`personaforge/skills`) |
+| Trace ↔ Dataset | `spanToSample`, `replayDataset`, `diffResults` for regression eval (`personaforge/eval`) |
+| Control Plane | zero-dep AgentOS dashboard: sessions, memory, evals, traces, approvals, chat (`personaforge/control-plane`) |
 
 ## Enterprise and compliance
 
-For regulated or high-assurance deployments, the graph engine is event-sourced end to end (`confused-ai/graph`), which unlocks a compliance and operations layer on top of any agent or workflow:
+For regulated or high-assurance deployments, the graph engine is event-sourced end to end (`personaforge/graph`), which unlocks a compliance and operations layer on top of any agent or workflow:
 
 | Capability | What it gives you | Guide |
 |---|---|---|

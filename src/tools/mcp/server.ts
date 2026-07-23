@@ -27,8 +27,8 @@
  *
  * @example
  * ```ts
- * import { createMcpServer } from 'confused-ai/tools';
- * import { toToolRegistry, calculatorTool } from 'confused-ai/tools';
+ * import { createMcpServer } from 'personaforge/tools';
+ * import { toToolRegistry, calculatorTool } from 'personaforge/tools';
  *
  * const registry = toToolRegistry([calculatorTool]);
  * const server = createMcpServer(registry, {
@@ -142,7 +142,7 @@ function timingSafeStringEqual(a: string, b: string): boolean {
 export interface McpServerOptions {
     /**
      * Server name returned in `initialize` response.
-     * @default 'confused-ai-mcp'
+     * @default 'personaforge-mcp'
      */
     name?: string;
     /**
@@ -317,7 +317,7 @@ export class McpHttpServer implements MCPServerAdapter {
     constructor(registry: ToolRegistry, opts: McpServerOptions = {}) {
         this.registry = registry;
         this.opts = {
-            name: opts.name ?? 'confused-ai-mcp',
+            name: opts.name ?? 'personaforge-mcp',
             version: opts.version ?? '1.0.0',
             port: opts.port ?? 3100,
             host: opts.host ?? '127.0.0.1',

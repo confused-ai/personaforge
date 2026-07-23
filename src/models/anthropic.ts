@@ -1,5 +1,5 @@
 /**
- * @confused-ai/models — Anthropic adapter.
+ * @personaforge/models — Anthropic adapter.
  * Lazy SDK import. Returns LLMProvider (DIP).
  */
 
@@ -7,7 +7,7 @@ import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../c
 import type { ModelAdapterConfig } from './types.js';
 
 const MISSING_SDK_MSG =
-  '[confused-ai] Anthropic adapter requires the @anthropic-ai/sdk package.\n' +
+  '[personaforge] Anthropic adapter requires the @anthropic-ai/sdk package.\n' +
   '  Install: npm install @anthropic-ai/sdk';
 
 const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';

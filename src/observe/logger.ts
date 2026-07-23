@@ -169,7 +169,7 @@ function tryGetOtelSpanContext(): { traceId?: string; spanId?: string } {
  *
  * @example
  * ```ts
- * import { createLogger, withTraceContext } from 'confused-ai/observe';
+ * import { createLogger, withTraceContext } from 'personaforge/observe';
  *
  * const logger = withTraceContext(createLogger({ level: 'info' }));
  * // Every log line now automatically includes traceId / spanId

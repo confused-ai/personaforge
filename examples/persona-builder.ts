@@ -24,11 +24,11 @@ config({
     quiet: true,
 });
 
-import { Agent } from 'confused-ai';
-import { definePersona } from 'confused-ai';
-import { SessionState } from 'confused-ai/session';
-import type { SessionStore } from 'confused-ai/session';
-import type { AgenticRunResult } from 'confused-ai';
+import { Agent } from 'personaforge';
+import { definePersona } from 'personaforge';
+import { SessionState } from 'personaforge/session';
+import type { SessionStore } from 'personaforge/session';
+import type { AgenticRunResult } from 'personaforge';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');

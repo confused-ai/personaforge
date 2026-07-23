@@ -76,7 +76,7 @@ export class WikipediaSearchTool extends BaseTool<typeof WikipediaSearchParamete
 
             const response = await fetch(searchUrl, {
                 headers: {
-                    'User-Agent': 'confused-ai/1.0',
+                    'User-Agent': 'personaforge/1.0',
                 },
             });
 
@@ -109,7 +109,7 @@ export class WikipediaSearchTool extends BaseTool<typeof WikipediaSearchParamete
 
             const searchResponse = await fetch(searchUrl, {
                 headers: {
-                    'User-Agent': 'confused-ai/1.0',
+                    'User-Agent': 'personaforge/1.0',
                 },
             });
 
@@ -139,7 +139,7 @@ export class WikipediaSearchTool extends BaseTool<typeof WikipediaSearchParamete
 
             const summaryResponse = await fetch(summaryUrl, {
                 headers: {
-                    'User-Agent': 'confused-ai/1.0',
+                    'User-Agent': 'personaforge/1.0',
                 },
             });
 

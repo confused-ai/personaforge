@@ -10,7 +10,7 @@
  *
  * Usage:
  * ```ts
- * import { A2AServer, createA2AServer } from 'confused-ai/orchestration';
+ * import { A2AServer, createA2AServer } from 'personaforge/orchestration';
  *
  * const server = createA2AServer({
  *   agentCard: {

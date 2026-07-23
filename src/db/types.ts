@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db — shared types.
+ * @personaforge/db — shared types.
  *
  * Row shapes and query types for every table managed by AgentDb:
  *  - SessionRow    → agent_sessions

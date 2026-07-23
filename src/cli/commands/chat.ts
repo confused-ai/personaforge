@@ -1,10 +1,10 @@
 /**
- * `confused-ai chat` — interactive single-agent REPL
+ * `personaforge chat` — interactive single-agent REPL
  *
  * Usage:
- *   confused-ai chat
- *   confused-ai chat --system "You are a Rust expert."
- *   confused-ai chat --model "openai:gpt-4o"
+ *   personaforge chat
+ *   personaforge chat --system "You are a Rust expert."
+ *   personaforge chat --model "openai:gpt-4o"
  *
  * The session ID is preserved across turns so the agent retains context for the
  * full conversation. Press Ctrl-C or type "/exit" to quit.
@@ -52,7 +52,7 @@ export function registerChatCommand(program: Command): void {
             });
 
             printLine('');
-            printLine(`  confused-ai chat  (session: ${sessionId})`);
+            printLine(`  personaforge chat  (session: ${sessionId})`);
             printLine(`  System: ${options.system}`);
             printLine(`  Type "/exit" or press Ctrl-C to quit.\n`);
 

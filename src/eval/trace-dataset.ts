@@ -1,5 +1,5 @@
 /**
- * @confused-ai/eval — dataset <-> trace loop.
+ * @personaforge/eval — dataset <-> trace loop.
  *
  * Closes the LangSmith-style workflow:
  *   1. Capture a span from a production trace (TraceSpan)

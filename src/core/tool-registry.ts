@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core — Map-backed ToolRegistry.
+ * @personaforge/core — Map-backed ToolRegistry.
  *
  * SRP  — registry owns only storage + retrieval of tools.
  * DIP  — depends on the Tool interface, not any concrete tool class.

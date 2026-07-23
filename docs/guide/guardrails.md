@@ -11,8 +11,8 @@ Guardrails run before and after each agent step to validate messages, detect uns
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { GuardrailValidator, createPiiDetectionRule, createPromptInjectionRule } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import { GuardrailValidator, createPiiDetectionRule, createPromptInjectionRule } from 'personaforge';
 
 const guardrails = new GuardrailValidator({
   rules: [
@@ -39,7 +39,7 @@ Pass `guardrails: false` to disable all guardrails.
 The core engine. Compose any combination of built-in and custom rules.
 
 ```ts
-import { GuardrailValidator } from 'confused-ai';
+import { GuardrailValidator } from 'personaforge';
 
 const guardrails = new GuardrailValidator({
   rules: [rule1, rule2, rule3],
@@ -58,7 +58,7 @@ const guardrails = new GuardrailValidator({
 Detect and optionally redact personally identifiable information:
 
 ```ts
-import { createPiiDetectionRule } from 'confused-ai';
+import { createPiiDetectionRule } from 'personaforge';
 
 const piiRule = createPiiDetectionRule({
   redact: true,           // replace PII with [REDACTED]
@@ -72,7 +72,7 @@ const piiRule = createPiiDetectionRule({
 **Detected PII types:** `email` · `phone` · `ssn` · `credit_card` · `national_insurance` · `passport` · `aws_key` · `api_key` · `jwt` · and more from `PII_PATTERNS`.
 
 ```ts
-import { detectPii, PII_PATTERNS } from 'confused-ai';
+import { detectPii, PII_PATTERNS } from 'personaforge';
 
 // Use standalone (no agent required) — detectPii is synchronous
 const result = detectPii('Contact me at alice@example.com or 555-123-4567', { extract: true });
@@ -88,7 +88,7 @@ console.log(result.matches);  // { email: ['alice@example.com'], phone: ['555-12
 Block attempts to hijack the agent via crafted input:
 
 ```ts
-import { createPromptInjectionRule, detectPromptInjection } from 'confused-ai';
+import { createPromptInjectionRule, detectPromptInjection } from 'personaforge';
 
 const injectionRule = createPromptInjectionRule({
   threshold: 0.7,    // 0.0–1.0; higher = stricter. Default: 0.7
@@ -104,8 +104,8 @@ console.log(detection.signals);     // [{ pattern: 'instruction-override', descr
 ### LLM-based injection classifier (higher accuracy)
 
 ```ts
-import { createLlmInjectionClassifier } from 'confused-ai';
-import { OpenAIProvider } from 'confused-ai';
+import { createLlmInjectionClassifier } from 'personaforge';
+import { OpenAIProvider } from 'personaforge';
 
 const injectionRule = createLlmInjectionClassifier({
   llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! }),
@@ -121,7 +121,7 @@ const injectionRule = createLlmInjectionClassifier({
 ### OpenAI Moderation API
 
 ```ts
-import { createOpenAiModerationRule } from 'confused-ai';
+import { createOpenAiModerationRule } from 'personaforge';
 
 const moderationRule = createOpenAiModerationRule({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -140,7 +140,7 @@ const moderationRule = createOpenAiModerationRule({
 ### Forbidden topics
 
 ```ts
-import { createForbiddenTopicsRule } from 'confused-ai';
+import { createForbiddenTopicsRule } from 'personaforge';
 
 const topicsRule = createForbiddenTopicsRule({
   topics: ['competitor pricing', 'internal salary data', 'acquisition plans'],
@@ -159,7 +159,7 @@ import {
   createAllowlistRule,
   createSensitiveDataRule,
   createUrlValidationRule,
-} from 'confused-ai';
+} from 'personaforge';
 
 const rules = [
   // Block responses that contain specific patterns.
@@ -198,7 +198,7 @@ const rules = [
 Restrict which tools the agent can call from within a guardrail rule:
 
 ```ts
-import { createToolAllowlistRule } from 'confused-ai';
+import { createToolAllowlistRule } from 'personaforge';
 
 // Signature: createToolAllowlistRule(allowedTools). Any tool not in the list
 // is blocked before execution.
@@ -210,7 +210,7 @@ const toolRule = createToolAllowlistRule(['search_orders', 'get_product_info']);
 ## Custom rules
 
 ```ts
-import type { GuardrailRule, GuardrailContext, GuardrailResult } from 'confused-ai';
+import type { GuardrailRule, GuardrailContext, GuardrailResult } from 'personaforge';
 
 const noProfanityRule: GuardrailRule = {
   name: 'no-profanity',
@@ -239,7 +239,7 @@ const guardrails = new GuardrailValidator({ rules: [noProfanityRule] });
 ## Full example: production guardrail stack
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   GuardrailValidator,
   createPromptInjectionRule,
@@ -248,7 +248,7 @@ import {
   createForbiddenTopicsRule,
   createMaxLengthRule,
   createToolAllowlistRule,
-} from 'confused-ai';
+} from 'personaforge';
 
 const guardrails = new GuardrailValidator({
   rules: [

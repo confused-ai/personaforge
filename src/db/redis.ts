@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/redis — RedisAgentDb.
+ * @personaforge/db/redis — RedisAgentDb.
  *
  * Uses ioredis. Data is stored as Redis hashes keyed by record id.
  * Sets and sorted sets track membership for list/query operations.
@@ -21,7 +21,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] RedisAgentDb requires ioredis.\n' +
+  '[personaforge/db] RedisAgentDb requires ioredis.\n' +
   '  Install: npm install ioredis';
 
 type RedisClient = {

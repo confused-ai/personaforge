@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core — public types.
+ * @personaforge/core — public types.
  *
  * Re-exports the subset of types that external consumers need.
  * Internal runner types live in src/runner/types.ts.

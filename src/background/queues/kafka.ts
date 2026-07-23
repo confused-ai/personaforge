@@ -8,7 +8,7 @@
  *
  * @example
  * ```ts
- * import { KafkaBackgroundQueue } from 'confused-ai/background';
+ * import { KafkaBackgroundQueue } from 'personaforge/background';
  *
  * const queue = new KafkaBackgroundQueue({
  *   brokers: ['kafka:9092'],
@@ -66,7 +66,7 @@ export class KafkaBackgroundQueue implements BackgroundQueue {
         // @ts-ignore -- kafkajs is an optional peer dep
         const { Kafka } = (await import('kafkajs')) as any;
         this.kafka = new Kafka({
-            clientId: this.opts.clientId ?? 'confused-ai-bg',
+            clientId: this.opts.clientId ?? 'personaforge-bg',
             brokers: this.opts.brokers,
             ...(this.opts.kafkaOptions ?? {}),
         });
@@ -115,7 +115,7 @@ export class KafkaBackgroundQueue implements BackgroundQueue {
         const { Kafka } = (await import('kafkajs')) as any;
         if (!this.kafka) {
             this.kafka = new Kafka({
-                clientId: `${this.opts.clientId ?? 'confused-ai-bg'}-worker`,
+                clientId: `${this.opts.clientId ?? 'personaforge-bg'}-worker`,
                 brokers: this.opts.brokers,
                 ...(this.opts.kafkaOptions ?? {}),
             });

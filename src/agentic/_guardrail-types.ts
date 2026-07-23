@@ -1,5 +1,5 @@
 /**
- * Guardrail types — re-exported from @confused-ai/guardrails
+ * Guardrail types — re-exported from @personaforge/guardrails
  */
 export type {
     GuardrailResult,

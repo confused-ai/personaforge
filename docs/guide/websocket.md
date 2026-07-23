@@ -9,8 +9,8 @@ outline: [2, 3]
 Agents support three streaming modes out of the box: simple string chunks via `agent.stream()`, typed events via `agent.streamEvents()`, and resumable SSE streams via `ResumableStreamManager`.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { ResumableStreamManager, formatSSE } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import { ResumableStreamManager, formatSSE } from 'personaforge';
 ```
 
 ---
@@ -82,7 +82,7 @@ Serve streaming responses as Server-Sent Events from any HTTP server:
 
 ```ts
 import Fastify from 'fastify';
-import { createAgent, formatSSE, ResumableStreamManager } from 'confused-ai';
+import { createAgent, formatSSE, ResumableStreamManager } from 'personaforge';
 
 const app = Fastify();
 const agent = createAgent({ ... });
@@ -120,7 +120,7 @@ app.get('/stream', async (req, reply) => {
 `ResumableStreamManager` checkpoints every chunk so clients can reconnect from where they left off:
 
 ```ts
-import { ResumableStreamManager } from 'confused-ai';
+import { ResumableStreamManager } from 'personaforge';
 
 const streams = new ResumableStreamManager({
   maxAgeMs: 5 * 60_000,    // keep streams resumable for 5 minutes

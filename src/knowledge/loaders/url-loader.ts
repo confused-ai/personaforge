@@ -56,7 +56,7 @@ export interface UrlLoaderOptions {
      */
     timeoutMs?: number;
     /**
-     * User-agent string. Default: 'confused-ai-knowledge-loader/1.0'
+     * User-agent string. Default: 'personaforge-knowledge-loader/1.0'
      */
     userAgent?: string;
     /** Additional metadata to attach to the generated Document */
@@ -86,7 +86,7 @@ export async function loadUrl(
     options: UrlLoaderOptions = {},
 ): Promise<Document[]> {
     const timeoutMs = options.timeoutMs ?? 10_000;
-    const userAgent = options.userAgent ?? 'confused-ai-knowledge-loader/1.0';
+    const userAgent = options.userAgent ?? 'personaforge-knowledge-loader/1.0';
     const extraMeta = options.metadata ?? {};
 
     // ── SSRF validation ───────────────────────────────────────────────────────

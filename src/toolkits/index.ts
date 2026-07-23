@@ -1,5 +1,5 @@
 /**
- * @confused-ai/toolkits — curated tool bundles with prompt fragments.
+ * @personaforge/toolkits — curated tool bundles with prompt fragments.
  *
  * A toolkit is a named set of tools *plus* an optional system-prompt fragment
  * describing how the agent should use them. This matches the LangChain

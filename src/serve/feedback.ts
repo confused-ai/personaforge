@@ -4,8 +4,8 @@
  * Mount this with your HTTP server framework of choice:
  *
  * ```ts
- * import { handleFeedback } from 'confused-ai/serve';
- * import { InMemoryFeedbackStore } from 'confused-ai/production';
+ * import { handleFeedback } from 'personaforge/serve';
+ * import { InMemoryFeedbackStore } from 'personaforge/production';
  *
  * const store = new InMemoryFeedbackStore();
  *

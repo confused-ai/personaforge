@@ -1,5 +1,5 @@
 /**
- * @confused-ai/production — FeedbackStore.
+ * @personaforge/production — FeedbackStore.
  *
  * Captures thumbs-up/down ratings and optional free-text comments tied to a
  * specific agent run. Useful for RLHF pipelines, eval regression tracking,
@@ -11,7 +11,7 @@
  *
  * Usage:
  * ```ts
- * import { InMemoryFeedbackStore } from 'confused-ai/production';
+ * import { InMemoryFeedbackStore } from 'personaforge/production';
  *
  * const store = new InMemoryFeedbackStore();
  * await store.append({ runId: '…', rating: 1, comment: 'Great!' });

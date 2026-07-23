@@ -9,7 +9,7 @@ outline: [2, 3]
 `CompressionManager` detects when message threads have grown too large and compresses verbose tool outputs into compact, fact-preserving summaries — in-place, without losing the context the task depends on.
 
 ```ts
-import { CompressionManager } from 'confused-ai';
+import { CompressionManager } from 'personaforge';
 ```
 
 ---
@@ -17,7 +17,7 @@ import { CompressionManager } from 'confused-ai';
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 // Mastermind context compression is built into createAgent and ON by default.
 // It compresses tool outputs, logs, code, and history before they reach the LLM.
@@ -143,7 +143,7 @@ The pipeline executes four stages on every run:
 4. **Code & Context Reduction (CCR)**: Replaces original content with compressed annotations, stashing the originals. Re-injects a retrieval tool so the agent can fetch the raw details if needed.
 
 ```ts
-import { Mastermind, OpenAIProvider } from 'confused-ai';
+import { Mastermind, OpenAIProvider } from 'personaforge';
 
 const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -219,7 +219,7 @@ Attached to an agent via the `mastermind` option, the same lifetime dashboard is
 
 ### Also in the compression module
 
-Beyond `CompressionManager` and `Mastermind`, `confused-ai/compression` also exports standalone utilities: `HuffmanCodec` (+ `compressContext` / `decompressContext`), `SummaryBufferMemory`, `createSlidingWindow` / `applyWindow`, `EntityExtractionMemory`, `createTokenCounter` / `countTokens` / `contextBudget`, the structural crushers (`crushJsonText`, `compressCode`, `crushLog`, `crushXml`, `crushCsv`), and the CCR primitives `CCRStore` / `createRetrieveTool`.
+Beyond `CompressionManager` and `Mastermind`, `personaforge/compression` also exports standalone utilities: `HuffmanCodec` (+ `compressContext` / `decompressContext`), `SummaryBufferMemory`, `createSlidingWindow` / `applyWindow`, `EntityExtractionMemory`, `createTokenCounter` / `countTokens` / `contextBudget`, the structural crushers (`crushJsonText`, `compressCode`, `crushLog`, `crushXml`, `crushCsv`), and the CCR primitives `CCRStore` / `createRetrieveTool`.
 
 ---
 

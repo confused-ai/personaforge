@@ -1,7 +1,7 @@
 /**
  * Adapters — Universal extensibility layer.
  *
- * Import path: `confused-ai/adapters`
+ * Import path: `personaforge/adapters`
  *
  * @example
  * ```ts
@@ -9,7 +9,7 @@
  *   createAdapterRegistry,
  *   InMemoryCacheAdapter,
  *   InMemoryVectorAdapter,
- * } from 'confused-ai/adapters';
+ * } from 'personaforge/adapters';
  *
  * const registry = createAdapterRegistry();
  *

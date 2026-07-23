@@ -14,7 +14,7 @@ import {
   createKnowledgeEngine,
   InMemoryVectorStore,   // built-in, good for <10 000 docs
   loadPdf, loadCsv, loadUrl,
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -22,9 +22,9 @@ import {
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createKnowledgeEngine, loadUrl } from 'confused-ai';
-import { OpenAIEmbeddingProvider } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import { createKnowledgeEngine, loadUrl } from 'personaforge';
+import { OpenAIEmbeddingProvider } from 'personaforge';
 
 // 1. Build the engine — `embed` is an EmbeddingFn: (text) => Promise<number[]>
 const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
@@ -58,7 +58,7 @@ console.log(result.text);
 ### Load from URL
 
 ```ts
-import { loadUrl } from 'confused-ai';
+import { loadUrl } from 'personaforge';
 
 const docs = await loadUrl('https://example.com/docs', {
   recursive: true,
@@ -70,7 +70,7 @@ const docs = await loadUrl('https://example.com/docs', {
 ### Load PDF
 
 ```ts
-import { loadPdf } from 'confused-ai';
+import { loadPdf } from 'personaforge';
 
 const docs = await loadPdf('./data/handbook.pdf', {
   splitByPage: true,  // one Document per page
@@ -81,7 +81,7 @@ const docs = await loadPdf('./data/handbook.pdf', {
 ### Load CSV
 
 ```ts
-import { loadCsv } from 'confused-ai';
+import { loadCsv } from 'personaforge';
 
 const docs = await loadCsv('./data/products.csv', {
   contentColumn: 'description',   // column to use as document content
@@ -92,7 +92,7 @@ const docs = await loadCsv('./data/products.csv', {
 ### Manual documents
 
 ```ts
-import type { Document } from 'confused-ai';
+import type { Document } from 'personaforge';
 
 const docs: Document[] = [
   {
@@ -125,7 +125,7 @@ const kb = createKnowledgeEngine({
 Production-ready vector search backed by PostgreSQL + pgvector:
 
 ```ts
-import { PgvectorKnowledgeAdapter, createKnowledgeEngine } from 'confused-ai';
+import { PgvectorKnowledgeAdapter, createKnowledgeEngine } from 'personaforge';
 
 const adapter = new PgvectorKnowledgeAdapter({
   connectionString: process.env.DATABASE_URL!,
@@ -139,7 +139,7 @@ const kb = createKnowledgeEngine({ embed: myEmbed, store: adapter });
 ### ChromaKnowledgeAdapter
 
 ```ts
-import { ChromaKnowledgeAdapter } from 'confused-ai';
+import { ChromaKnowledgeAdapter } from 'personaforge';
 
 const adapter = new ChromaKnowledgeAdapter({
   url: 'http://localhost:8000',
@@ -151,7 +151,7 @@ const adapter = new ChromaKnowledgeAdapter({
 ### Neo4jKnowledgeAdapter — graph RAG
 
 ```ts
-import { Neo4jKnowledgeAdapter } from 'confused-ai';
+import { Neo4jKnowledgeAdapter } from 'personaforge';
 
 const adapter = new Neo4jKnowledgeAdapter({
   uri: process.env.NEO4J_URI!,
@@ -164,8 +164,8 @@ const adapter = new Neo4jKnowledgeAdapter({
 ### DbKnowledgeEngine — zero infra (SQLite-backed)
 
 ```ts
-import { createDbKnowledgeEngine } from 'confused-ai';
-import { SqliteAgentDb } from 'confused-ai/db';
+import { createDbKnowledgeEngine } from 'personaforge';
+import { SqliteAgentDb } from 'personaforge/db';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
 const kb = createDbKnowledgeEngine({ db, embed: myEmbed });
@@ -189,7 +189,7 @@ console.log(context);
 ## Embedding providers
 
 ```ts
-import { OpenAIEmbeddingProvider } from 'confused-ai';
+import { OpenAIEmbeddingProvider } from 'personaforge';
 
 const openaiEmbed = new OpenAIEmbeddingProvider({ apiKey: '...', model: 'text-embedding-3-small' });
 ```
@@ -199,7 +199,7 @@ const openaiEmbed = new OpenAIEmbeddingProvider({ apiKey: '...', model: 'text-em
 Any `async (text: string) => number[]` works:
 
 ```ts
-import type { EmbeddingFn } from 'confused-ai';
+import type { EmbeddingFn } from 'personaforge';
 
 const myEmbed: EmbeddingFn = async (text) => {
   const res = await fetch('https://my-embed-service/embed', {
@@ -220,7 +220,7 @@ Avoid re-embedding identical text within a process. `withEmbeddingCache` wraps a
 embeddings in memory (no external store, no TTL). The cache is cleared on restart.
 
 ```ts
-import { withEmbeddingCache } from 'confused-ai';
+import { withEmbeddingCache } from 'personaforge';
 
 // Second arg is the max number of cached entries (default: 500).
 const cachedEmbed = withEmbeddingCache(myEmbeddingFn, 500);

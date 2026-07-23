@@ -9,8 +9,8 @@ outline: [2, 3]
 `AgenticLifecycleHooks` let you attach behavior at key lifecycle points without touching core agent logic. Pass a `hooks` object to `createAgent()`.
 
 ```ts
-import { createAgent } from 'confused-ai';
-import type { AgenticLifecycleHooks } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import type { AgenticLifecycleHooks } from 'personaforge';
 ```
 
 ---

@@ -6,14 +6,14 @@ outline: [2, 3]
 
 # Orchestration
 
-The framework ships a full orchestration layer for coordinating multiple agents. Import from `confused-ai/workflow` or `confused-ai`.
+The framework ships a full orchestration layer for coordinating multiple agents. Import from `personaforge/workflow` or `personaforge`.
 
 ```ts
 import {
   Team, SwarmOrchestrator, createSupervisor, createHandoff,
   createAgentRouter, createConsensus, createPipeline,
   compose, pipe,
-} from 'confused-ai/workflow';
+} from 'personaforge/workflow';
 ```
 
 ---
@@ -23,7 +23,7 @@ import {
 Chain agents sequentially. Each agent's output becomes the next agent's input.
 
 ```ts
-import { compose, createAgent } from 'confused-ai';
+import { compose, createAgent } from 'personaforge';
 
 const researcher = createAgent({ name: 'researcher', instructions: 'Research the topic.', model: 'gpt-4o', apiKey: '...' });
 const writer     = createAgent({ name: 'writer',     instructions: 'Write a clear report from the research.', model: 'gpt-4o-mini', apiKey: '...' });
@@ -38,7 +38,7 @@ console.log(result.text);
 ### `pipe` — functional style
 
 ```ts
-import { pipe } from 'confused-ai/workflow';
+import { pipe } from 'personaforge/workflow';
 
 const process = pipe(
   (input: string) => researcher.run(input),
@@ -56,7 +56,7 @@ const result = await process('Quantum computing 2026');
 Coordinate a team of specialist agents under a named team identity:
 
 ```ts
-import { Team, createAgent } from 'confused-ai';
+import { Team, createAgent } from 'personaforge';
 
 const codeAgent   = createAgent({ name: 'coder',    instructions: 'Write production-quality TypeScript.', model: 'gpt-4o', apiKey: '...' });
 const reviewAgent = createAgent({ name: 'reviewer', instructions: 'Review code for bugs and style.', model: 'gpt-4o-mini', apiKey: '...' });
@@ -79,8 +79,8 @@ console.log(result.synthesis);
 A supervisor agent decides which specialist to delegate each task to:
 
 ```ts
-import { createSupervisor, createRole } from 'confused-ai/orchestration';
-import { createAgent } from 'confused-ai';
+import { createSupervisor, createRole } from 'personaforge/orchestration';
+import { createAgent } from 'personaforge';
 
 const supervisor = createSupervisor({
   name: 'triage',
@@ -106,7 +106,7 @@ console.log(result);
 Define explicit handoff conditions so agents can transfer control at runtime:
 
 ```ts
-import { createHandoff, createAgent } from 'confused-ai';
+import { createHandoff, createAgent } from 'personaforge';
 
 const triageAgent = createAgent({
   name: 'triage',
@@ -142,7 +142,7 @@ console.log(result.finalOutput.result);  // answered by the specialist
 Route requests to agents based on declared capabilities:
 
 ```ts
-import { createAgentRouter, createAgent } from 'confused-ai';
+import { createAgentRouter, createAgent } from 'personaforge';
 
 const router = createAgentRouter({
   strategy: 'capability-match',  // 'capability-match' | 'round-robin' | 'least-loaded'
@@ -163,7 +163,7 @@ const result = await router.route('Fix the SQL query performance issue.');
 Run multiple agents on the same prompt and pick the best answer by consensus:
 
 ```ts
-import { createConsensus, createAgent } from 'confused-ai';
+import { createConsensus, createAgent } from 'personaforge';
 
 const consensus = createConsensus({
   agents: {
@@ -192,7 +192,7 @@ limits and the model, not a fixed agent list. Use the `createSwarm` factory or t
 `SwarmOrchestrator` class directly:
 
 ```ts
-import { createSwarm } from 'confused-ai';
+import { createSwarm } from 'personaforge';
 
 const swarm = createSwarm({
   maxSubagents: 12,
@@ -219,7 +219,7 @@ console.log(result.aggregatedOutput);  // collated subtask results
 Chain agents with typed input/output contracts:
 
 ```ts
-import { createPipeline } from 'confused-ai';
+import { createPipeline } from 'personaforge';
 
 // Agents run in order; each agent receives the previous agent's output as its input.
 const pipeline = createPipeline({
@@ -237,7 +237,7 @@ const report = await pipeline.run('Extract, enrich, and report on the sales data
 Expose an agent as an HTTP service and connect to it from another process:
 
 ```ts
-import { A2AServer, createHttpA2AClient } from 'confused-ai/workflow';
+import { A2AServer, createHttpA2AClient } from 'personaforge/workflow';
 
 // Server side
 const server = new A2AServer({ agent: myAgent, port: 3100 });
@@ -257,7 +257,7 @@ import {
   RoundRobinLoadBalancer,
   LeastConnectionsLoadBalancer,
   WeightedResponseTimeLoadBalancer,
-} from 'confused-ai/workflow';
+} from 'personaforge/workflow';
 
 const balancer = new LeastConnectionsLoadBalancer([agentA, agentB, agentC]);
 const agent = balancer.pick();
@@ -275,7 +275,7 @@ The **GSD (Get Shit Done) Protocol** is a spec-driven multi-agent pattern that s
 State is kept aligned by writing to a `.planning` workspace folder containing `REQUIREMENTS.md`, `ROADMAP.md`, and `STATE.md`.
 
 ```ts
-import { createGSDCoordinator, FilesystemGSDStorage } from 'confused-ai/workflow';
+import { createGSDCoordinator, FilesystemGSDStorage } from 'personaforge/workflow';
 
 const gsd = createGSDCoordinator({
   projectDir: './my-project',
@@ -307,7 +307,7 @@ if (verification.success) {
 The **Ralph / RALF Loop Protocol** (Read-Act-Loop-Finish) runs a single agent in an iterative loop to solve complex tasks. To avoid context bloat and performance degradation, it creates a fresh session instance for each cycle while propagating concise summaries of preceding cycles in the prompt.
 
 ```ts
-import { createRalphLoop } from 'confused-ai/workflow';
+import { createRalphLoop } from 'personaforge/workflow';
 
 const loop = createRalphLoop({
   agent: codingAgent,
@@ -327,13 +327,13 @@ console.log(result.cyclesRun);   // e.g. 3
 
 ## Extended Multi-Agent Orchestration Patterns
 
-The framework supports 9 advanced agentic interaction patterns under `confused-ai` to orchestrate agents for specific reasoning, code execution, or tutoring tasks.
+The framework supports 9 advanced agentic interaction patterns under `personaforge` to orchestrate agents for specific reasoning, code execution, or tutoring tasks.
 
 ### 1. Mixture-of-Agents (MoA)
 Combines multiple proposer agents to generate candidate responses in parallel, then refines them across rounds before a single aggregator agent synthesizes the final result.
 
 ```ts
-import { createMixtureOfAgents } from 'confused-ai';
+import { createMixtureOfAgents } from 'personaforge';
 
 const moa = createMixtureOfAgents({
   name: 'MoA-Synthesizer',
@@ -349,7 +349,7 @@ const outcome = await moa.run({ prompt: 'Write an optimized matrix multiplicatio
 An Actor agent generates an answer, which a Critic agent reviews. The Actor refines the answer based on the Critic's feedback, looping until satisfying a validator or reaching `maxRefinements`.
 
 ```ts
-import { createActorCritic } from 'confused-ai';
+import { createActorCritic } from 'personaforge';
 
 const actorCritic = createActorCritic({
   name: 'Code-Review-Loop',
@@ -364,7 +364,7 @@ const actorCritic = createActorCritic({
 Wraps an agent to guide users conceptually without giving direct answers, forcing reflection by asking clarifying questions or pointing out contradictions.
 
 ```ts
-import { createSocraticAgent } from 'confused-ai';
+import { createSocraticAgent } from 'personaforge';
 
 const tutor = createSocraticAgent({
   name: 'Math-Tutor',
@@ -378,7 +378,7 @@ const tutor = createSocraticAgent({
 Sequentially pipes a series of structured tasks where each agent's execution depends on the outputs of preceding agents.
 
 ```ts
-import { createPromptChain } from 'confused-ai';
+import { createPromptChain } from 'personaforge';
 
 const chain = createPromptChain({
   name: 'Content-Pipeline',
@@ -398,7 +398,7 @@ const chain = createPromptChain({
 Delegates mathematical or algorithmic tasks to an agent by prompting it to write executable code (e.g. JavaScript), executes that code in a sandbox runtime, and feeds the results back to the agent to synthesize the final answer.
 
 ```ts
-import { createProgramOfThought } from 'confused-ai';
+import { createProgramOfThought } from 'personaforge';
 
 const pot = createProgramOfThought({
   name: 'Math-PoT',
@@ -414,7 +414,7 @@ const pot = createProgramOfThought({
 Speeds up long generation tasks by first generating a structured outline (skeleton), then invoking worker agents in parallel to write details for each section, finally joining the details together.
 
 ```ts
-import { createSkeletonOfThought } from 'confused-ai';
+import { createSkeletonOfThought } from 'personaforge';
 
 const sot = createSkeletonOfThought({
   name: 'Article-Generator',
@@ -428,7 +428,7 @@ const sot = createSkeletonOfThought({
 Prompts an agent to "step back" and analyze the underlying conceptual principle or broader context of a task first, then feeds that abstraction as context to a solver agent to resolve the original question.
 
 ```ts
-import { createStepBackAgent } from 'confused-ai';
+import { createStepBackAgent } from 'personaforge';
 
 const stepBack = createStepBackAgent({
   name: 'Physics-Solver',
@@ -441,7 +441,7 @@ const stepBack = createStepBackAgent({
 Generates `N` candidate answers in parallel and evaluates each candidate using a scoring function or a Judge agent, returning the highest-scoring candidate.
 
 ```ts
-import { createRejectionSampling } from 'confused-ai';
+import { createRejectionSampling } from 'personaforge';
 
 const bestOfN = createRejectionSampling({
   name: 'Creative-Writer',
@@ -457,7 +457,7 @@ const bestOfN = createRejectionSampling({
 Runs an agentic loop that tests the agent's output against a validator function. If the output fails validation, the agent is prompted with the errors to self-correct its answer, up to `maxRetries`.
 
 ```ts
-import { createSelfCorrection } from 'confused-ai';
+import { createSelfCorrection } from 'personaforge';
 
 const selfDebugger = createSelfCorrection({
   name: 'JSON-Validator',

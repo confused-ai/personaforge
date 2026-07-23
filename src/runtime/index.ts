@@ -1,9 +1,9 @@
 /**
  * Production HTTP runtime: stateless app + session-scoped agent APIs.
  *
- * @deprecated This implementation folder will be merged into `@confused-ai/serve` in the
+ * @deprecated This implementation folder will be merged into `@personaforge/serve` in the
  *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@confused-ai/serve` directly.
+ *   Migrate new code to import from `@personaforge/serve` directly.
  */
 
 export { createHttpService, listenService } from './server.js';

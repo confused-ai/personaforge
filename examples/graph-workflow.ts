@@ -26,7 +26,7 @@ import {
   type NodeContext,
   type GraphPlugin,
   type GraphEvent,
-} from 'confused-ai/graph';
+} from 'personaforge/graph';
 
 // ── Step Functions ──────────────────────────────────────────────────────────
 

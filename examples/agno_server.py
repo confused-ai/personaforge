@@ -1,5 +1,5 @@
 """
-Agno benchmark server — used by examples/agno-vs-confused-ai.ts
+Agno benchmark server — used by examples/agno-vs-personaforge.ts
 
 Setup:
     uv pip install 'agno[os]' openai

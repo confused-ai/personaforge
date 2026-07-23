@@ -1,8 +1,8 @@
 /**
- * confused-ai/observe — Telemetry, logging, tracing, metrics.
+ * personaforge/observe — Telemetry, logging, tracing, metrics.
  *
  * ```ts
- * import { logger, tracer, metrics } from 'confused-ai/observe'
+ * import { logger, tracer, metrics } from 'personaforge/observe'
  * ```
  */
 

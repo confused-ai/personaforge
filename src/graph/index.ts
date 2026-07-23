@@ -1,8 +1,8 @@
 /**
- * @confused-ai/graph — DAG execution engine, event store, scheduler, and durable executor.
+ * @personaforge/graph — DAG execution engine, event store, scheduler, and durable executor.
  *
  * Package barrel — re-exports everything from the implementation modules.
- * Use `@confused-ai/core` imports for the bridge utilities (no root src/ dependency).
+ * Use `@personaforge/core` imports for the bridge utilities (no root src/ dependency).
  */
 
 // ── Core Types ──────────────────────────────────────────────────────────────
@@ -162,7 +162,7 @@ import type { LLMProvider as CoreLLMProvider, Message as CoreMessage, GenerateRe
 import type { LLMProvider as GraphLLMProvider, LLMMessage, LLMResponse } from './types.js';
 
 /**
- * Bridge a `@confused-ai/core` LLMProvider into the graph engine's
+ * Bridge a `@personaforge/core` LLMProvider into the graph engine's
  * `LLMProvider` interface. Use this when you want to pass the same LLM provider
  * you use with `createAgent()` into the graph engine or `AgentRuntime`.
  */

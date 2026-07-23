@@ -1,5 +1,5 @@
 /**
- * @confused-ai/models — OpenAI adapter.
+ * @personaforge/models — OpenAI adapter.
  *
  * SRP  — This file owns only the OpenAI provider.
  * DIP  — Returns LLMProvider interface; caller never sees the SDK class.
@@ -10,7 +10,7 @@ import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../c
 import type { ModelAdapterConfig } from './types.js';
 
 const MISSING_SDK_MSG =
-  '[confused-ai] OpenAI adapter requires the openai package.\n' +
+  '[personaforge] OpenAI adapter requires the openai package.\n' +
   '  Install: npm install openai  (or: yarn add / pnpm add / bun add openai)';
 
 const DEFAULT_MODEL = 'gpt-4o';

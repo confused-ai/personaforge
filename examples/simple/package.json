@@ -10,6 +10,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "confused-ai": "2.2.0"
+    "personaforge": "2.2.0"
   }
 }

@@ -1,48 +1,48 @@
 ---
 title: "API Reference"
-description: "Public API map for confused-ai with verified root and subpath imports."
+description: "Public API map for personaforge with verified root and subpath imports."
 outline: [2, 3]
 ---
 
 # API Reference
 
-`confused-ai` is a single install. Public docs should use `confused-ai` or `confused-ai/<module>` imports only.
+`personaforge` is a single install. Public docs should use `personaforge` or `personaforge/<module>` imports only.
 
 ```bash
-npm install confused-ai
+npm install personaforge
 ```
 
-Do not use internal workspace imports such as `@confused-ai/*`. Do not document `confused-ai/contracts/extensions` as a consumer import surface.
+Do not use internal workspace imports such as `@personaforge/*`. Do not document `personaforge/contracts/extensions` as a consumer import surface.
 
 ## Recommended Import Map
 
 | Import | Use for |
 |--------|---------|
-| `confused-ai` | Main authoring API: `agent`, `createAgent`, `defineAgent`, `compose`, `pipe` |
-| `confused-ai/model` | Provider factories such as `openai`, `anthropic`, and `ollama` |
-| `confused-ai/tool` | Tool authoring helpers such as `tool`, `defineTool`, `createTools`, and `extendTool` |
-| `confused-ai/tools` | Built-in tools and focused tool subpaths |
-| `confused-ai/workflow` | Graphs, orchestration helpers, teams, handoffs, and agent routing |
-| `confused-ai/guard` | Circuit breaker, rate limiting, approval primitives, and guardrails |
-| `confused-ai/production` | `withResilience` plus audit, checkpoint, idempotency, approval, and tenancy utilities |
-| `confused-ai/serve` | HTTP service creation and transport helpers |
-| `confused-ai/observe` | Logging, tracing, metrics, and evaluation helpers |
-| `confused-ai/session` | Session persistence |
-| `confused-ai/memory` | Long-lived and vector memory |
-| `confused-ai/knowledge` | Knowledge and retrieval layers |
-| `confused-ai/storage` | Generic storage layer |
-| `confused-ai/skills` | Skill composition |
-| `confused-ai/background` | Background queues and hook offloading |
-| `confused-ai/voice` | Voice and speech providers |
+| `personaforge` | Main authoring API: `agent`, `createAgent`, `defineAgent`, `compose`, `pipe` |
+| `personaforge/model` | Provider factories such as `openai`, `anthropic`, and `ollama` |
+| `personaforge/tool` | Tool authoring helpers such as `tool`, `defineTool`, `createTools`, and `extendTool` |
+| `personaforge/tools` | Built-in tools and focused tool subpaths |
+| `personaforge/workflow` | Graphs, orchestration helpers, teams, handoffs, and agent routing |
+| `personaforge/guard` | Circuit breaker, rate limiting, approval primitives, and guardrails |
+| `personaforge/production` | `withResilience` plus audit, checkpoint, idempotency, approval, and tenancy utilities |
+| `personaforge/serve` | HTTP service creation and transport helpers |
+| `personaforge/observe` | Logging, tracing, metrics, and evaluation helpers |
+| `personaforge/session` | Session persistence |
+| `personaforge/memory` | Long-lived and vector memory |
+| `personaforge/knowledge` | Knowledge and retrieval layers |
+| `personaforge/storage` | Generic storage layer |
+| `personaforge/skills` | Skill composition |
+| `personaforge/background` | Background queues and hook offloading |
+| `personaforge/voice` | Voice and speech providers |
 
-`confused-ai/runtime` and `confused-ai/observability` are still exported, but they are compatibility aliases for the same runtime and telemetry surfaces exposed by `confused-ai/serve` and `confused-ai/observe`. For new docs, prefer `serve` and `observe`.
+`personaforge/runtime` and `personaforge/observability` are still exported, but they are compatibility aliases for the same runtime and telemetry surfaces exposed by `personaforge/serve` and `personaforge/observe`. For new docs, prefer `serve` and `observe`.
 
 ## Root Agent API
 
 Use the root package for the default agent authoring flow.
 
 ```ts
-import { agent } from 'confused-ai';
+import { agent } from 'personaforge';
 
 const assistant = agent({
   name: 'assistant',
@@ -64,7 +64,7 @@ Use `createAgent(...)` when you want the factory-style API directly. Use `Agent`
 Use `defineAgent(...)` when you want schema-typed input and output.
 
 ```ts
-import { defineAgent } from 'confused-ai';
+import { defineAgent } from 'personaforge';
 import { z } from 'zod';
 
 const qa = defineAgent('qa')
@@ -80,10 +80,10 @@ console.log(result.answer, result.runId, result.sessionId);
 
 ## Models
 
-Use provider factories from `confused-ai/model` when you want explicit model instances instead of string refs.
+Use provider factories from `personaforge/model` when you want explicit model instances instead of string refs.
 
 ```ts
-import { anthropic, ollama, openai } from 'confused-ai/model';
+import { anthropic, ollama, openai } from 'personaforge/model';
 
 const primary = openai('gpt-4o-mini');
 const backup = anthropic('claude-sonnet-4-20250514');
@@ -96,11 +96,11 @@ void local;
 
 ## Serving Agents Over HTTP
 
-Use `confused-ai/serve` for HTTP endpoints and transports.
+Use `personaforge/serve` for HTTP endpoints and transports.
 
 ```ts
-import { agent } from 'confused-ai';
-import { createHttpService, listenService } from 'confused-ai/serve';
+import { agent } from 'personaforge';
+import { createHttpService, listenService } from 'personaforge/serve';
 
 const chat = agent({
   name: 'chat',
@@ -121,11 +121,11 @@ await listenService(service, 3000);
 
 ## Production Wrappers
 
-Use `confused-ai/production` for resilience and operational stores.
+Use `personaforge/production` for resilience and operational stores.
 
 ```ts
-import { agent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
+import { agent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
 
 const base = agent({
   name: 'assistant',
@@ -148,17 +148,17 @@ console.log(result.text);
 
 ## Tool Catalog Subpaths
 
-Built-in tool collections are exposed under `confused-ai/tools` and focused subpaths such as:
+Built-in tool collections are exposed under `personaforge/tools` and focused subpaths such as:
 
-- `confused-ai/tools/search`
-- `confused-ai/tools/devtools`
-- `confused-ai/tools/utils`
-- `confused-ai/tools/communication`
+- `personaforge/tools/search`
+- `personaforge/tools/devtools`
+- `personaforge/tools/utils`
+- `personaforge/tools/communication`
 
-Use `confused-ai/tool` when you are defining tools. Use `confused-ai/tools` when you are importing ready-made tools and toolkits.
+Use `personaforge/tool` when you are defining tools. Use `personaforge/tools` when you are importing ready-made tools and toolkits.
 
 ## Notes
 
 - Prefer the owning subpath for focused modules like `session`, `memory`, `knowledge`, `storage`, `production`, `background`, `skills`, and `voice`.
 - Do not assume every focused module is re-exported from the root package.
-- Keep public docs aligned to one install story: `npm install confused-ai`.
+- Keep public docs aligned to one install story: `npm install personaforge`.

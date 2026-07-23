@@ -9,7 +9,7 @@ outline: [2, 3]
 `compose()` and `pipe()` chain agents into sequential pipelines. The output text of each agent becomes the prompt for the next. No graph required.
 
 ```ts
-import { compose, pipe, createAgent } from 'confused-ai';
+import { compose, pipe, createAgent } from 'personaforge';
 ```
 
 ---
@@ -17,7 +17,7 @@ import { compose, pipe, createAgent } from 'confused-ai';
 ## `compose()` — simple pipeline
 
 ```ts
-import { createAgent, compose } from 'confused-ai';
+import { createAgent, compose } from 'personaforge';
 
 const researcher = createAgent({
   name: 'researcher',
@@ -69,7 +69,7 @@ const pipeline = compose(researcher, writer, {
 ## `pipe()` — fluent step-by-step builder
 
 ```ts
-import { pipe } from 'confused-ai';
+import { pipe } from 'personaforge';
 
 const draft   = createAgent({ name: 'drafter',   instructions: 'Draft a blog post.', ... });
 const editor  = createAgent({ name: 'editor',    instructions: 'Edit for clarity.', ... });

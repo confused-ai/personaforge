@@ -9,7 +9,7 @@
  *   OPENAI_API_KEY=sk-... bun examples/quickstart/04-session.ts
  */
 
-import { agent, InMemorySessionStore } from 'confused-ai';
+import { agent, InMemorySessionStore } from 'personaforge';
 
 // ── Shared session store ──────────────────────────────────────────────────────
 

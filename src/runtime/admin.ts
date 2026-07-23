@@ -125,7 +125,7 @@ export function createAdminHandler(ctx: AdminHandlerContext): AdminHandler {
     if (!bearerToken) {
         // Log warning for insecure admin API
         console.warn(
-            '[confused-ai] WARNING: Admin API is running without authentication.' +
+            '[personaforge] WARNING: Admin API is running without authentication.' +
             ' Set `adminApi.bearerToken` in production.'
         );
     }

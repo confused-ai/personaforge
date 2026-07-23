@@ -1,5 +1,5 @@
 /**
- * @confused-ai/learning — DbLearningStores.
+ * @personaforge/learning — DbLearningStores.
  *
  * All five learning store interfaces implemented on top of AgentDb's unified
  * `agent_learnings` table. One backend — any AgentDb variant — covers every

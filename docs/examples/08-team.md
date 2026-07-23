@@ -1,6 +1,6 @@
 # 08 · Multi-Agent Team
 
-The current team API lives under `confused-ai/orchestration` and is built around roles, tasks, and team modes.
+The current team API lives under `personaforge/orchestration` and is built around roles, tasks, and team modes.
 
 ## What you'll learn
 
@@ -11,7 +11,7 @@ The current team API lives under `confused-ai/orchestration` and is built around
 ## Task-driven team
 
 ```ts
-import { createTeam, defineRole, defineTask } from 'confused-ai/orchestration';
+import { createTeam, defineRole, defineTask } from 'personaforge/orchestration';
 
 const llm = {
   async generateText() {
@@ -63,7 +63,7 @@ console.log(result.taskOutputs);
 ## Route mode
 
 ```ts
-import { createTeam, defineRole } from 'confused-ai/orchestration';
+import { createTeam, defineRole } from 'personaforge/orchestration';
 
 const llm = {
   async generateText() {

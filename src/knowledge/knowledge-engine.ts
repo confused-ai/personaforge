@@ -1,6 +1,6 @@
  
 /**
- * @confused-ai/knowledge — KnowledgeEngine.
+ * @personaforge/knowledge — KnowledgeEngine.
  *
  * SOLID:
  *   SRP  — engine owns only retrieval orchestration.

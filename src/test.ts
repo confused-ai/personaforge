@@ -1,8 +1,8 @@
 /**
- * confused-ai/test — Testing utilities for agent development.
+ * personaforge/test — Testing utilities for agent development.
  *
  * ```ts
- * import { mockAgent, scenario } from 'confused-ai/test'
+ * import { mockAgent, scenario } from 'personaforge/test'
  *
  * const a = mockAgent({ responses: ['Hello!'] })
  * await scenario(a).send('Hi').expect(t => t.includes('Hello')).run()

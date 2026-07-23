@@ -1,4 +1,4 @@
-# Contributing to confused-ai
+# Contributing to personaforge
 
 Thank you for contributing! This guide covers how to set up the project, the coding standards, and the PR process.
 
@@ -11,7 +11,7 @@ Thank you for contributing! This guide covers how to set up the project, the cod
 
 ```bash
 # Clone and install
-git clone https://github.com/confused-ai/confused-ai.git
+git clone https://github.com/personaforge/personaforge.git
 cd agent-framework
 bun install
 
@@ -36,7 +36,7 @@ src/
   agentic/        # Agentic runner (multi-step LLM loop)
   artifacts/      # Structured agent output (markdown, JSON, images)
   background/     # Background job queues (BullMQ)
-  cli/            # confused-ai CLI commands
+  cli/            # personaforge CLI commands
   config/         # Configuration loading
   core/           # Core utilities (circuit breaker, retry, rate limiter)
   execution/      # Tool execution sandbox
@@ -90,8 +90,8 @@ docs/             # Documentation
 Use the testing utilities in `src/testing/`:
 
 ```ts
-import { createTestAgent } from 'confused-ai/testing';
-import { MockToolRegistry } from 'confused-ai/testing';
+import { createTestAgent } from 'personaforge/testing';
+import { MockToolRegistry } from 'personaforge/testing';
 
 const { agent, llm } = await createTestAgent({
   instructions: 'You are a test agent',
@@ -125,7 +125,7 @@ const result = await agent.run('Hello');
 ## Adding a New Tool
 
 ```ts
-import type { Tool } from 'confused-ai/tools';
+import type { Tool } from 'personaforge/tools';
 
 export const myTool: Tool = {
   name: 'my_tool',

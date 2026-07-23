@@ -14,7 +14,7 @@ import {
   createLoggingPlugin,
   createRateLimitPlugin,
   createTelemetryPlugin,
-} from 'confused-ai/plugins';
+} from 'personaforge/plugins';
 ```
 
 ---
@@ -22,12 +22,12 @@ import {
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   createPluginRegistry,
   createLoggingPlugin,
   createRateLimitPlugin,
-} from 'confused-ai/plugins';
+} from 'personaforge/plugins';
 
 const plugins = createPluginRegistry();
 
@@ -64,7 +64,7 @@ const toolMiddleware = plugins.getToolMiddleware();
 Logs every agent invocation, tool call, and error:
 
 ```ts
-import { createLoggingPlugin } from 'confused-ai/plugins';
+import { createLoggingPlugin } from 'personaforge/plugins';
 
 plugins.register(createLoggingPlugin(myLogger));  // optional custom logger
 ```
@@ -74,7 +74,7 @@ plugins.register(createLoggingPlugin(myLogger));  // optional custom logger
 Rejects or queues requests that exceed a per-minute request rate:
 
 ```ts
-import { createRateLimitPlugin } from 'confused-ai/plugins';
+import { createRateLimitPlugin } from 'personaforge/plugins';
 
 plugins.register(createRateLimitPlugin({
   maxRpm:    60,    // max requests per minute (default: 60)
@@ -87,7 +87,7 @@ plugins.register(createRateLimitPlugin({
 Emits metrics counters and histograms to any `MetricsCollector`:
 
 ```ts
-import { createTelemetryPlugin } from 'confused-ai/plugins';
+import { createTelemetryPlugin } from 'personaforge/plugins';
 
 plugins.register(createTelemetryPlugin(metricsCollector));
 ```
@@ -119,7 +119,7 @@ interface PluginRegistry {
 ## Author a custom plugin
 
 ```ts
-import type { Plugin } from 'confused-ai/plugins';
+import type { Plugin } from 'personaforge/plugins';
 
 const auditPlugin: Plugin = {
   id: 'audit-logger',
@@ -185,7 +185,7 @@ interface Plugin {
 If you already have `AgentLifecycleHooks`, use `hooksToPlugin` to register them as a plugin:
 
 ```ts
-import { hooksToPlugin } from 'confused-ai/plugins';
+import { hooksToPlugin } from 'personaforge/plugins';
 
 const myPlugin = hooksToPlugin('my-hooks', {
   beforeRun: async (input) => { console.log('run started'); return input; },

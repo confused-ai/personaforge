@@ -1,5 +1,5 @@
 /**
- * @confused-ai/test-utils — Protocol conformance suites.
+ * @personaforge/test-utils — Protocol conformance suites.
  *
  * Each `run*Conformance` function registers a group of standard test cases
  * against a store or provider instance. Designed for a bring-your-own-test-
@@ -428,7 +428,7 @@ export function runToolConformance(
 
 /**
  * Minimal structural KVStore shape tested by this suite.
- * Compatible with both `@confused-ai/contracts` KVStore and the graph-local
+ * Compatible with both `@personaforge/contracts` KVStore and the graph-local
  * KVStore (which uses generics), so either implementation can be wired in.
  */
 export interface KVStoreLike {

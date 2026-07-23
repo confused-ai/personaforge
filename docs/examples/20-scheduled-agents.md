@@ -9,7 +9,7 @@ outline: [2, 3]
 `ScheduleManager` lets you register agent handlers, define cron-based schedules, trigger runs manually, and inspect history — all without an external job queue. It's the right primitive for daily digests, health checks, report generation, and any periodic task an agent should own.
 
 ```ts
-import { ScheduleManager } from 'confused-ai/scheduler';
+import { ScheduleManager } from 'personaforge/scheduler';
 ```
 
 ---
@@ -27,12 +27,12 @@ import { ScheduleManager } from 'confused-ai/scheduler';
 ## Daily market digest
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   InMemoryScheduleRunStore,
   InMemoryScheduleStore,
   ScheduleManager,
-} from 'confused-ai/scheduler';
+} from 'personaforge/scheduler';
 
 // ── Agent ────────────────────────────────────────────────────────────────────
 const digestAgent = createAgent({
@@ -103,12 +103,12 @@ console.log(latest.output);
 ## Multiple schedules with different cadences
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   InMemoryScheduleRunStore,
   InMemoryScheduleStore,
   ScheduleManager,
-} from 'confused-ai/scheduler';
+} from 'personaforge/scheduler';
 
 const manager = new ScheduleManager({
   store: new InMemoryScheduleStore(),
@@ -191,7 +191,7 @@ import {
   createSqliteScheduleStore,
   createSqliteScheduleRunStore,
   ScheduleManager,
-} from 'confused-ai/scheduler';
+} from 'personaforge/scheduler';
 
 const manager = new ScheduleManager({
   store: await createSqliteScheduleStore('./schedules.db'),

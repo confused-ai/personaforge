@@ -1,12 +1,12 @@
 /**
- * confused-ai — root entry point.
+ * personaforge — root entry point.
  *
  * @packageDocumentation
  *
  * The fastest path to a working agent is the one-call `agent()` factory:
  *
  * ```ts
- * import { agent } from 'confused-ai';
+ * import { agent } from 'personaforge';
  *
  * // 1. Create an agent from a system prompt (model/provider resolved from env).
  * const bot = agent('You are a helpful assistant.');
@@ -33,7 +33,7 @@
  * import { createSwarm }          from './orchestration/multi-agent/index.js';
  * ```
  *
- * Prefer the smallest possible import surface? Use the `confused-ai/lite`
+ * Prefer the smallest possible import surface? Use the `personaforge/lite`
  * entry point and pull optional capabilities from focused subpaths on demand.
  */
 

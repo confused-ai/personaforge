@@ -19,7 +19,7 @@ and explains the results in natural language. No SQL knowledge required.
 ```ts
 // database-analyst.ts
 import { z } from 'zod';
-import { createAgent, tool } from 'confused-ai';
+import { createAgent, tool } from 'personaforge';
 
 // ── Database setup (using better-sqlite3 for simplicity) ───────────────────
 // npm install better-sqlite3

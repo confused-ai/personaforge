@@ -12,7 +12,7 @@ You do not need to rewrite a tool to add production behavior. The current tool l
 
 ```ts
 import { z } from 'zod/v3';
-import { extendTool, tool } from 'confused-ai';
+import { extendTool, tool } from 'personaforge';
 
 const fetchWeather = tool({
   name: 'fetch_weather',
@@ -52,7 +52,7 @@ console.log(result);
 
 ```ts
 import { z } from 'zod/v3';
-import { tool, wrapTool } from 'confused-ai';
+import { tool, wrapTool } from 'personaforge';
 
 const cache = new Map<string, { city: string; tempC: number; condition: string }>();
 
@@ -94,7 +94,7 @@ console.log(result);
 
 ```ts
 import { z } from 'zod/v3';
-import { pipeTools, tool, versionTool } from 'confused-ai';
+import { pipeTools, tool, versionTool } from 'personaforge';
 
 const fetchUrl = tool({
   name: 'fetch_url',

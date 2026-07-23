@@ -240,7 +240,7 @@ export class BudgetEnforcer {
         }
         if (this.config.onExceeded === 'warn') {
             console.warn(
-                `[confused-ai] Budget warning [${opts.cap}]: $${opts.spentUsd.toFixed(4)} of $${opts.limitUsd.toFixed(4)}`
+                `[personaforge] Budget warning [${opts.cap}]: $${opts.spentUsd.toFixed(4)} of $${opts.limitUsd.toFixed(4)}`
             );
         }
         // 'truncate' — caller checks the thrown error; for warn/truncate we just log

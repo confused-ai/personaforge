@@ -1,5 +1,5 @@
 /**
- * @confused-ai/workflow — supervisor pattern.
+ * @personaforge/workflow — supervisor pattern.
  * Map<string, WorkflowAgent> for O(1) sub-agent lookup.
  */
 

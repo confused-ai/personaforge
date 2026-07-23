@@ -1,7 +1,7 @@
 /**
  * Agent execution contracts — zero-dependency definitions.
  *
- * These types are the canonical contracts layer. @confused-ai/core re-exports
+ * These types are the canonical contracts layer. @personaforge/core re-exports
  * the same shapes for consumers that prefer importing from core directly.
  */
 

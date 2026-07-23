@@ -1,5 +1,5 @@
 /**
- * @confused-ai/models — shared config types.
+ * @personaforge/models — shared config types.
  * Zero runtime code — type-only file.
  */
 
@@ -16,7 +16,7 @@ export interface ModelAdapterConfig {
   temperature?: number;
 }
 
-// ── Re-export canonical LLM types from @confused-ai/core ────────────────────
+// ── Re-export canonical LLM types from @personaforge/core ────────────────────
 // This avoids consumers needing to import from two packages.
 export type {
     LLMProvider,

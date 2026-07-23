@@ -1,5 +1,5 @@
 /**
- * @confused-ai/session — package barrel.
+ * @personaforge/session — package barrel.
  */
 
 export { InMemorySessionStore, createInMemoryStore } from './in-memory.js';

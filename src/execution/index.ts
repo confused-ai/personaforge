@@ -1,5 +1,5 @@
 /**
- * @confused-ai/execution — Event-driven workflow and graph execution engine.
+ * @personaforge/execution — Event-driven workflow and graph execution engine.
  *
  * Capabilities:
  *   - ExecutionEngineImpl: Task-based plan execution

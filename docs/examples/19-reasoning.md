@@ -9,7 +9,7 @@ outline: [2, 3]
 `ReasoningManager` gives you a structured reasoning loop where each step is an explicit object — with a title, action, result, confidence score, and a declared next action. Use it when you need per-step visibility for incident triage, audit logs, or UI rendering of agent thought.
 
 ```ts
-import { ReasoningManager, ReasoningEventType, NextAction } from 'confused-ai/reasoning';
+import { ReasoningManager, ReasoningEventType, NextAction } from 'personaforge/reasoning';
 ```
 
 ---
@@ -28,7 +28,7 @@ import { ReasoningManager, ReasoningEventType, NextAction } from 'confused-ai/re
 This example uses a scripted `generate` function to show the event contract clearly without depending on a specific model.
 
 ```ts
-import { NextAction, ReasoningEventType, ReasoningManager } from 'confused-ai/reasoning';
+import { NextAction, ReasoningEventType, ReasoningManager } from 'personaforge/reasoning';
 
 let calls = 0;
 
@@ -82,7 +82,7 @@ Replace the scripted function with a real LLM call. The manager handles the loop
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk';
-import { NextAction, ReasoningEventType, ReasoningManager } from 'confused-ai/reasoning';
+import { NextAction, ReasoningEventType, ReasoningManager } from 'personaforge/reasoning';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 

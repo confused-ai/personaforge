@@ -1,5 +1,5 @@
 /**
- * @confused-ai/tools — core types and defineTool factory.
+ * @personaforge/tools — core types and defineTool factory.
  *
  * SOLID:
  *   SRP  — this file owns only the Tool contract and its factory.
@@ -7,13 +7,13 @@
  *   DIP  — callers depend on the Tool interface, not any concrete class.
  *
  * The Tool interface is the single authority used by:
- *   - @confused-ai/core  (MapToolRegistry, AgentRunner)
- *   - @confused-ai/tools (httpClient, fileSystem, shell, browserTool)
+ *   - @personaforge/core  (MapToolRegistry, AgentRunner)
+ *   - @personaforge/tools (httpClient, fileSystem, shell, browserTool)
  */
 
 import { z }          from 'zod';
 
-// ── Tool interface (matches @confused-ai/core Tool — co-defined to avoid circular dep) ──
+// ── Tool interface (matches @personaforge/core Tool — co-defined to avoid circular dep) ──
 
 export interface Tool {
   /** Unique name — used as the key in the tool registry (O(1) lookup). */
@@ -58,7 +58,7 @@ interface ToolDefinition<S extends z.ZodType> {
 /**
  * Create a minimal runtime `Tool` from a plain definition object.
  *
- * @deprecated Prefer `tool()` from `@confused-ai/tools` which adds Zod
+ * @deprecated Prefer `tool()` from `@personaforge/tools` which adds Zod
  * validation, category tags, timeout, and approval gating in a single call.
  * `defineTool()` will be removed in v2.0.
  *

@@ -1,5 +1,5 @@
 /**
- * @confused-ai/session — DbSessionStore.
+ * @personaforge/session — DbSessionStore.
  *
  * Implements SessionStore backed by any AgentDb backend.
  * Messages are stored in session_data.messages so they survive process restarts.

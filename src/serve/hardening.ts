@@ -56,7 +56,7 @@ export function securityHeaders(): Middleware {
       'camera=(), microphone=(), geolocation=(), payment=()',
     );
     // Override Express default to avoid advertising implementation details
-    res.setHeader('X-Powered-By', 'confused-ai');
+    res.setHeader('X-Powered-By', 'personaforge');
     next();
   };
 }

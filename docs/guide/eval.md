@@ -6,14 +6,14 @@ outline: [2, 3]
 
 # Evaluation
 
-The evaluation framework gives you LLM-as-judge scoring, text metrics (ROUGE-L, word overlap), benchmark runners, persistent eval stores, and CI regression detection. Import from `confused-ai`.
+The evaluation framework gives you LLM-as-judge scoring, text metrics (ROUGE-L, word overlap), benchmark runners, persistent eval stores, and CI regression detection. Import from `personaforge`.
 
 ## LLM-as-judge
 
 Score a response against a prompt with an LLM:
 
 ```ts
-import { runLlmAsJudge, OpenAIProvider } from 'confused-ai';
+import { runLlmAsJudge, OpenAIProvider } from 'personaforge';
 
 const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o-mini' });
 
@@ -32,7 +32,7 @@ console.log(result.rationale);  // judge explanation
 ### Pre-built criteria sets
 
 ```ts
-import { createMultiCriteriaJudge, RAG_CRITERIA, AGENT_CRITERIA } from 'confused-ai';
+import { createMultiCriteriaJudge, RAG_CRITERIA, AGENT_CRITERIA } from 'personaforge';
 
 // For RAG agents: relevance, groundedness, completeness, conciseness
 const ragJudge = createMultiCriteriaJudge({ llm, criteria: RAG_CRITERIA });
@@ -46,7 +46,7 @@ const agentResult2 = await agentJudge({ candidate: response });
 ### Multi-criteria judge
 
 ```ts
-import { createMultiCriteriaJudge } from 'confused-ai';
+import { createMultiCriteriaJudge } from 'personaforge';
 
 const judge = createMultiCriteriaJudge({
   llm,
@@ -72,7 +72,7 @@ import {
   LevenshteinAccuracy,
   wordOverlapF1,
   rougeLWords,
-} from 'confused-ai';
+} from 'personaforge';
 
 // These accuracy metrics are ready-to-use objects, not classes — no `new`, no config.
 
@@ -100,7 +100,7 @@ console.log(rougeLWords('the cat sat on the mat', 'cat sat on mat'));  // 0.83
 Run an eval against a dataset and collect aggregate metrics:
 
 ```ts
-import { runEvalBatch, createMultiCriteriaJudge, AGENT_CRITERIA } from 'confused-ai';
+import { runEvalBatch, createMultiCriteriaJudge, AGENT_CRITERIA } from 'personaforge';
 
 // runEvalBatch scores pre-computed candidate outputs against a multi-criteria judge.
 const judge = createMultiCriteriaJudge({ llm, criteria: AGENT_CRITERIA });
@@ -137,7 +137,7 @@ import {
   rougeLScorer,
   llmJudgeScorer,
   formatBenchmarkReport,
-} from 'confused-ai/eval';
+} from 'personaforge/eval';
 
 const report = await runBenchmark({
   name: 'qa-benchmark-v3',
@@ -169,7 +169,7 @@ console.log(formatBenchmarkReport(report));
 ## Eval store — persist and query results
 
 ```ts
-import { InMemoryEvalStore, createSqliteEvalStore, runEvalSuite } from 'confused-ai';
+import { InMemoryEvalStore, createSqliteEvalStore, runEvalSuite } from 'personaforge';
 
 // Development: in-memory
 const store = new InMemoryEvalStore();
@@ -201,7 +201,7 @@ console.log(history.map(r => ({ date: r.timestamp, avgScore: r.averageScore })))
 Compare a new eval run against a baseline and fail if scores drop:
 
 ```ts
-import { runEvalSuite } from 'confused-ai';
+import { runEvalSuite } from 'personaforge';
 
 const report = await runEvalSuite({
   suiteName: 'regression-check',
@@ -222,7 +222,7 @@ if (!report.passed) {
 ## Dataset loading
 
 ```ts
-import { loadDataset } from 'confused-ai/eval';
+import { loadDataset } from 'personaforge/eval';
 
 // JSON array or JSON lines
 const jsonlCases = await loadDataset({ source: './evals/qa.jsonl' });
@@ -250,7 +250,7 @@ const inlineCases = [
 Collect high-quality runs and export them as fine-tuning data:
 
 ```ts
-import { generateDataset, filterByScore } from 'confused-ai/eval';
+import { generateDataset, filterByScore } from 'personaforge/eval';
 import { writeFile } from 'node:fs/promises';
 
 // Your collected runs as training examples (input / output, with a quality score 0–10)

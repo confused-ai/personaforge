@@ -16,7 +16,7 @@ import {
   createPlanArtifact,
   createReasoningArtifact,
   InMemoryArtifactStorage,
-} from 'confused-ai/artifacts';
+} from 'personaforge/artifacts';
 ```
 
 ---
@@ -50,7 +50,7 @@ import {
   createDataArtifact,
   createPlanArtifact,
   createReasoningArtifact,
-} from 'confused-ai/artifacts';
+} from 'personaforge/artifacts';
 
 // Plain text / code file
 const code = createTextArtifact({
@@ -123,7 +123,7 @@ interface ArtifactMetadata {
 ## Store artifacts
 
 ```ts
-import { InMemoryArtifactStorage } from 'confused-ai/artifacts';
+import { InMemoryArtifactStorage } from 'personaforge/artifacts';
 
 const storage = new InMemoryArtifactStorage({
   maxSizeBytes: 100 * 1024 * 1024,  // 100 MB per artifact (default)
@@ -158,8 +158,8 @@ await storage.delete(stored.id);
 Attach artifact creation to the `afterRun` hook to capture every run's output:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { InMemoryArtifactStorage, createMarkdownArtifact } from 'confused-ai/artifacts';
+import { createAgent } from 'personaforge';
+import { InMemoryArtifactStorage, createMarkdownArtifact } from 'personaforge/artifacts';
 
 const artifactStorage = new InMemoryArtifactStorage();
 
@@ -245,8 +245,8 @@ import {
   createAudioFromUrl,
   createVideoFromUrl,
   InMemoryArtifactStorage,
-} from 'confused-ai/artifacts';
-import type { ImageArtifact, AudioArtifact, VideoArtifact } from 'confused-ai/artifacts';
+} from 'personaforge/artifacts';
+import type { ImageArtifact, AudioArtifact, VideoArtifact } from 'personaforge/artifacts';
 
 // Build media artifacts directly (each returns an artifact ready for storage.save()):
 const image = createImageFromUrl('hero.png', 'https://cdn.example.com/hero.png', {

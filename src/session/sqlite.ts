@@ -1,5 +1,5 @@
 /**
- * @confused-ai/session — SQLite session store (durable, zero external server).
+ * @personaforge/session — SQLite session store (durable, zero external server).
  *
  * SRP  — owns only SQLite session persistence.
  * DIP  — implements SessionStore; caller depends on the interface.
@@ -12,7 +12,7 @@
 import type { SessionStore, SessionData, SessionMessage } from './types.js';
 
 const MISSING_SDK_MSG =
-  '[confused-ai] SQLite session store requires better-sqlite3.\n' +
+  '[personaforge] SQLite session store requires better-sqlite3.\n' +
   '  Install: npm install better-sqlite3';
 
 interface SqliteStatement<TRow = unknown> {

@@ -1,12 +1,12 @@
 /**
- * @confused-ai/models — Ollama adapter (local models). Lazy SDK import.
+ * @personaforge/models — Ollama adapter (local models). Lazy SDK import.
  */
 
 import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../core/index.js';
 import type { ModelAdapterConfig } from './types.js';
 
 const MISSING_SDK_MSG =
-  '[confused-ai] Ollama adapter requires the ollama package.\n' +
+  '[personaforge] Ollama adapter requires the ollama package.\n' +
   '  Install: npm install ollama\n' +
   '  Also ensure Ollama is running locally: https://ollama.ai';
 

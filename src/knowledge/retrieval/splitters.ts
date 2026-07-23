@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — text splitters.
+ * @personaforge/knowledge — text splitters.
  *
  * Zero-dependency chunking for RAG ingestion. Closes the biggest LangChain
  * retrieval gap: turning raw documents into overlapping, size-bounded chunks

@@ -102,7 +102,7 @@ export interface FileSource {
  *
  * @example
  * ```ts
- * import { imageUrl, imageFile, multiModal } from 'confused-ai';
+ * import { imageUrl, imageFile, multiModal } from 'personaforge';
  *
  * // Run with a remote image
  * await agent.run(multiModal('What is in this image?', imageUrl('https://example.com/photo.jpg')));

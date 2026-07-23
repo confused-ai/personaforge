@@ -1,7 +1,7 @@
 /**
  * Minimal agent using the framework.
  *
- * Uses the `agent()` headline API: `import { agent } from "confused-ai"`.
+ * Uses the `agent()` headline API: `import { agent } from "personaforge"`.
  *
  * Requires: OPENAI_API_KEY in `examples/.env` (or your env) — see `resolveLlmForCreateAgent`.
  *
@@ -17,13 +17,13 @@ config({
     quiet: true,
 });
 
-import { agent, InMemorySessionStore } from 'confused-ai';
+import { agent, InMemorySessionStore } from 'personaforge';
 
 async function main() {
     const myAgent = agent({
         name: 'SimpleAssistant',
         instructions: 'You are a helpful assistant. Be concise.',
-        /** No tools — chat only. Add HttpClientTool, etc. from `confused-ai/tools` when needed. */
+        /** No tools — chat only. Add HttpClientTool, etc. from `personaforge/tools` when needed. */
         tools: [],
         dev: true,
         sessionStore: new InMemorySessionStore(),

@@ -9,7 +9,7 @@ outline: [2, 3]
 Custom tools expose your application's capabilities to agents. Each tool has a typed Zod schema, an execute function, and optional metadata like approval requirements, timeouts, and categories.
 
 ```ts
-import { tool, defineTool, createTools } from 'confused-ai';
+import { tool, defineTool, createTools } from 'personaforge';
 import { z } from 'zod';
 ```
 
@@ -18,7 +18,7 @@ import { z } from 'zod';
 ## `tool()` — primary helper
 
 ```ts
-import { tool, createAgent } from 'confused-ai';
+import { tool, createAgent } from 'personaforge';
 import { z } from 'zod';
 
 const getOrder = tool({
@@ -128,7 +128,7 @@ const slowTool = tool({
 ## Tool categories and tags
 
 ```ts
-import { ToolCategory } from 'confused-ai/tool';
+import { ToolCategory } from 'personaforge/tool';
 
 const myTool = tool({
   name: 'search_products',
@@ -145,7 +145,7 @@ const myTool = tool({
 ## `defineTool` (alias)
 
 ```ts
-import { defineTool } from 'confused-ai';
+import { defineTool } from 'personaforge';
 
 // Identical to tool() — just a named alias
 const myTool = defineTool({
@@ -161,7 +161,7 @@ const myTool = defineTool({
 ## `createTools()` — define multiple tools at once
 
 ```ts
-import { createTools } from 'confused-ai';
+import { createTools } from 'personaforge';
 
 const { get_product, update_inventory, check_stock } = createTools({
   get_product: {

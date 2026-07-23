@@ -1,11 +1,11 @@
 /**
- * CLI — `confused-ai diff` command
+ * CLI — `personaforge diff` command
  *
  * Compares the event timelines of two runs side-by-side.
  * Highlights nodes that diverge in status, order, or duration.
  *
  * Usage:
- *   confused-ai diff --run-id-a <idA> --run-id-b <idB> [--db <path>]
+ *   personaforge diff --run-id-a <idA> --run-id-b <idB> [--db <path>]
  */
 
 import type { Command } from 'commander';

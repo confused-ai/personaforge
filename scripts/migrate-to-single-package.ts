@@ -3,7 +3,7 @@
  * Monorepo → single-package migration script.
  *
  * 1. Copies packages/*/src/ into src/<package-name>/
- * 2. Rewrites @confused-ai/* imports to relative paths in all src/ files
+ * 2. Rewrites @personaforge/* imports to relative paths in all src/ files
  */
 
 import fs from 'fs';
@@ -25,8 +25,8 @@ function findPackages(): Array<{ name: string; srcDir: string; destDir: string }
     const pkgPath = path.join(dir, 'package.json');
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      if (pkg.name?.startsWith('@confused-ai/')) {
-        const shortName = pkg.name.replace('@confused-ai/', '');
+      if (pkg.name?.startsWith('@personaforge/')) {
+        const shortName = pkg.name.replace('@personaforge/', '');
         const srcDir = path.join(dir, 'src');
         if (fs.existsSync(srcDir)) {
           results.push({ name: shortName, srcDir, destDir: path.join(SRC, shortName) });
@@ -70,7 +70,7 @@ for (const { name, srcDir, destDir } of packages) {
   copyDir(srcDir, destDir);
 }
 
-// ── Step 2: Rewrite @confused-ai/* imports ───────────────────────────────────
+// ── Step 2: Rewrite @personaforge/* imports ───────────────────────────────────
 
 // Build set of known package names
 const packageNames = new Set(packages.map(p => p.name));
@@ -88,22 +88,22 @@ function rewriteImports(filePath: string): number {
   let count = 0;
 
   // Regex to match:
-  //   from '@confused-ai/foo'
-  //   from '@confused-ai/foo/bar/baz'
-  //   import('@confused-ai/foo')
-  //   import('@confused-ai/foo/bar')
-  const pattern = /(['"])@confused-ai\/([\w-]+)((?:\/[\w.-]+)*)\1/g;
+  //   from '@personaforge/foo'
+  //   from '@personaforge/foo/bar/baz'
+  //   import('@personaforge/foo')
+  //   import('@personaforge/foo/bar')
+  const pattern = /(['"])@personaforge\/([\w-]+)((?:\/[\w.-]+)*)\1/g;
 
   updated = updated.replace(pattern, (match, quote, pkgName, subpath) => {
     const destDir = path.join(SRC, pkgName);
 
     if (!subpath) {
-      // @confused-ai/foo → ../foo/index.js
+      // @personaforge/foo → ../foo/index.js
       const rel = computeRelative(filePath, destDir);
       count++;
       return `${quote}${rel}/index.js${quote}`;
     } else {
-      // @confused-ai/foo/bar/baz → ../foo/bar/baz.js
+      // @personaforge/foo/bar/baz → ../foo/bar/baz.js
       // First check if it resolves to a directory with index.ts
       const targetAsDir = path.join(destDir, subpath);
       const targetAsFile = path.join(destDir, subpath + '.ts');
@@ -127,7 +127,7 @@ function rewriteImports(filePath: string): number {
   return count;
 }
 
-console.log('\n=== Step 2: Rewriting @confused-ai/* imports in src/ ===');
+console.log('\n=== Step 2: Rewriting @personaforge/* imports in src/ ===');
 
 function collectTs(dir: string): string[] {
   const results: string[] = [];

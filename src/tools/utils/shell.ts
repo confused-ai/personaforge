@@ -3,7 +3,7 @@
  *
  * SECURITY NOTE: This tool executes system shell commands. It is NOT included
  * in the default tools barrel export to avoid supply chain risk flags.
- * Import explicitly: import { ShellTool } from 'confused-ai-core/tools/shell'
+ * Import explicitly: import { ShellTool } from 'personaforge-core/tools/shell'
  *
  * child_process is lazy-loaded at execution time (not at import time)
  * to avoid static analysis supply chain flags.

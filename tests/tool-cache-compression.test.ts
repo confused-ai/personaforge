@@ -4,12 +4,12 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ToolCache } from '@confused-ai/tools';
-import { ToolCompressor } from '@confused-ai/tools';
-import { withCache, withCompression } from '@confused-ai/tools';
-import { tool } from '@confused-ai/tools';
+import { ToolCache } from '@personaforge/tools';
+import { ToolCompressor } from '@personaforge/tools';
+import { withCache, withCompression } from '@personaforge/tools';
+import { tool } from '@personaforge/tools';
 import { z } from 'zod';
-import type { ToolResult } from '@confused-ai/tools';
+import type { ToolResult } from '@personaforge/tools';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

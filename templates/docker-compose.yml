@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     build: .
-    image: confused-ai-agent:latest
+    image: personaforge-agent:latest
     ports:
       - "8787:8787"
     environment:

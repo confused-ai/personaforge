@@ -17,7 +17,7 @@ import type {
 // ── Minimal mongodb typing ────────────────────────────────────────────────────
 
 const MISSING_SDK =
-    '[confused-ai] MongoDB learning stores require the `mongodb` package.\n' +
+    '[personaforge] MongoDB learning stores require the `mongodb` package.\n' +
     '  Install: npm install mongodb';
 
 interface MongoCollection<T = Record<string, unknown>> {

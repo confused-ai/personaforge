@@ -25,7 +25,7 @@ outline: [2, 3]
 The default driver is in-memory — great for development, tests, and short-lived caches.
 
 ```ts
-import { createStorage } from 'confused-ai/storage';
+import { createStorage } from 'personaforge/storage';
 
 const cache = createStorage();
 
@@ -56,7 +56,7 @@ console.log(keys); // → []
 Swap in `driver: 'file'` with a `basePath` to persist values across process restarts.
 
 ```ts
-import { createStorage } from 'confused-ai/storage';
+import { createStorage } from 'personaforge/storage';
 
 const diskStore = createStorage({
   driver: 'file',
@@ -109,7 +109,7 @@ async function getCachedEmbedding(text: string): Promise<number[]> {
 Prefix keys with a tenant or agent ID to isolate storage within a shared store.
 
 ```ts
-import { createStorage } from 'confused-ai/storage';
+import { createStorage } from 'personaforge/storage';
 
 function tenantStorage(tenantId: string) {
   const store = createStorage({

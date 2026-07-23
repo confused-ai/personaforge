@@ -22,7 +22,7 @@ import { VERSION } from '../shared/index.js';
 export function buildProgram(): Command {
     const program = new Command();
     program
-        .name('confused-ai')
+        .name('personaforge')
         .description('CLI for Confused-AI — production-grade TypeScript agents')
         .version(VERSION);
 

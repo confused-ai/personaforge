@@ -1,5 +1,5 @@
 /**
- * @confused-ai/memory — DbMemoryStore.
+ * @personaforge/memory — DbMemoryStore.
  *
  * Implements MemoryStore backed by any AgentDb backend (agent_memories table).
  * Persists memories across process restarts. Text search (not vector search)
@@ -136,7 +136,7 @@ export class DbMemoryStore implements MemoryStore {
   ): Promise<MemoryEntry> {
     await this.db.init();
     const existing = await this.get(id);
-    if (!existing) throw new Error(`[confused-ai/memory] Memory not found: ${id}`);
+    if (!existing) throw new Error(`[personaforge/memory] Memory not found: ${id}`);
     const merged = {
       ...existing,
       ...updates,

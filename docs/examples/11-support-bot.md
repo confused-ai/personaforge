@@ -12,8 +12,8 @@ This version keeps the example on the current public API: one agent, two tools, 
 
 ```ts
 import { z } from 'zod/v3';
-import { createAgent, tool } from 'confused-ai';
-import { InMemorySessionStore } from 'confused-ai/session';
+import { createAgent, tool } from 'personaforge';
+import { InMemorySessionStore } from 'personaforge/session';
 
 const lookupOrder = tool({
   name: 'lookup_order',

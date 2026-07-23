@@ -7,8 +7,8 @@
  * ## Quick start
  *
  * ```ts
- * import { agent } from 'confused-ai';
- * import { queueHook, InMemoryBackgroundQueue } from 'confused-ai/background';
+ * import { agent } from 'personaforge';
+ * import { queueHook, InMemoryBackgroundQueue } from 'personaforge/background';
  *
  * // Default: in-memory worker pool (no extra deps)
  * const queue = new InMemoryBackgroundQueue({ concurrency: 5 });

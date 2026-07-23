@@ -1,5 +1,5 @@
 /**
- * PostgreSQL-backed stores for `confused-ai`.
+ * PostgreSQL-backed stores for `personaforge`.
  *
  * Provides durable, production-ready implementations of:
  *   - `AuditStore`            → `PostgresAuditStore`
@@ -12,7 +12,7 @@
  *
  * Run the included DDL once:
  * ```ts
- * import { createPostgresAuditStore, createPostgresCheckpointStore } from 'confused-ai/production';
+ * import { createPostgresAuditStore, createPostgresCheckpointStore } from 'personaforge/production';
  * import pg from 'pg';
  *
  * const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -45,7 +45,7 @@ export interface PgQueryable {
 // ── DDL ───────────────────────────────────────────────────────────────────
 
 const AUDIT_DDL = `
-CREATE TABLE IF NOT EXISTS confused_ai_audit_log (
+CREATE TABLE IF NOT EXISTS personaforge_audit_log (
   id               TEXT        NOT NULL PRIMARY KEY,
   timestamp        TIMESTAMPTZ NOT NULL DEFAULT now(),
   method           TEXT        NOT NULL,
@@ -64,14 +64,14 @@ CREATE TABLE IF NOT EXISTS confused_ai_audit_log (
   idempotency_key  TEXT,
   idempotency_hit  BOOLEAN
 );
-CREATE INDEX IF NOT EXISTS cai_audit_timestamp  ON confused_ai_audit_log (timestamp DESC);
-CREATE INDEX IF NOT EXISTS cai_audit_user_id    ON confused_ai_audit_log (user_id);
-CREATE INDEX IF NOT EXISTS cai_audit_agent_name ON confused_ai_audit_log (agent_name);
-CREATE INDEX IF NOT EXISTS cai_audit_tenant_id  ON confused_ai_audit_log (tenant_id);
+CREATE INDEX IF NOT EXISTS cai_audit_timestamp  ON personaforge_audit_log (timestamp DESC);
+CREATE INDEX IF NOT EXISTS cai_audit_user_id    ON personaforge_audit_log (user_id);
+CREATE INDEX IF NOT EXISTS cai_audit_agent_name ON personaforge_audit_log (agent_name);
+CREATE INDEX IF NOT EXISTS cai_audit_tenant_id  ON personaforge_audit_log (tenant_id);
 `.trim();
 
 const CHECKPOINT_DDL = `
-CREATE TABLE IF NOT EXISTS confused_ai_checkpoints (
+CREATE TABLE IF NOT EXISTS personaforge_checkpoints (
   run_id       TEXT        NOT NULL PRIMARY KEY,
   step         INTEGER     NOT NULL,
   state        JSONB       NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS confused_ai_checkpoints (
  * PostgreSQL-backed `AuditStore`.
  *
  * All writes are append-only (INSERT, never UPDATE/DELETE except `purge()`).
- * The table name `confused_ai_audit_log` is fixed to avoid SQL injection via
+ * The table name `personaforge_audit_log` is fixed to avoid SQL injection via
  * dynamic identifiers.
  */
 export class PostgresAuditStore implements AuditStore {
@@ -99,7 +99,7 @@ export class PostgresAuditStore implements AuditStore {
 
   async append(entry: AuditEntry): Promise<void> {
     await this._db.query(
-      `INSERT INTO confused_ai_audit_log (
+      `INSERT INTO personaforge_audit_log (
          id, timestamp, method, path, status,
          agent_name, session_id, user_id, tenant_id, prompt_hash,
          tools_called, finish_reason, duration_ms, cost_usd, ip,
@@ -134,7 +134,7 @@ export class PostgresAuditStore implements AuditStore {
     const limit  = filter?.limit  ?? 1_000;
 
     const { rows } = await this._db.query<Record<string, unknown>>(
-      `SELECT * FROM confused_ai_audit_log ${sql}
+      `SELECT * FROM personaforge_audit_log ${sql}
        ORDER BY timestamp DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset],
@@ -145,7 +145,7 @@ export class PostgresAuditStore implements AuditStore {
   async count(filter?: AuditFilter): Promise<number> {
     const { sql, params } = buildAuditWhere(filter);
     const { rows } = await this._db.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM confused_ai_audit_log ${sql}`,
+      `SELECT COUNT(*)::text AS count FROM personaforge_audit_log ${sql}`,
       params,
     );
     return parseInt(rows[0]?.count ?? '0', 10);
@@ -154,7 +154,7 @@ export class PostgresAuditStore implements AuditStore {
   async purge(beforeDate: Date): Promise<number> {
     const { rows } = await this._db.query<{ count: string }>(
       `WITH deleted AS (
-         DELETE FROM confused_ai_audit_log WHERE timestamp < $1 RETURNING id
+         DELETE FROM personaforge_audit_log WHERE timestamp < $1 RETURNING id
        ) SELECT COUNT(*)::text AS count FROM deleted`,
       [beforeDate.toISOString()],
     );
@@ -212,7 +212,7 @@ function rowToAuditEntry(row: Record<string, unknown>): AuditEntry {
  * PostgreSQL-backed `AgentCheckpointStore`.
  *
  * Uses an UPSERT pattern so `save()` is idempotent. Checkpoints are stored as
- * JSONB in the `confused_ai_checkpoints` table.
+ * JSONB in the `personaforge_checkpoints` table.
  */
 export class PostgresCheckpointStore implements AgentCheckpointStore {
   private constructor(private readonly _db: PgQueryable) {}
@@ -225,7 +225,7 @@ export class PostgresCheckpointStore implements AgentCheckpointStore {
 
   async save(runId: string, step: number, state: AgentRunState): Promise<void> {
     await this._db.query(
-      `INSERT INTO confused_ai_checkpoints (run_id, step, state, updated_at)
+      `INSERT INTO personaforge_checkpoints (run_id, step, state, updated_at)
        VALUES ($1, $2, $3::jsonb, now())
        ON CONFLICT (run_id) DO UPDATE
          SET step = EXCLUDED.step,
@@ -237,7 +237,7 @@ export class PostgresCheckpointStore implements AgentCheckpointStore {
 
   async load(runId: string): Promise<{ step: number; state: AgentRunState } | null> {
     const { rows } = await this._db.query<{ step: number; state: unknown }>(
-      `SELECT step, state FROM confused_ai_checkpoints WHERE run_id = $1`,
+      `SELECT step, state FROM personaforge_checkpoints WHERE run_id = $1`,
       [runId],
     );
     if (!rows[0]) return null;
@@ -248,14 +248,14 @@ export class PostgresCheckpointStore implements AgentCheckpointStore {
 
   async delete(runId: string): Promise<void> {
     await this._db.query(
-      `DELETE FROM confused_ai_checkpoints WHERE run_id = $1`,
+      `DELETE FROM personaforge_checkpoints WHERE run_id = $1`,
       [runId],
     );
   }
 
   async listIncomplete(): Promise<string[]> {
     const { rows } = await this._db.query<{ run_id: string }>(
-      `SELECT run_id FROM confused_ai_checkpoints ORDER BY updated_at DESC`,
+      `SELECT run_id FROM personaforge_checkpoints ORDER BY updated_at DESC`,
     );
     return rows.map(r => r.run_id);
   }

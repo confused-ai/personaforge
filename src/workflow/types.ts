@@ -1,7 +1,7 @@
 /**
- * @confused-ai/workflow — shared types.
+ * @personaforge/workflow — shared types.
  *
- * Note: Agent is imported as a concrete named interface from @confused-ai/core.
+ * Note: Agent is imported as a concrete named interface from @personaforge/core.
  * We re-declare a minimal subset here to avoid cross-package resolution issues
  * in strict mode, and use type-only imports throughout.
  */

@@ -6,12 +6,12 @@ outline: [2, 3]
 
 # Trace ↔ Dataset Loop
 
-The `confused-ai/eval` module closes the LangSmith-style feedback loop: capture a real production interaction, turn it into an eval sample, replay it against a new prompt or model, and diff the results to catch regressions before shipping.
+The `personaforge/eval` module closes the LangSmith-style feedback loop: capture a real production interaction, turn it into an eval sample, replay it against a new prompt or model, and diff the results to catch regressions before shipping.
 
 ```ts
 import {
   spanToSample, replayDataset, diffResults, summarizeDiff,
-} from 'confused-ai/eval';
+} from 'personaforge/eval';
 ```
 
 ---

@@ -1,12 +1,12 @@
 /**
  * Test utilities for agent framework testing.
  *
- * @deprecated This implementation folder will be merged into `@confused-ai/test-utils` in the
+ * @deprecated This implementation folder will be merged into `@personaforge/test-utils` in the
  *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@confused-ai/test-utils` directly.
+ *   Migrate new code to import from `@personaforge/test-utils` directly.
  *
  * Provides helpers for unit tests, integration tests, and e2e tests.
- * Import via `confused-ai/testing`.
+ * Import via `personaforge/testing`.
  */
 
 export * from './mock-llm.js';

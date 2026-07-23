@@ -11,7 +11,7 @@ Tools are functions the agent can call during a run. They are defined with `tool
 ## Define a tool
 
 ```ts
-import { tool } from 'confused-ai/tool';
+import { tool } from 'personaforge/tool';
 import { z } from 'zod';
 
 const getWeather = tool({
@@ -31,7 +31,7 @@ const getWeather = tool({
 Pass the tool to `createAgent`:
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'weather-agent',
@@ -49,7 +49,7 @@ const agent = createAgent({
 Both produce the same result. `defineTool` is the older API; `tool` is the preferred shorthand.
 
 ```ts
-import { tool, defineTool, createTool } from 'confused-ai/tool';
+import { tool, defineTool, createTool } from 'personaforge/tool';
 
 // All three are equivalent:
 const t1 = tool({ name: 'add', description: '...', parameters: z.object({ a: z.number(), b: z.number() }), execute: async ({ a, b }) => a + b });
@@ -62,7 +62,7 @@ const t3 = createTool({ name: 'add', description: '...', parameters: z.object({ 
 ## Multiple tools: `createTools`
 
 ```ts
-import { createTools } from 'confused-ai/tool';
+import { createTools } from 'personaforge/tool';
 import { z } from 'zod';
 
 const tools = createTools({
@@ -108,7 +108,7 @@ const auditTool = tool({
 Apply cross-cutting behaviour (logging, caching, auth) across all tools:
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'agent',
@@ -135,7 +135,7 @@ const agent = createAgent({
 ## Extend and wrap tools
 
 ```ts
-import { extendTool, wrapTool, pipeTools } from 'confused-ai/tool';
+import { extendTool, wrapTool, pipeTools } from 'personaforge/tool';
 
 // Normalise inputs and trim results around an existing tool
 const reliableSearch = extendTool(searchTool, {
@@ -166,7 +166,7 @@ const pipeline = pipeTools(fetchPageTool, summariseTool, {
 
 ## Built-in tools (100+)
 
-Each provider-backed tool is imported from its category subpath (e.g. `confused-ai/tools/search`).
+Each provider-backed tool is imported from its category subpath (e.g. `personaforge/tools/search`).
 
 ### Search
 
@@ -182,7 +182,7 @@ import {
   RedditSearchTool,
   OpenWeatherToolkit,
   GoogleMapsToolkit,
-} from 'confused-ai/tools/search';
+} from 'personaforge/tools/search';
 
 const agent = createAgent({
   name: 'researcher',
@@ -205,7 +205,7 @@ import {
   TwilioToolkit,
   ZoomToolkit,
   ResendToolkit,
-} from 'confused-ai/tools/communication';
+} from 'personaforge/tools/communication';
 ```
 
 ### Productivity
@@ -220,7 +220,7 @@ import {
   GoogleDriveToolkit,
   GoogleSheetsToolkit,
   GoogleCalendarToolkit,
-} from 'confused-ai/tools/productivity';
+} from 'personaforge/tools/productivity';
 ```
 
 ### Developer tools
@@ -232,7 +232,7 @@ import {
   DockerToolkit,
   E2BToolkit,        // sandboxed code execution
   CodeExecToolkit,   // local code execution
-} from 'confused-ai/tools/devtools';
+} from 'personaforge/tools/devtools';
 ```
 
 ### Data
@@ -244,7 +244,7 @@ import {
   DatabaseToolkit,
   Neo4jToolkit,
   RedisToolkit,
-} from 'confused-ai/tools/data';
+} from 'personaforge/tools/data';
 ```
 
 ### Finance
@@ -253,7 +253,7 @@ import {
 import {
   StripeToolkit,
   YFinanceTool,      // Yahoo Finance market data
-} from 'confused-ai/tools/finance';
+} from 'personaforge/tools/finance';
 ```
 
 ### Utilities
@@ -264,7 +264,7 @@ import {
   fileSystem,        // read/write local files
   browserTool,       // headless browser
   createShellTool,   // run shell commands
-} from 'confused-ai/tool';
+} from 'personaforge/tool';
 ```
 
 ### Web preset
@@ -288,7 +288,7 @@ const agent = createAgent({
 Group tools into a typed registry for advanced use:
 
 ```ts
-import { ToolRegistryImpl } from 'confused-ai/tool';
+import { ToolRegistryImpl } from 'personaforge/tool';
 
 const registry = new ToolRegistryImpl();
 registry.register(searchTool);

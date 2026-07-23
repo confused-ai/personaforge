@@ -9,8 +9,8 @@ Adapters are the infrastructure hand-off layer for `createAgent()`. The safest p
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createProductionSetup } from 'confused-ai/adapters';
+import { createAgent } from 'personaforge';
+import { createProductionSetup } from 'personaforge/adapters';
 
 const setup = createProductionSetup({ dev: true });
 await setup.connect();
@@ -30,13 +30,13 @@ console.log(await setup.healthCheck());
 ## Manual registry
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   InMemoryCacheAdapter,
   InMemorySessionStoreAdapter,
   InMemoryVectorAdapter,
   createAdapterRegistry,
-} from 'confused-ai/adapters';
+} from 'personaforge/adapters';
 
 const registry = createAdapterRegistry();
 registry.register(new InMemoryCacheAdapter());
@@ -59,13 +59,13 @@ void agent;
 ## Explicit bindings
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import {
   InMemoryAuditLogAdapter,
   InMemoryRateLimitAdapter,
   InMemorySessionStoreAdapter,
   InMemoryVectorAdapter,
-} from 'confused-ai/adapters';
+} from 'personaforge/adapters';
 
 const agent = createAgent({
   name: 'assistant',

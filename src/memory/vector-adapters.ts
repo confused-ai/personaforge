@@ -86,7 +86,7 @@ export interface PineconeVectorStoreConfig {
  * @example
  * ```ts
  * import { Pinecone } from '@pinecone-database/pinecone';
- * import { PineconeVectorStore } from 'confused-ai/memory';
+ * import { PineconeVectorStore } from 'personaforge/memory';
  *
  * const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
  * const vectorStore = new PineconeVectorStore({
@@ -180,7 +180,7 @@ export interface QdrantVectorStoreConfig {
  *
  * @example
  * ```ts
- * import { QdrantVectorStore } from 'confused-ai/memory';
+ * import { QdrantVectorStore } from 'personaforge/memory';
  * const vectorStore = new QdrantVectorStore({
  *   url: 'http://localhost:6333',
  *   collection: 'agent-memory',
@@ -357,7 +357,7 @@ export interface PgVectorStoreConfig {
  * @example
  * ```ts
  * import { Pool } from 'pg';
- * import { PgVectorStore } from 'confused-ai/memory';
+ * import { PgVectorStore } from 'personaforge/memory';
  *
  * const pool = new Pool({ connectionString: process.env.DATABASE_URL });
  * const vectorStore = new PgVectorStore({ pool, table: 'agent_memory', dimension: 1536 });

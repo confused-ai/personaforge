@@ -1,5 +1,5 @@
 /**
- * @confused-ai/workflow — compose() pipeline.
+ * @personaforge/workflow — compose() pipeline.
  * O(n steps) time, O(1) space — only last result kept.
  */
 

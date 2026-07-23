@@ -10,8 +10,8 @@ import {
     createDataArtifact,
     createReasoningArtifact,
     createPlanArtifact,
-} from '@confused-ai/artifacts';
-import type { ArtifactStorage } from '@confused-ai/artifacts';
+} from '@personaforge/artifacts';
+import type { ArtifactStorage } from '@personaforge/artifacts';
 
 describe('InMemoryArtifactStorage', () => {
     let storage: ArtifactStorage;

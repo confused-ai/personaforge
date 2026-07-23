@@ -15,7 +15,7 @@
  * ## Quick Start (5 seconds)
  *
  * ```ts
- * import { agent } from 'confused-ai'
+ * import { agent } from 'personaforge'
  * const a = agent('You are a helpful assistant.')
  * const result = await a.run('Summarize the news today.')
  * console.log(result.text)
@@ -25,16 +25,16 @@
  *
  * | What you want                   | Import from              | Key exports                               |
  * |---------------------------------|--------------------------|-------------------------------------------|
- * | Create agents                   | `confused-ai`            | `agent`, `createAgent`, `compose`, `pipe` |
- * | LLM providers                   | `confused-ai/model`      | `openai()`, `anthropic()`, `ollama()`     |
- * | Define tools                    | `confused-ai/tool`       | `tool()`, `createTools()`, `defineTool()` |
- * | Multi-agent workflows           | `confused-ai/workflow`   | `compose`, `pipe`, `AgentRuntime`         |
- * | Production safety               | `confused-ai/guard`      | `BudgetEnforcer`, `RateLimiter`, `CircuitBreaker` |
- * | HTTP server                     | `confused-ai/serve`      | `serve()`, `createRouter()`               |
- * | Telemetry & logging             | `confused-ai/observe`    | `createTracer()`, `createLogger()`        |
- * | Testing                         | `confused-ai/test`       | `mockAgent()`, `scenario()`               |
- * | Low-level graph engine          | `confused-ai/graph`      | `createGraph()`, `DAGEngine`              |
- * | Pluggable adapters              | `confused-ai/adapters`   | `createAdapterRegistry()`                 |
+ * | Create agents                   | `personaforge`            | `agent`, `createAgent`, `compose`, `pipe` |
+ * | LLM providers                   | `personaforge/model`      | `openai()`, `anthropic()`, `ollama()`     |
+ * | Define tools                    | `personaforge/tool`       | `tool()`, `createTools()`, `defineTool()` |
+ * | Multi-agent workflows           | `personaforge/workflow`   | `compose`, `pipe`, `AgentRuntime`         |
+ * | Production safety               | `personaforge/guard`      | `BudgetEnforcer`, `RateLimiter`, `CircuitBreaker` |
+ * | HTTP server                     | `personaforge/serve`      | `serve()`, `createRouter()`               |
+ * | Telemetry & logging             | `personaforge/observe`    | `createTracer()`, `createLogger()`        |
+ * | Testing                         | `personaforge/test`       | `mockAgent()`, `scenario()`               |
+ * | Low-level graph engine          | `personaforge/graph`      | `createGraph()`, `DAGEngine`              |
+ * | Pluggable adapters              | `personaforge/adapters`   | `createAdapterRegistry()`                 |
  *
  * ## Architecture — Layers
  *
@@ -42,7 +42,7 @@
  * ┌─────────────────────────────────────────────────────────────────┐
  * │                      Developer API                               │
  * │                                                                   │
- * │   import { agent, openai, tool, compose } from 'confused-ai'    │
+ * │   import { agent, openai, tool, compose } from 'personaforge'    │
  * │                                                                   │
  * │   agent()  ·  openai()  ·  anthropic()  ·  ollama()             │
  * │   tool()   ·  createTools()  ·  defineTool()                    │
@@ -98,7 +98,7 @@
  * ### 1. Minimal agent (zero config)
  *
  * ```ts
- * import { agent } from 'confused-ai'
+ * import { agent } from 'personaforge'
  *
  * const a = agent('You are a helpful assistant.')
  * const { text } = await a.run('What is 2 + 2?')
@@ -107,8 +107,8 @@
  * ### 2. Agent with tools
  *
  * ```ts
- * import { agent } from 'confused-ai'
- * import { tool } from 'confused-ai/tool'
+ * import { agent } from 'personaforge'
+ * import { tool } from 'personaforge/tool'
  * import { z } from 'zod'
  *
  * const weather = tool({
@@ -125,8 +125,8 @@
  * ### 3. Choose your model
  *
  * ```ts
- * import { agent } from 'confused-ai'
- * import { openai, anthropic, ollama } from 'confused-ai/model'
+ * import { agent } from 'personaforge'
+ * import { openai, anthropic, ollama } from 'personaforge/model'
  *
  * const gpt4 = agent('...', { model: openai('gpt-4.1') })
  * const claude = agent('...', { model: anthropic('claude-sonnet-4-20250514') })
@@ -136,7 +136,7 @@
  * ### 4. Sequential pipeline
  *
  * ```ts
- * import { agent, compose } from 'confused-ai'
+ * import { agent, compose } from 'personaforge'
  *
  * const researcher = agent('Research the topic and return bullet points.')
  * const writer     = agent('Turn bullet points into a polished blog post.')
@@ -149,8 +149,8 @@
  * ### 5. Multi-model consensus
  *
  * ```ts
- * import { MultiAgentOrchestrator, AgentRuntime, wrapCoreLLM } from 'confused-ai/workflow'
- * import { openai, anthropic } from 'confused-ai/model'
+ * import { MultiAgentOrchestrator, AgentRuntime, wrapCoreLLM } from 'personaforge/workflow'
+ * import { openai, anthropic } from 'personaforge/model'
  *
  * const orchestrator = new MultiAgentOrchestrator()
  *   .addAgent({ name: 'GPT', instructions: 'Review the code.', llm: wrapCoreLLM('gpt-4o', openai()) })
@@ -166,7 +166,7 @@
  * ### 6. DAG workflow
  *
  * ```ts
- * import { createGraph, DAGEngine } from 'confused-ai/graph'
+ * import { createGraph, DAGEngine } from 'personaforge/graph'
  *
  * const graph = createGraph('data-pipeline')
  *   .addNode('fetch',   { kind: 'task', execute: ctx => fetchData() })
@@ -181,7 +181,7 @@
  * ### 7. Production agent with safety
  *
  * ```ts
- * import { createAgent } from 'confused-ai'
+ * import { createAgent } from 'personaforge'
  *
  * const a = createAgent({
  *   name: 'SupportBot',
@@ -196,8 +196,8 @@
  * ### 8. HTTP server
  *
  * ```ts
- * import { createAgent } from 'confused-ai'
- * import { createAgentRouter } from 'confused-ai/serve'
+ * import { createAgent } from 'personaforge'
+ * import { createAgentRouter } from 'personaforge/serve'
  *
  * const a = createAgent({ name: 'Bot', instructions: '...' })
  * const router = createAgentRouter(a)
@@ -207,7 +207,7 @@
  * ### 9. Testing without a real LLM
  *
  * ```ts
- * import { mockAgent, scenario } from 'confused-ai/test'
+ * import { mockAgent, scenario } from 'personaforge/test'
  *
  * const a = mockAgent({ responses: ['Hello!', 'Goodbye!'] })
  *
@@ -222,7 +222,7 @@
  * ### 10. Custom LLM provider
  *
  * ```ts
- * import type { LLMProvider, Message, GenerateResult } from 'confused-ai/model'
+ * import type { LLMProvider, Message, GenerateResult } from 'personaforge/model'
  *
  * const myProvider: LLMProvider = {
  *   async generateText(messages: Message[]): Promise<GenerateResult> {
@@ -237,7 +237,7 @@
  * ### 11. Custom tool (fluent builder)
  *
  * ```ts
- * import { defineTool } from 'confused-ai/tool'
+ * import { defineTool } from 'personaforge/tool'
  * import { z } from 'zod'
  *
  * const stockTool = defineTool()
@@ -254,8 +254,8 @@
  * ### 12. Extend a built-in tool
  *
  * ```ts
- * import { extendTool } from 'confused-ai/tool'
- * import { webSearchTool } from 'confused-ai/tools/search'
+ * import { extendTool } from 'personaforge/tool'
+ * import { webSearchTool } from 'personaforge/tools/search'
  *
  * const cachedSearch = extendTool(webSearchTool, {
  *   name: 'cachedSearch',
@@ -269,7 +269,7 @@
  * All errors extend `AgentError` and carry a structured `code` + `retryable` flag:
  *
  * ```ts
- * import { AgentError, ErrorCode } from 'confused-ai'
+ * import { AgentError, ErrorCode } from 'personaforge'
  *
  * try {
  *   await agent.run(prompt)
@@ -305,45 +305,45 @@
  *
  * ## Module Reference
  *
- * ### `src/model.ts` → `confused-ai/model`
+ * ### `src/model.ts` → `personaforge/model`
  * Provider classes (`OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, `BedrockConverseProvider`)
  * and factory shorthands (`openai()`, `anthropic()`, `ollama()`).
  *
- * ### `src/tool.ts` → `confused-ai/tool`
+ * ### `src/tool.ts` → `personaforge/tool`
  * `tool()` helper, `createTools()`, `defineTool()` builder, `extendTool()`, `wrapTool()`,
  * `pipeTools()`, built-in utility tools, MCP client/server.
  *
- * ### `src/workflow.ts` → `confused-ai/workflow`
+ * ### `src/workflow.ts` → `personaforge/workflow`
  * `compose()`, `pipe()` for linear pipelines; `AgentRuntime`, `MultiAgentOrchestrator`
  * for multi-agent; `createGraph()`, `DAGEngine` for DAG workflows; `wrapCoreLLM()` bridge.
  *
- * ### `src/guard.ts` → `confused-ai/guard`
+ * ### `src/guard.ts` → `personaforge/guard`
  * `BudgetEnforcer`, `RateLimiter`, `CircuitBreaker`, `InMemoryApprovalStore`,
  * `HealthCheckManager`, `InMemoryIdempotencyStore`, `InMemoryAuditStore`.
  *
- * ### `src/serve.ts` → `confused-ai/serve`
+ * ### `src/serve.ts` → `personaforge/serve`
  * HTTP runtime: `createAgentRouter()`, auth middleware, health endpoints.
  *
- * ### `src/observe.ts` → `confused-ai/observe`
+ * ### `src/observe.ts` → `personaforge/observe`
  * OTLP tracing, metrics, structured logging.
  *
- * ### `src/test.ts` → `confused-ai/test`
+ * ### `src/test.ts` → `personaforge/test`
  * `mockAgent()`, `scenario()` — LLM-free deterministic testing.
  *
- * ### `src/graph/` → `confused-ai/graph`
+ * ### `src/graph/` → `personaforge/graph`
  * Full DAG execution engine: `createGraph()`, `DAGEngine`, `DurableExecutor`,
  * `DistributedEngine`, `MultiAgentOrchestrator`, `AgentRuntime`, event stores,
  * memory system, graph plugins.
  *
- * ### `src/adapters/` → `confused-ai/adapters`
+ * ### `src/adapters/` → `personaforge/adapters`
  * Universal adapter registry for SQL, NoSQL, vector, cache, object storage,
  * message queues, observability, embedding, auth, rate-limit, and audit-log backends.
  *
- * ### `src/contracts/` → `confused-ai/contracts`
+ * ### `src/contracts/` → `personaforge/contracts`
  * Dependency-free shared interfaces (domain model layer). All modules import
  * types from here instead of cross-importing.
  *
- * ### `src/contracts/extensions.ts` → `confused-ai/contracts/extensions`
+ * ### `src/contracts/extensions.ts` → `personaforge/contracts/extensions`
  * Canonical pluggable interface re-exports: `SessionStore`, `MemoryStore`,
  * `LLMProvider`, `Tool`, `RAGEngine`, `Tracer`, `MetricsCollector`, etc.
  */

@@ -16,7 +16,7 @@ Lifecycle hooks let you observe every stage of an agent run — before and after
 - How to build structured logs around runs and tool calls
 - How to track token usage and step counts
 - How to integrate with external tracing systems using `runId` and `traceId`
-- How to use the `confused-ai/observe` module for richer metrics
+- How to use the `personaforge/observe` module for richer metrics
 
 ---
 
@@ -24,7 +24,7 @@ Lifecycle hooks let you observe every stage of an agent run — before and after
 
 ```ts
 import { z } from 'zod/v3';
-import { createAgent, tool } from 'confused-ai';
+import { createAgent, tool } from 'personaforge';
 
 const lookupOrder = tool({
   name: 'lookup_order',
@@ -112,7 +112,7 @@ Replace `console.log` with your preferred logger:
 
 ```ts
 import pino from 'pino';
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const logger = pino({ level: 'info' });
 
@@ -194,13 +194,13 @@ const agent = createAgent({
 
 ---
 
-## `confused-ai/observe` — richer metrics and evals
+## `personaforge/observe` — richer metrics and evals
 
 For structured traces, eval suites, and metric aggregation, use the observe module:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createObserver, runEvalSuite } from 'confused-ai/observe';
+import { createAgent } from 'personaforge';
+import { createObserver, runEvalSuite } from 'personaforge/observe';
 
 const observer = createObserver({
   onEvent: (event) => {
@@ -237,4 +237,4 @@ const agent = createAgent({
 
 - [13 · Production Resilience](./13-production) — circuit breakers and rate limits
 - [22 · Eval Regression Guard](./22-eval-ci) — automated evaluation in CI
-- [Observability guide](../guide/observability) — `confused-ai/observe` full reference
+- [Observability guide](../guide/observability) — `personaforge/observe` full reference

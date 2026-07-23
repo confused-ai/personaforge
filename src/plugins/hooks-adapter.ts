@@ -16,7 +16,7 @@
  *
  * @example
  * ```ts
- * import { hooksToPlugin } from 'confused-ai/plugins';
+ * import { hooksToPlugin } from 'personaforge/plugins';
  *
  * const hooks: AgenticLifecycleHooks = {
  *   beforeRun: async (prompt) => { console.log('Starting:', prompt); return prompt; },

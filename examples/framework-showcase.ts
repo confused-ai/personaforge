@@ -11,32 +11,32 @@ import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import { z } from 'zod';
 
-import { createAgent, resolveLlmForCreateAgent } from 'confused-ai';
-import { InMemorySessionStore } from 'confused-ai';
-import { CalculatorAddTool } from 'confused-ai';
-import { GuardrailValidator, createSensitiveDataRule } from 'confused-ai';
-import { ConsoleLogger } from 'confused-ai';
-import { LogLevel } from 'confused-ai';
-import { MetricsCollectorImpl } from 'confused-ai';
-import { InMemoryStore, MemoryType } from 'confused-ai';
-import { ToolRegistryImpl } from 'confused-ai';
-import { ClassicalPlanner, PlanningAlgorithm } from 'confused-ai';
+import { createAgent, resolveLlmForCreateAgent } from 'personaforge';
+import { InMemorySessionStore } from 'personaforge';
+import { CalculatorAddTool } from 'personaforge';
+import { GuardrailValidator, createSensitiveDataRule } from 'personaforge';
+import { ConsoleLogger } from 'personaforge';
+import { LogLevel } from 'personaforge';
+import { MetricsCollectorImpl } from 'personaforge';
+import { InMemoryStore, MemoryType } from 'personaforge';
+import { ToolRegistryImpl } from 'personaforge';
+import { ClassicalPlanner, PlanningAlgorithm } from 'personaforge';
 import {
     defineAgent,
     createWorkflow,
     asOrchestratorAgent,
     type DefinedAgent,
-} from 'confused-ai';
-import { createPipeline } from 'confused-ai';
-import { AgentContextBuilder } from 'confused-ai';
+} from 'personaforge';
+import { createPipeline } from 'personaforge';
+import { AgentContextBuilder } from 'personaforge';
 import {
     HealthCheckManager,
     HealthStatus,
     createSessionStoreHealthCheck,
     createCustomHealthCheck,
-} from 'confused-ai/production';
-import { createHttpService, listenService, getRuntimeOpenApiJson } from 'confused-ai/serve';
-import { VERSION } from 'confused-ai';
+} from 'personaforge/production';
+import { createHttpService, listenService, getRuntimeOpenApiJson } from 'personaforge/serve';
+import { VERSION } from 'personaforge';
 
 config({
     path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env'),
@@ -190,7 +190,7 @@ async function sectionPipeline() {
         .withPlanner(new ClassicalPlanner({ algorithm: PlanningAlgorithm.HIERARCHICAL }))
         .build();
     const pout = await pipeline.run(
-        { prompt: JSON.stringify({ topic: 'confused-ai' }) },
+        { prompt: JSON.stringify({ topic: 'personaforge' }) },
         pctx
     );
     console.log('Pipeline state:', pout.state, 'result sample:', JSON.stringify(pout.result).slice(0, 180));
@@ -246,7 +246,7 @@ async function main() {
         10
     );
 
-    console.log('confused-ai framework showcase | VERSION', VERSION);
+    console.log('personaforge framework showcase | VERSION', VERSION);
     if (!process.env.OPENAI_API_KEY) {
         console.error('Set OPENAI_API_KEY in examples/.env (or the environment) for the LLM sections.');
         process.exit(1);

@@ -40,9 +40,9 @@ import {
     type EvalDatasetItem,
     type EvalReport,
     type EvalScorer,
-} from 'confused-ai';
-import { createAgent } from 'confused-ai';
-import { MockLLMProvider } from 'confused-ai/test-utils';
+} from 'personaforge';
+import { createAgent } from 'personaforge';
+import { MockLLMProvider } from 'personaforge/test-utils';
 
 // ── Golden dataset ─────────────────────────────────────────────────────────
 // In production: load from JSON, CSV, or a database
@@ -163,7 +163,7 @@ function printReport(report: EvalReport) {
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
-    console.log('confused-ai — Eval Regression Guard\n');
+    console.log('personaforge — Eval Regression Guard\n');
 
     const store = new InMemoryEvalStore();
 

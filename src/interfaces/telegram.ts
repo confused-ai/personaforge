@@ -13,7 +13,7 @@
  *
  * @example
  * ```ts
- * import { TelegramInterface } from 'confused-ai/interfaces';
+ * import { TelegramInterface } from 'personaforge/interfaces';
  *
  * new TelegramInterface({
  *   agent: assistant,

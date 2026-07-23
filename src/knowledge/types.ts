@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — RAG types.
+ * @personaforge/knowledge — RAG types.
  */
 
 export interface Document {
@@ -26,7 +26,7 @@ export interface VectorStore {
 /** EmbeddingFn — converts text → float vector. */
 export type EmbeddingFn = (text: string) => Promise<number[]>;
 
-/** RAGEngine — interface consumed by @confused-ai/core. */
+/** RAGEngine — interface consumed by @personaforge/core. */
 export interface RAGEngine {
   addDocuments(docs: Document[]): Promise<void>;
   buildContext(query: string, topK?: number): Promise<string>;

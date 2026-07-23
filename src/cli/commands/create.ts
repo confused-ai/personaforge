@@ -6,7 +6,7 @@ const TEMPLATES: Record<string, { description: string; files: Record<string, (na
     basic: {
         description: 'Minimal agent with one LLM call',
         files: {
-            'agent.ts': (name: string) => `import { createAgent } from 'confused-ai';
+            'agent.ts': (name: string) => `import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: '${name}',
@@ -30,11 +30,11 @@ if (import.meta.main) {
                 type: 'module',
                 scripts: {
                     start: 'bun agent.ts',
-                    serve: 'confused-ai serve agent.ts',
+                    serve: 'personaforge serve agent.ts',
                     typecheck: 'tsc --noEmit',
                 },
                 dependencies: {
-                    'confused-ai': '*',
+                    'personaforge': '*',
                     openai: '^6.0.0',
                 },
                 devDependencies: {
@@ -63,7 +63,7 @@ OPENAI_API_KEY=sk-...
 `,
             'README.md': (name: string) => `# ${name}
 
-An AI agent built with [confused-ai](https://github.com/confused-ai/confused-ai).
+An AI agent built with [personaforge](https://github.com/personaforge/personaforge).
 
 ## Getting started
 
@@ -78,7 +78,7 @@ bun agent.ts "Hello!"
 ## Serve as an HTTP API
 
 \`\`\`bash
-confused-ai serve agent.ts --port 3000
+personaforge serve agent.ts --port 3000
 # POST http://localhost:3000/v1/chat
 # { "message": "Hello!" }
 \`\`\`
@@ -89,7 +89,7 @@ confused-ai serve agent.ts --port 3000
     http: {
         description: 'Agent exposed as an HTTP API (JSON + SSE)',
         files: {
-            'agent.ts': (name: string) => `import { createAgent } from 'confused-ai';
+            'agent.ts': (name: string) => `import { createAgent } from 'personaforge';
 import { createHttpService, listenService } from '../../runtime/index.js';
 
 export const agent = createAgent({
@@ -109,7 +109,7 @@ console.log(\`Listening on http://localhost:\${port}\`);
                     start: 'bun agent.ts',
                     dev: 'bun --watch agent.ts',
                 },
-                dependencies: { 'confused-ai': '*', openai: '^6.0.0' },
+                dependencies: { 'personaforge': '*', openai: '^6.0.0' },
                 devDependencies: { typescript: '^5.0.0', '@types/bun': 'latest' },
             }, null, 2) + '\n',
             '.env.example': () => `OPENAI_API_KEY=sk-...\nPORT=8787\n`,

@@ -1,5 +1,5 @@
 /**
- * @confused-ai/models — provider-level fallback + retry wrapper.
+ * @personaforge/models — provider-level fallback + retry wrapper.
  *
  * Wraps any LLMProvider with `.withFallbacks([alt1, alt2])` and
  * `.withRetry({ maxRetries, retryOn })` so model-level resilience is a

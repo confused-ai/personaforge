@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { createRalphLoop } from 'confused-ai/orchestration';
+ * import { createRalphLoop } from 'personaforge/orchestration';
  *
  * const loop = createRalphLoop({
  *   agent: codingAgent,

@@ -10,8 +10,8 @@
  *
  * @example
  * ```ts
- * import { createHttpService, listenService } from 'confused-ai/serve';
- * import { SlackInterface } from 'confused-ai/interfaces';
+ * import { createHttpService, listenService } from 'personaforge/serve';
+ * import { SlackInterface } from 'personaforge/interfaces';
  *
  * const svc = createHttpService({
  *   agents: { assistant },

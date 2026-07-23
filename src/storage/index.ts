@@ -198,7 +198,7 @@ export interface StorageOptions {
  *
  * @example
  * ```ts
- * import { createStorage } from 'confused-ai';
+ * import { createStorage } from 'personaforge';
  *
  * // Dev: in-memory
  * const store = createStorage();

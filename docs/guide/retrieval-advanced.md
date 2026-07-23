@@ -6,7 +6,7 @@ outline: [2, 3]
 
 # Advanced Retrieval
 
-The `confused-ai/knowledge` module ships everything needed to close the retrieval quality gap that separates a demo RAG pipeline from a production one: real chunking, dense-plus-sparse hybrid search, reranking, and composable retriever primitives.
+The `personaforge/knowledge` module ships everything needed to close the retrieval quality gap that separates a demo RAG pipeline from a production one: real chunking, dense-plus-sparse hybrid search, reranking, and composable retriever primitives.
 
 ```ts
 import {
@@ -19,7 +19,7 @@ import {
   // Retriever primitives
   MultiQueryRetriever, ContextualCompressionRetriever, LLMCompressor,
   ParentDocumentRetriever, SelfQueryRetriever, TimeWeightedRetriever,
-} from 'confused-ai/knowledge';
+} from 'personaforge/knowledge';
 ```
 
 Everything below is zero-dependency by default. External services (Cohere, Jina) are opt-in.

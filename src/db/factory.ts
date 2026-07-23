@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/factory — createAgentDb() factory.
+ * @personaforge/db/factory — createAgentDb() factory.
  *
  * Instantiates the right AgentDb backend from a config object or a
  * connection URL string.
@@ -128,7 +128,7 @@ export async function createAgentDb(config: AgentDbConfig | string): Promise<Age
       });
     }
     default:
-      throw new Error(`[confused-ai/db] Unknown database type: "${type}". ` +
+      throw new Error(`[personaforge/db] Unknown database type: "${type}". ` +
         `Supported: memory, sqlite, postgres, mongo, redis, json, mysql, dynamodb, turso`);
   }
 }
@@ -152,6 +152,6 @@ function parseUrl(url: string): AgentDbConfig {
   if (lower.startsWith('libsql://') || lower.startsWith('turso://')) return { type: 'turso', uri: url };
   if (lower.startsWith('file:'))       return { type: 'turso', uri: url };
 
-  throw new Error(`[confused-ai/db] Cannot parse database URL: "${url}". ` +
+  throw new Error(`[personaforge/db] Cannot parse database URL: "${url}". ` +
     `Expected scheme: sqlite:, postgres:, mongodb:, redis:, json:, mysql:, dynamodb:, libsql:, turso:, file:, or 'memory'`);
 }

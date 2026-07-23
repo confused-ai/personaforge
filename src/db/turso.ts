@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/turso — TursoAgentDb.
+ * @personaforge/db/turso — TursoAgentDb.
  *
  * Edge SQLite using Turso / LibSQL (`@libsql/client`).
  * Works locally (file:) AND against Turso cloud (libsql://).
@@ -18,7 +18,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] TursoAgentDb requires @libsql/client.\n' +
+  '[personaforge/db] TursoAgentDb requires @libsql/client.\n' +
   '  Install: npm install @libsql/client';
 
 // Minimal surface types

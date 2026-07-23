@@ -1,5 +1,5 @@
 /**
- * @confused-ai/simulation — a wind tunnel for agents.
+ * @personaforge/simulation — a wind tunnel for agents.
  *
  * Run an agent against many scenarios, record every run into the durable log,
  * and get aggregate pass/fail statistics. Failing scenarios stay replayable.

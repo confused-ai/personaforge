@@ -1,5 +1,5 @@
 /**
- * @confused-ai/contracts — Branded ID types and UUID factory.
+ * @personaforge/contracts — Branded ID types and UUID factory.
  *
  * Replaces all `Date.now() + Math.random()` patterns across the codebase with
  * crypto.randomUUID() for better distribution and security in distributed systems.

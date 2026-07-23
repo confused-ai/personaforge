@@ -50,11 +50,11 @@ export function setupGracefulShutdown(
     isShuttingDown = true;
 
      
-    console.warn(`[confused-ai] ${signal} received — starting graceful shutdown`);
+    console.warn(`[personaforge] ${signal} received — starting graceful shutdown`);
 
     // Force-exit deadline
     const forceExit = setTimeout(() => {
-      console.error(`[confused-ai] Graceful shutdown timed out after ${String(timeoutMs)}ms — forcing exit`);
+      console.error(`[personaforge] Graceful shutdown timed out after ${String(timeoutMs)}ms — forcing exit`);
       process.exit(1);
     }, timeoutMs);
     // Don't let this timer keep the process alive if everything finishes cleanly
@@ -89,9 +89,9 @@ export function makeCleanup(label: string, fn: CleanupFn): CleanupFn {
     try {
       await fn();
        
-      console.warn(`[confused-ai] cleanup '${label}' completed`);
+      console.warn(`[personaforge] cleanup '${label}' completed`);
     } catch (e) {
-      console.error(`[confused-ai] cleanup '${label}' failed`, e);
+      console.error(`[personaforge] cleanup '${label}' failed`, e);
     }
   };
 }

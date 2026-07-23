@@ -9,7 +9,7 @@ outline: [2, 3]
 Use `createTenantContext()` to isolate sessions, rate limits, and run context per tenant — without separate databases. All stores are wrapped and all keys are automatically prefixed.
 
 ```ts
-import { createTenantContext, TenantRegistry } from 'confused-ai/production';
+import { createTenantContext, TenantRegistry } from 'personaforge/production';
 ```
 
 ---
@@ -17,9 +17,9 @@ import { createTenantContext, TenantRegistry } from 'confused-ai/production';
 ## Quick start
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createTenantContext } from 'confused-ai/production';
-import { createSqliteStore } from 'confused-ai/session';
+import { createAgent } from 'personaforge';
+import { createTenantContext } from 'personaforge/production';
+import { createSqliteStore } from 'personaforge/session';
 
 // Single shared session store
 const sessionStore = createSqliteStore({ path: './agent.db' });
@@ -81,7 +81,7 @@ const sessionId = await ctxA.sessionStore.create({ agentId: 'support' });
 Use `TenantRegistry` to define configuration for each tenant (rate limits, allowed models):
 
 ```ts
-import { TenantRegistry } from 'confused-ai/production';
+import { TenantRegistry } from 'personaforge/production';
 
 const registry = new TenantRegistry();
 

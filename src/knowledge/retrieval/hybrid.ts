@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — hybrid retrieval (dense + BM25) via Reciprocal-Rank
+ * @personaforge/knowledge — hybrid retrieval (dense + BM25) via Reciprocal-Rank
  * Fusion.
  *
  * RRF: for each candidate d, score = Σ 1 / (k + rank_i(d)) across every ranked

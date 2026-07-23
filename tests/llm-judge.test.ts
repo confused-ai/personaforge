@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runLlmAsJudge } from '@confused-ai/eval';
+import { runLlmAsJudge } from '@personaforge/eval';
 import { MockLLMProvider } from '../src/testing/mock-llm.js';
 
 describe('runLlmAsJudge', () => {

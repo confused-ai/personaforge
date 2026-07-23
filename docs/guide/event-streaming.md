@@ -6,13 +6,13 @@ outline: [2, 3]
 
 # Event Streaming
 
-The `confused-ai/streaming` module provides a LangGraph-style event stream protocol. Nodes, tools, and LLM adapters emit typed events; consumers choose which event types they want.
+The `personaforge/streaming` module provides a LangGraph-style event stream protocol. Nodes, tools, and LLM adapters emit typed events; consumers choose which event types they want.
 
 ```ts
 import {
   StreamEventBus, StreamContext, createStreamableRun,
   type StreamEvent, type StreamMode,
-} from 'confused-ai/streaming';
+} from 'personaforge/streaming';
 ```
 
 ---

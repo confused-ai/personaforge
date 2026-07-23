@@ -11,7 +11,7 @@ outline: [2, 3]
 ## Quick start
 
 ```ts
-import { createAgent, AnthropicProvider, OpenAIProvider, createSmartRouter } from 'confused-ai';
+import { createAgent, AnthropicProvider, OpenAIProvider, createSmartRouter } from 'personaforge';
 
 const openai    = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 const anthropic = new AnthropicProvider({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -108,7 +108,7 @@ const router = createSmartRouter(entries, {
 ### `createSmartRouter` — adaptive (recommended)
 
 ```ts
-import { createSmartRouter } from 'confused-ai';
+import { createSmartRouter } from 'personaforge';
 
 const router = createSmartRouter(entries, {
   debug: true,               // log every decision
@@ -122,7 +122,7 @@ const router = createSmartRouter(entries, {
 ### `createBalancedRouter`
 
 ```ts
-import { createBalancedRouter } from 'confused-ai';
+import { createBalancedRouter } from 'personaforge';
 
 const router = createBalancedRouter(entries, { debug: true });
 ```
@@ -130,7 +130,7 @@ const router = createBalancedRouter(entries, { debug: true });
 ### `createCostOptimizedRouter` / `createQualityFirstRouter` / `createSpeedOptimizedRouter`
 
 ```ts
-import { createCostOptimizedRouter, createQualityFirstRouter, createSpeedOptimizedRouter } from 'confused-ai';
+import { createCostOptimizedRouter, createQualityFirstRouter, createSpeedOptimizedRouter } from 'personaforge';
 
 const cheap   = createCostOptimizedRouter(entries);
 const quality = createQualityFirstRouter(entries);
@@ -140,7 +140,7 @@ const fast    = createSpeedOptimizedRouter(entries);
 ### `new LLMRouter` — full config control
 
 ```ts
-import { LLMRouter } from 'confused-ai';
+import { LLMRouter } from 'personaforge';
 
 const router = new LLMRouter({
   strategy: 'balanced',
@@ -163,7 +163,7 @@ const router = new LLMRouter({
 Rules are evaluated before any strategy. The first matching rule wins.
 
 ```ts
-import { createSmartRouter } from 'confused-ai';
+import { createSmartRouter } from 'personaforge';
 
 const router = createSmartRouter(entries, {
   rules: [
@@ -232,7 +232,7 @@ import {
   AnthropicProvider,
   createGroqProvider,
   createAgent,
-} from 'confused-ai';
+} from 'personaforge';
 
 const openai    = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 const anthropic = new AnthropicProvider({ apiKey: process.env.ANTHROPIC_API_KEY! });

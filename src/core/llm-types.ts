@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core — canonical LLM provider type definitions.
+ * @personaforge/core — canonical LLM provider type definitions.
  *
  * These types are the single source of truth for the LLM provider interface.
  * All src/providers/types.ts consumers should migrate to re-exporting these.

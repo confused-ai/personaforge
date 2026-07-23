@@ -2,7 +2,7 @@
 /**
  * scripts/check-bundle-size.mjs
  *
- * Bundles a public confused-ai entry point with esbuild, gzips the output,
+ * Bundles a public personaforge entry point with esbuild, gzips the output,
  * and fails (exit 1) if the gzip size exceeds the configured gate.
  *
  * Heavy optional deps (playwright, pg, openai, anthropic, ioredis, …) are

@@ -12,7 +12,7 @@
  *
  * @example
  * ```ts
- * import { defineTask, defineRole, createTeam } from 'confused-ai/orchestration';
+ * import { defineTask, defineRole, createTeam } from 'personaforge/orchestration';
  *
  * const researcher = defineRole({ role: 'Researcher', backstory: '...', goal: '...', llm });
  * const writer     = defineRole({ role: 'Writer',     backstory: '...', goal: '...', llm });

@@ -7,9 +7,9 @@
  *
  * @example
  * ```ts
- * import { createAgent } from 'confused-ai';
- * import { SchedulerTools } from 'confused-ai/scheduler';
- * import { ScheduleManager } from 'confused-ai/scheduler';
+ * import { createAgent } from 'personaforge';
+ * import { SchedulerTools } from 'personaforge/scheduler';
+ * import { ScheduleManager } from 'personaforge/scheduler';
  *
  * const manager = new ScheduleManager();
  *

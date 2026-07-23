@@ -11,7 +11,7 @@ outline: [2, 3]
 ## Minimal agent
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const agent = createAgent({
   name: 'assistant',
@@ -130,7 +130,7 @@ result.storageKey;    // key used when storage adapter persisted this run
 ### Agent with tools
 
 ```ts
-import { createAgent, tool } from 'confused-ai';
+import { createAgent, tool } from 'personaforge';
 import { z } from 'zod';
 
 const getWeather = tool({
@@ -158,7 +158,7 @@ console.log(result.text);
 ### Agent with sessions (multi-turn)
 
 ```ts
-import { createAgent, InMemorySessionStore } from 'confused-ai';
+import { createAgent, InMemorySessionStore } from 'personaforge';
 
 const agent = createAgent({
   name: 'support-bot',
@@ -181,7 +181,7 @@ console.log(result.text);  // references order #12345
 ### Agent with structured output
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 import { z } from 'zod';
 
 const SentimentSchema = z.object({
@@ -207,7 +207,7 @@ console.log(data.score);      // 0.95
 ### Agent with memory
 
 ```ts
-import { createAgent, InMemoryStore } from 'confused-ai';
+import { createAgent, InMemoryStore } from 'personaforge';
 
 const agent = createAgent({
   name: 'personal-assistant',
@@ -230,7 +230,7 @@ console.log(result.text);
 ### Agent with RAG (knowledge base)
 
 ```ts
-import { createAgent, createKnowledgeEngine, InMemoryVectorStore } from 'confused-ai';
+import { createAgent, createKnowledgeEngine, InMemoryVectorStore } from 'personaforge';
 
 const kb = createKnowledgeEngine({
   vectorStore: new InMemoryVectorStore(),
@@ -279,8 +279,8 @@ const agent = createAgent({
 For direct control over the ReAct loop without the `createAgent` convenience layer:
 
 ```ts
-import { AgenticRunner, createAgenticAgent } from 'confused-ai';
-import { OpenAIProvider } from 'confused-ai';
+import { AgenticRunner, createAgenticAgent } from 'personaforge';
+import { OpenAIProvider } from 'personaforge';
 
 const runner = new AgenticRunner({
   llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! }),

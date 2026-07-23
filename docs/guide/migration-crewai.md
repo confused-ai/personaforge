@@ -1,18 +1,18 @@
 ---
 title: Migrate From CrewAI
-description: Port CrewAI agents, tasks, crews, and tools to confused-ai. Role-based agents become createAgent(). Crew execution becomes compose() or orchestration. Shared tools are plain tool() definitions.
+description: Port CrewAI agents, tasks, crews, and tools to personaforge. Role-based agents become createAgent(). Crew execution becomes compose() or orchestration. Shared tools are plain tool() definitions.
 outline: [2, 3]
 ---
 
 # Migrate From CrewAI
 
-CrewAI's role-based crew model maps cleanly onto `confused-ai`. The main change is moving from a framework-defined crew class to explicit agents, pipelines, or orchestrators.
+CrewAI's role-based crew model maps cleanly onto `personaforge`. The main change is moving from a framework-defined crew class to explicit agents, pipelines, or orchestrators.
 
 ---
 
 ## Quick comparison
 
-| CrewAI concept | confused-ai equivalent |
+| CrewAI concept | personaforge equivalent |
 |---|---|
 | `Agent(role, goal, backstory)` | `createAgent({ name, instructions })` |
 | `Task(description, agent)` | An `agent.run()` call — or a graph `task` node |
@@ -36,9 +36,9 @@ researcher = Agent(
     tools=[search_tool],
 )
 
-// confused-ai
-import { createAgent } from 'confused-ai';
-import { webSearchTool } from 'confused-ai';
+// personaforge
+import { createAgent } from 'personaforge';
+import { webSearchTool } from 'personaforge';
 
 const researcher = createAgent({
   name: 'researcher',
@@ -64,8 +64,8 @@ crew = Crew(
 )
 result = crew.kickoff()
 
-// confused-ai
-import { compose } from 'confused-ai';
+// personaforge
+import { compose } from 'personaforge';
 
 const pipeline = compose(researcher, writer, editor, {
   transform: (result) => result.text,
@@ -82,8 +82,8 @@ const result = await pipeline.run('AI trends in 2025');
 // CrewAI (hierarchical with manager_llm)
 crew = Crew(agents=[writer, researcher], process=Process.hierarchical, manager_llm=gpt4)
 
-// confused-ai
-import { createSupervisor } from 'confused-ai';
+// personaforge
+import { createSupervisor } from 'personaforge';
 
 const supervisor = createSupervisor({
   name: 'project-manager',
@@ -108,7 +108,7 @@ task = Task(
     agent=researcher,
 )
 
-// confused-ai — bake the output format into instructions
+// personaforge — bake the output format into instructions
 const researcher = createAgent({
   name: 'ev-researcher',
   instructions: `Research the given market and produce a detailed 3-paragraph report.
@@ -134,8 +134,8 @@ def get_stock_price(ticker: str) -> str:
     """Get the current stock price for a ticker."""
     return fetch_price(ticker)
 
-// confused-ai
-import { tool } from 'confused-ai';
+// personaforge
+import { tool } from 'personaforge';
 import { z } from 'zod';
 
 const getStockPrice = tool({

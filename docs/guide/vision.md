@@ -14,7 +14,7 @@ import {
   imageUrl,
   imageFile,
   imageBuffer,
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -22,7 +22,7 @@ import {
 ## Pass a remote image
 
 ```ts
-import { createAgent, multiModal, imageUrl } from 'confused-ai';
+import { createAgent, multiModal, imageUrl } from 'personaforge';
 
 const agent = createAgent({
   name: 'vision-agent',
@@ -44,7 +44,7 @@ const result = await agent.run(
 ## Pass a local file
 
 ```ts
-import { multiModal, imageFile } from 'confused-ai';
+import { multiModal, imageFile } from 'personaforge';
 
 // imageFile() is async — loads and base64-encodes the file
 const result = await agent.run(
@@ -60,7 +60,7 @@ const result = await agent.run(
 ## Pass a buffer (canvas, upload, fetch response)
 
 ```ts
-import { multiModal, imageBuffer } from 'confused-ai';
+import { multiModal, imageBuffer } from 'personaforge';
 
 const response = await fetch('https://example.com/diagram.png');
 const buffer = await response.arrayBuffer();

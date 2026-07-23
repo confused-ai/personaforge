@@ -1,5 +1,5 @@
 /**
- * @confused-ai/contracts — Canonical interface definitions.
+ * @personaforge/contracts — Canonical interface definitions.
  *
  * This is the single source of truth for all core abstractions:
  * LLMProvider, Message, GenerateOptions, GenerateResult, Tool, ToolRegistry,
@@ -421,8 +421,8 @@ export interface Skill {
 
   /**
    * Tools provided by this skill.
-   * Compatible with `Tool[]` from `@confused-ai/contracts` and
-   * `LightweightTool[]` from `@confused-ai/tools`.
+   * Compatible with `Tool[]` from `@personaforge/contracts` and
+   * `LightweightTool[]` from `@personaforge/tools`.
    */
   readonly tools?: readonly unknown[];
 

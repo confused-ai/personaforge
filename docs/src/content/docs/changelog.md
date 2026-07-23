@@ -1,11 +1,11 @@
 ---
 title: Changelog
-description: All notable changes to confused-ai
+description: All notable changes to personaforge
 ---
 
 # Changelog
 
-All notable changes to `confused-ai` are documented here.  
+All notable changes to `personaforge` are documented here.  
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · [Semantic Versioning](https://semver.org/)
 
 ::: tip Full changelog
@@ -38,7 +38,7 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 
 ### Added
 
-#### Testing Module (`confused-ai/testing`)
+#### Testing Module (`personaforge/testing`)
 - `MockToolRegistry` — records all invocations; `calls()`, `lastCall()`, `reset()`
 - `createTestAgent()` — zero-config test harness with `MockLLMProvider` + `MockSessionStore`
 - `createTestHttpService()` — integration test helper on a random port
@@ -50,11 +50,11 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 - WebSocket transport (`websocket: true`) — attaches to existing `http.Server`
 - Admin API (`adminApi: true`) — `/admin/health`, `/admin/agents`, `/admin/audit`, `/admin/stats`, `/admin/checkpoints`
 
-#### Adapter System (`confused-ai/adapters`)
+#### Adapter System (`personaforge/adapters`)
 - 20-category adapter system covering SQL, NoSQL, vector, cache, object storage, message queues, observability, embedding, session, memory, guardrail, RAG, tool registry, auth, rate limiting, audit log
 - `createProductionSetup()` — opinionated full-stack wiring with progressive upgrade path
 
-#### LLM Router (`confused-ai/llm`)
+#### LLM Router (`personaforge/llm`)
 - `LLMRouter` — intelligent routing by task type, complexity, and strategy
 - Four strategies: `balanced`, `cost`, `quality`, `speed`
 - Factories: `createBalancedRouter`, `createCostOptimizedRouter`, `createQualityFirstRouter`, `createSpeedOptimizedRouter`
@@ -72,7 +72,7 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 - `withResilience()` — circuit breaker + rate limiter + retry + health check wrapper
 - `RedisRateLimiter` — distributed rate limiting via Redis
 
-#### Secret Manager (`confused-ai/config`)
+#### Secret Manager (`personaforge/config`)
 - `createSecretManager()` with adapters: `EnvSecretManagerAdapter`, `AwsSecretsManagerAdapter`, `AzureKeyVaultAdapter`, `VaultAdapter`, `GcpSecretManagerAdapter`
 
 #### Orchestration Extensions
@@ -89,8 +89,8 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 - `createSqliteSessionStoreSync` — sync init, safe for factory use
 - Persistent user profiles and learning modes
 - Eval dataset persistence — `EvalStore`, `InMemoryEvalStore`, `SqliteEvalStore`, `runEvalSuite`
-- Plugin system — `confused-ai/plugins` with built-in logging, rate-limit, telemetry plugins
-- Contracts layer — `confused-ai/contracts` for shared interfaces without runtime code
+- Plugin system — `personaforge/plugins` with built-in logging, rate-limit, telemetry plugins
+- Contracts layer — `personaforge/contracts` for shared interfaces without runtime code
 
 ---
 

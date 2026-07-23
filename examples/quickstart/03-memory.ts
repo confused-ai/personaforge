@@ -9,8 +9,8 @@
  *   OPENAI_API_KEY=sk-... bun examples/quickstart/03-memory.ts
  */
 
-import { agent, InMemoryStore } from 'confused-ai';
-import { createAgentMemoryTools } from '@confused-ai/memory';
+import { agent, InMemoryStore } from 'personaforge';
+import { createAgentMemoryTools } from '@personaforge/memory';
 
 // ── Create a shared memory store ─────────────────────────────────────────────
 

@@ -19,7 +19,7 @@
  *
  * @example
  * ```ts
- * import { AGUIInterface } from 'confused-ai/interfaces';
+ * import { AGUIInterface } from 'personaforge/interfaces';
  *
  * new AGUIInterface({ agent: assistant });
  * ```

@@ -3,7 +3,7 @@
  * Requires: npm install @anthropic-ai/sdk
  *
  * Usage:
- * import { AnthropicProvider } from 'confused-ai-core/llm';
+ * import { AnthropicProvider } from 'personaforge-core/llm';
  * const llm = new AnthropicProvider({ model: 'claude-3-5-sonnet-20241022' });
  * const result = await llm.generateText([{ role: 'user', content: 'Hello' }]);
  */

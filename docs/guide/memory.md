@@ -11,7 +11,7 @@ Memory lets an agent retain and recall selected facts across runs. The framework
 ## Quick start
 
 ```ts
-import { createAgent, InMemoryStore } from 'confused-ai';
+import { createAgent, InMemoryStore } from 'personaforge';
 
 const agent = createAgent({
   name: 'personal-assistant',
@@ -40,7 +40,7 @@ console.log(result.text);  // references TypeScript
 In-process store. Cleared when the process restarts. Good for prototyping.
 
 ```ts
-import { InMemoryStore } from 'confused-ai';
+import { InMemoryStore } from 'personaforge';
 
 const memoryStore = new InMemoryStore();
 ```
@@ -50,7 +50,7 @@ const memoryStore = new InMemoryStore();
 Semantic search over stored memories using embeddings.
 
 ```ts
-import { VectorMemoryStore, InMemoryVectorStore, OpenAIEmbeddingProvider } from 'confused-ai';
+import { VectorMemoryStore, InMemoryVectorStore, OpenAIEmbeddingProvider } from 'personaforge';
 
 const memoryStore = new VectorMemoryStore({
   vectorStore: new InMemoryVectorStore(),
@@ -64,7 +64,7 @@ const memoryStore = new VectorMemoryStore({
 ### Pinecone
 
 ```ts
-import { VectorMemoryStore, PineconeVectorStore, OpenAIEmbeddingProvider } from 'confused-ai';
+import { VectorMemoryStore, PineconeVectorStore, OpenAIEmbeddingProvider } from 'personaforge';
 
 const memoryStore = new VectorMemoryStore({
   vectorStore: new PineconeVectorStore({
@@ -78,7 +78,7 @@ const memoryStore = new VectorMemoryStore({
 ### Qdrant
 
 ```ts
-import { VectorMemoryStore, QdrantVectorStore, OpenAIEmbeddingProvider } from 'confused-ai';
+import { VectorMemoryStore, QdrantVectorStore, OpenAIEmbeddingProvider } from 'personaforge';
 
 const memoryStore = new VectorMemoryStore({
   vectorStore: new QdrantVectorStore({
@@ -92,7 +92,7 @@ const memoryStore = new VectorMemoryStore({
 ### PgVector (PostgreSQL)
 
 ```ts
-import { VectorMemoryStore, PgVectorStore, OpenAIEmbeddingProvider } from 'confused-ai';
+import { VectorMemoryStore, PgVectorStore, OpenAIEmbeddingProvider } from 'personaforge';
 
 const memoryStore = new VectorMemoryStore({
   vectorStore: new PgVectorStore({
@@ -108,8 +108,8 @@ const memoryStore = new VectorMemoryStore({
 Persists to the framework's built-in SQLite/Postgres AgentDb:
 
 ```ts
-import { createDbMemoryStore } from 'confused-ai/memory';
-import { SqliteAgentDb } from 'confused-ai/db';
+import { createDbMemoryStore } from 'personaforge/memory';
+import { SqliteAgentDb } from 'personaforge/db';
 
 // Pass an AgentDb instance positionally; options are optional.
 const db = new SqliteAgentDb({ path: './agent.db' });
@@ -150,9 +150,9 @@ const agent = createAgent({
 Compress conversation history into concise summaries to prevent context overflow:
 
 ```ts
-import { MemoryDistiller, summariseMemories, summariseConversation } from 'confused-ai/memory';
-import { InMemoryStore } from 'confused-ai';
-import { OpenAIProvider } from 'confused-ai';
+import { MemoryDistiller, summariseMemories, summariseConversation } from 'personaforge/memory';
+import { InMemoryStore } from 'personaforge';
+import { OpenAIProvider } from 'personaforge';
 
 const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 const store = new InMemoryStore();
@@ -182,9 +182,9 @@ const conversationSummary = await summariseConversation(messages, llm);
 Automatically compress conversation history when it grows too long:
 
 ```ts
-import { createAgent } from 'confused-ai';
-import { createSummaryBufferHook } from 'confused-ai/memory';
-import { OpenAIProvider } from 'confused-ai';
+import { createAgent } from 'personaforge';
+import { createSummaryBufferHook } from 'personaforge/memory';
+import { OpenAIProvider } from 'personaforge';
 
 const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 const summaryHook = createSummaryBufferHook({
@@ -209,7 +209,7 @@ const agent = createAgent({
 You can read and write the memory store directly without an agent:
 
 ```ts
-import { InMemoryStore, MemoryType } from 'confused-ai';
+import { InMemoryStore, MemoryType } from 'personaforge';
 
 const store = new InMemoryStore();
 
@@ -247,7 +247,7 @@ await store.delete(entry.id);
 `createTieredMemoryTools(memory)` returns the four LLM-callable tools (`core_memory_append`, `core_memory_replace`, `archival_memory_insert`, `archival_memory_search`) so the agent edits both tiers on its own.
 
 ```ts
-import { createAgent, TieredMemory, createTieredMemoryTools, InMemoryStore, DEFAULT_BLOCK_LIMIT } from 'confused-ai';
+import { createAgent, TieredMemory, createTieredMemoryTools, InMemoryStore, DEFAULT_BLOCK_LIMIT } from 'personaforge';
 
 const tiered = new TieredMemory({
   blocks: [
@@ -274,7 +274,7 @@ const agent = createAgent({
 `GraphMemory` stores typed entities and labelled relations the agent can traverse ("who works where", "what depends on what") instead of only fuzzy-matching by embedding. `createGraphMemoryTools(graph)` exposes `add_entity`, `add_relation`, and `search_graph` so the agent builds and queries the graph itself.
 
 ```ts
-import { createAgent, GraphMemory, createGraphMemoryTools } from 'confused-ai';
+import { createAgent, GraphMemory, createGraphMemoryTools } from 'personaforge';
 
 const graph = new GraphMemory();
 graph.addRelation('Jordan', 'works_at', 'AcmeCorp');
@@ -299,8 +299,8 @@ const agent = createAgent({
 `createAgentMemoryTools({ store })` returns two ready-to-register tools — `remember(fact, tags?)` and `recall(query, limit?)` — backed by any `MemoryStore`. This is the explicit, tool-based alternative to the `enableAgenticMemory` shortcut used in the quick start.
 
 ```ts
-import { createAgent, InMemoryStore } from 'confused-ai';
-import { createAgentMemoryTools } from 'confused-ai/memory';
+import { createAgent, InMemoryStore } from 'personaforge';
+import { createAgentMemoryTools } from 'personaforge/memory';
 
 const { remember, recall } = createAgentMemoryTools({ store: new InMemoryStore() });
 

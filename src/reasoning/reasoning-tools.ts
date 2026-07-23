@@ -1,5 +1,5 @@
 /**
- * @confused-ai/reasoning — reasoning-as-tools.
+ * @personaforge/reasoning — reasoning-as-tools.
  *
  * Agno-style `think` / `analyze` tool pair. The agent writes reasoning steps
  * to a scratchpad and can query them later. Lifts non-reasoning models by

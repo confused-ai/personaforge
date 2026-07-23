@@ -20,7 +20,7 @@ import {
   JsonFileAgentDb,
   InMemoryAgentDb,
   createAgentDb,
-} from 'confused-ai/db';
+} from 'personaforge/db';
 ```
 
 ---
@@ -30,7 +30,7 @@ import {
 ### SQLite (zero-config local)
 
 ```ts
-import { SqliteAgentDb } from 'confused-ai/db';
+import { SqliteAgentDb } from 'personaforge/db';
 
 const db = new SqliteAgentDb({ path: './data/agent.db' });
 ```
@@ -38,7 +38,7 @@ const db = new SqliteAgentDb({ path: './data/agent.db' });
 ### PostgreSQL
 
 ```ts
-import { PostgresAgentDb } from 'confused-ai/db';
+import { PostgresAgentDb } from 'personaforge/db';
 
 const db = new PostgresAgentDb({
   connectionString: process.env.DATABASE_URL!,
@@ -49,7 +49,7 @@ const db = new PostgresAgentDb({
 ### MongoDB
 
 ```ts
-import { MongoAgentDb } from 'confused-ai/db';
+import { MongoAgentDb } from 'personaforge/db';
 
 const db = new MongoAgentDb({
   url: process.env.MONGODB_URI!,
@@ -60,7 +60,7 @@ const db = new MongoAgentDb({
 ### Redis (key-value)
 
 ```ts
-import { RedisAgentDb } from 'confused-ai/db';
+import { RedisAgentDb } from 'personaforge/db';
 
 const db = new RedisAgentDb({
   url: process.env.REDIS_URL!,
@@ -71,7 +71,7 @@ const db = new RedisAgentDb({
 ### Turso (libSQL, edge-ready)
 
 ```ts
-import { TursoAgentDb } from 'confused-ai/db';
+import { TursoAgentDb } from 'personaforge/db';
 
 const db = new TursoAgentDb({
   url: process.env.TURSO_DATABASE_URL!,
@@ -82,7 +82,7 @@ const db = new TursoAgentDb({
 ### DynamoDB
 
 ```ts
-import { DynamoDbAgentDb } from 'confused-ai/db';
+import { DynamoDbAgentDb } from 'personaforge/db';
 
 const db = new DynamoDbAgentDb({
   region: 'us-east-1',
@@ -95,7 +95,7 @@ const db = new DynamoDbAgentDb({
 `JsonFileAgentDb` persists each table as a JSON file under a directory — handy for demos and small local apps with no database server:
 
 ```ts
-import { JsonFileAgentDb } from 'confused-ai/db';
+import { JsonFileAgentDb } from 'personaforge/db';
 
 const db = new JsonFileAgentDb({ dir: './data/agent-db' });
 ```
@@ -105,7 +105,7 @@ const db = new JsonFileAgentDb({ dir: './data/agent-db' });
 Pick a backend by string at runtime:
 
 ```ts
-import { createAgentDb } from 'confused-ai/db';
+import { createAgentDb } from 'personaforge/db';
 
 // createAgentDb is async. `uri` is the connection string for every backend
 // (its meaning depends on `type`). A plain URL string also works, e.g.
@@ -125,10 +125,10 @@ const db = await createAgentDb({
 The main use of `AgentDb` is wiring all framework stores to a single persistent backend:
 
 ```ts
-import { createAgent, DbSessionStore } from 'confused-ai';
-import { createDbKnowledgeEngine, OpenAIEmbeddingProvider } from 'confused-ai';
-import { SqliteAgentDb } from 'confused-ai/db';
-import { createDbMemoryStore } from 'confused-ai/memory';
+import { createAgent, DbSessionStore } from 'personaforge';
+import { createDbKnowledgeEngine, OpenAIEmbeddingProvider } from 'personaforge';
+import { SqliteAgentDb } from 'personaforge/db';
+import { createDbMemoryStore } from 'personaforge/memory';
 
 const db = new SqliteAgentDb({ path: './agent.db' });
 const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
@@ -154,7 +154,7 @@ const agent = createAgent({
 For agent-initiated queries, expose database access as a typed tool:
 
 ```ts
-import { tool, createAgent } from 'confused-ai';
+import { tool, createAgent } from 'personaforge';
 import { z } from 'zod';
 import { db } from './db.js';  // your existing database client (Drizzle, Prisma, Knex...)
 
@@ -183,10 +183,10 @@ const agent = createAgent({
 
 ### Built-in data tools
 
-If you don't want to hand-write tools, the framework ships ready-made data toolkits under `confused-ai/tools/data` — SQL (`DatabaseToolkit`: Postgres/MySQL/SQLite), `RedisToolkit`, `CsvToolkit`, plus BigQuery and Neo4j tools:
+If you don't want to hand-write tools, the framework ships ready-made data toolkits under `personaforge/tools/data` — SQL (`DatabaseToolkit`: Postgres/MySQL/SQLite), `RedisToolkit`, `CsvToolkit`, plus BigQuery and Neo4j tools:
 
 ```ts
-import { DatabaseToolkit, RedisToolkit, CsvToolkit } from 'confused-ai/tools/data';
+import { DatabaseToolkit, RedisToolkit, CsvToolkit } from 'personaforge/tools/data';
 ```
 
 ---

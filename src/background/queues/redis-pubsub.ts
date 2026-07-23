@@ -10,7 +10,7 @@
  * @example
  * ```ts
  * import Redis from 'ioredis';
- * import { RedisPubSubBackgroundQueue } from 'confused-ai/background';
+ * import { RedisPubSubBackgroundQueue } from 'personaforge/background';
  *
  * const publisher  = new Redis(process.env.REDIS_URL);
  * const subscriber = new Redis(process.env.REDIS_URL);

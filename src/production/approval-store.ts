@@ -13,8 +13,8 @@
  *
  * @example
  * ```ts
- * import { createAgent } from 'confused-ai';
- * import { createSqliteApprovalStore, requireApprovalTool } from 'confused-ai/production';
+ * import { createAgent } from 'personaforge';
+ * import { createSqliteApprovalStore, requireApprovalTool } from 'personaforge/production';
  *
  * const approvalStore = createSqliteApprovalStore('./agent.db');
  *
@@ -400,7 +400,7 @@ export interface RequireApprovalToolOptions {
  *
  * @example
  * ```ts
- * import { createSqliteApprovalStore, requireApprovalTool } from 'confused-ai/production';
+ * import { createSqliteApprovalStore, requireApprovalTool } from 'personaforge/production';
  * const store = createSqliteApprovalStore('./agent.db');
  * const agent = createAgent({ name: 'Safe', tools: [requireApprovalTool(store)] });
  * ```

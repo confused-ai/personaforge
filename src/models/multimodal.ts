@@ -3,7 +3,7 @@
  * ==============================
  * Convenience factories for building structured `MessageContent` arrays that
  * mix text, images, audio, video and file attachments.  These map directly to
- * the `MessageContent` union in `@confused-ai/core` so they work with every
+ * the `MessageContent` union in `@personaforge/core` so they work with every
  * LLMProvider adapter that supports multi-modal input.
  *
  * Usage:
@@ -25,7 +25,7 @@ import { readFile } from 'node:fs/promises';
 import { extname }  from 'node:path';
 import type { Message, MessageContent } from '../core/index.js';
 
-// ── Re-declare content-part types locally (not exported from @confused-ai/core) ──
+// ── Re-declare content-part types locally (not exported from @personaforge/core) ──
 
 interface TextContent {
     type: 'text';

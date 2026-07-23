@@ -5,7 +5,7 @@
  *
  * @example
  * ```ts
- * import { createAgentRouter } from 'confused-ai/orchestration';
+ * import { createAgentRouter } from 'personaforge/orchestration';
  *
  * const router = createAgentRouter({
  *   agents: {

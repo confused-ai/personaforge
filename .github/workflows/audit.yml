@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-audit-${{ hashFiles('bun.lockb') }}
+          key: ${{ runner.os }}-bun-audit-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-audit-
 
       - run: bun install --frozen-lockfile

@@ -1,10 +1,10 @@
 /**
- * @confused-ai/router — cost-optimized LLM router.
+ * @personaforge/router — cost-optimized LLM router.
  *
  * SOLID:
  *   SRP  — router owns only model selection; callers handle actual LLM calls.
  *   OCP  — add new routing strategies by implementing RouterStrategy.
- *   DIP  — depends on LLMProvider interface from @confused-ai/core.
+ *   DIP  — depends on LLMProvider interface from @personaforge/core.
  *
  * DS choices:
  *   - Model cost table: Map<string, ModelCost> → O(1) lookup per model.

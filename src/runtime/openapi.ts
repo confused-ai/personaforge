@@ -6,7 +6,7 @@ export function getRuntimeOpenApiJson(): Record<string, unknown> {
     return {
         openapi: '3.0.3',
         info: {
-            title: 'confused-ai HTTP runtime',
+            title: 'personaforge HTTP runtime',
             version: '1.0.0',
             description:
                 'Stateless Node HTTP service: health, agent listing, session creation, and chat (JSON or SSE).',
@@ -26,7 +26,7 @@ export function getRuntimeOpenApiJson(): Record<string, unknown> {
                                         required: ['status', 'service', 'time'],
                                         properties: {
                                             status: { type: 'string', example: 'ok' },
-                                            service: { type: 'string', example: 'confused-ai' },
+                                            service: { type: 'string', example: 'personaforge' },
                                             time: { type: 'string', format: 'date-time' },
                                         },
                                     },

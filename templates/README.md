@@ -1,4 +1,4 @@
-# confused-ai Deployment Templates
+# personaforge Deployment Templates
 
 Production-ready templates for deploying your agent to various platforms.
 
@@ -19,9 +19,9 @@ Copy the template for your target platform and fill in the `<placeholders>`.
 Create `src/server.ts` (adapt to your stack):
 
 ```typescript
-import { createHttpService, listenService } from 'confused-ai/runtime';
-import { createAgent } from 'confused-ai';
-import { openai } from 'confused-ai/llm';
+import { createHttpService, listenService } from 'personaforge/runtime';
+import { createAgent } from 'personaforge';
+import { openai } from 'personaforge/llm';
 
 const assistant = createAgent({
   name: 'assistant',

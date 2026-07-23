@@ -6,7 +6,7 @@ outline: [2, 3]
 
 # Workflow Branching
 
-Branching adds conditional execution paths — different stages run depending on what an earlier stage produced. In `confused-ai`, branching is available in both the pipeline API (`compose`/`pipe`) and the full graph engine.
+Branching adds conditional execution paths — different stages run depending on what an earlier stage produced. In `personaforge`, branching is available in both the pipeline API (`compose`/`pipe`) and the full graph engine.
 
 ---
 
@@ -15,7 +15,7 @@ Branching adds conditional execution paths — different stages run depending on
 Use a `when` predicate on `pipe(...).then()` to skip or stop stages:
 
 ```ts
-import { pipe, createAgent } from 'confused-ai';
+import { pipe, createAgent } from 'personaforge';
 
 const classifier = createAgent({
   name: 'classifier',
@@ -56,7 +56,7 @@ const result = await pipeline.run('How do I configure distributed tracing in Kub
 Use a `router` node for multi-way branching:
 
 ```ts
-import { createGraph } from 'confused-ai';
+import { createGraph } from 'personaforge';
 
 const graph = createGraph('support-routing')
   .addNode('classify', {

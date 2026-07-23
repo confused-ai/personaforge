@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-04
 **Status:** Strategy approved (directional). Sub-project specs to follow.
-**One line:** Turn `confused-ai` from a wide-but-shallow feature race into the one framework that owns *durable, replayable, self-improving, type-provable* agent execution — by building a single event-sourced substrate and exposing four superpowers as thin layers over it.
+**One line:** Turn `personaforge` from a wide-but-shallow feature race into the one framework that owns *durable, replayable, self-improving, type-provable* agent execution — by building a single event-sourced substrate and exposing four superpowers as thin layers over it.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * @confused-ai/skills — createDeepAgent (deep-research recipe).
+ * @personaforge/skills — createDeepAgent (deep-research recipe).
  *
  * Orchestrates planner + sub-agents + compression for long-horizon research:
  *   1. Planner decomposes the question into sub-questions.

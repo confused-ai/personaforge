@@ -14,6 +14,6 @@ export function registerListTemplatesCommand(program: Command): void {
             for (const t of TEMPLATES) {
                 console.log(`  ${t.name.padEnd(16)} ${t.description}`);
             }
-            console.log('\nUsage: confused-ai create <name> --template <name>\n');
+            console.log('\nUsage: personaforge create <name> --template <name>\n');
         });
 }

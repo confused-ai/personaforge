@@ -9,7 +9,7 @@ outline: [2, 3]
 RAG (Retrieval-Augmented Generation) grounds agent answers in your documents instead of relying on the model's training data. `KnowledgeEngine` handles ingestion, embedding, and retrieval — you attach it to any agent with the `knowledgebase` option.
 
 ```ts
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 ```
 
 ---
@@ -27,8 +27,8 @@ import { createKnowledgeEngine } from 'confused-ai/knowledge';
 ## Basic knowledge-backed agent
 
 ```ts
-import { agent } from 'confused-ai';
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { agent } from 'personaforge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 // Create the engine
 const knowledge = createKnowledgeEngine({
@@ -106,7 +106,7 @@ for (const chunk of chunks) {
 
 ```ts
 import { readFile } from 'node:fs/promises';
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 const knowledge = createKnowledgeEngine({ topK: 5, maxContextChars: 2_000 });
 
@@ -148,7 +148,7 @@ console.log(`Ingested ${docs.length} documents`);
 Any content can be a document — including JSON records or database rows:
 
 ```ts
-import { createKnowledgeEngine } from 'confused-ai/knowledge';
+import { createKnowledgeEngine } from 'personaforge/knowledge';
 
 const knowledge = createKnowledgeEngine({ topK: 3, maxContextChars: 1_000 });
 

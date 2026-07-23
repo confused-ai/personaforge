@@ -9,7 +9,7 @@ outline: [2, 3]
 `createDeepAgent` packages planner + parallel sub-agents + compression into a single opinionated factory for long-horizon research tasks.
 
 ```ts
-import { createDeepAgent } from 'confused-ai/skills';
+import { createDeepAgent } from 'personaforge/skills';
 ```
 
 ---

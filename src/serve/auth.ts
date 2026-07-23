@@ -8,7 +8,7 @@
  */
 
 import { createHmac, timingSafeEqual, createVerify, createPublicKey, type KeyObject } from 'node:crypto';
-import { ConfusedAIError, ERROR_CODES } from '../contracts/index.js';
+import { PersonaForgeError, ERROR_CODES } from '../contracts/index.js';
 
 // ── JWT types ──────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ export interface JwtPayload {
 export interface JwtVerifier {
   /**
    * Verify a JWT token and return its decoded payload.
-   * @throws {ConfusedAIError} with code `UNAUTHORIZED` on any verification failure
+   * @throws {PersonaForgeError} with code `UNAUTHORIZED` on any verification failure
    */
   verify(token: string): Promise<JwtPayload>;
 }
@@ -69,7 +69,7 @@ export class HS256Verifier implements JwtVerifier {
       typeof payload.nbf === 'number' &&
       now < payload.nbf - clockTolerance
     ) {
-      return Promise.reject(new ConfusedAIError({
+      return Promise.reject(new PersonaForgeError({
         code: ERROR_CODES.UNAUTHORIZED,
         message: `JWT not yet valid (nbf: ${payload.nbf}, now: ${now}, tolerance: ${clockTolerance}s)`,
       }));
@@ -80,7 +80,7 @@ export class HS256Verifier implements JwtVerifier {
       typeof payload.iat === 'number' &&
       payload.iat > now + clockTolerance
     ) {
-      return Promise.reject(new ConfusedAIError({
+      return Promise.reject(new PersonaForgeError({
         code: ERROR_CODES.UNAUTHORIZED,
         message: `JWT issued in the future (iat: ${payload.iat}, now: ${now})`,
       }));
@@ -152,7 +152,7 @@ export class JwksVerifier implements JwtVerifier {
   async verify(token: string): Promise<JwtPayload> {
     const parts = token.split('.');
     if (parts.length !== 3) {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Malformed JWT' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Malformed JWT' });
     }
     const [headerB64, payloadB64, sigB64] = parts as [string, string, string];
 
@@ -161,16 +161,16 @@ export class JwksVerifier implements JwtVerifier {
     try {
       header = JSON.parse(base64UrlDecode(headerB64).toString('utf8')) as { alg?: string; kid?: string };
     } catch {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT header' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT header' });
     }
 
     const alg = header.alg;
     if (!alg || alg === 'none') {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT algorithm "none" is not allowed' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT algorithm "none" is not allowed' });
     }
     const digest = JWKS_ALG_TO_DIGEST[alg];
     if (!digest) {
-      throw new ConfusedAIError({
+      throw new PersonaForgeError({
         code: ERROR_CODES.UNAUTHORIZED,
         message: `Unsupported JWKS algorithm: ${alg}`,
       });
@@ -203,7 +203,7 @@ export class JwksVerifier implements JwtVerifier {
       ok = false;
     }
     if (!ok) {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT signature' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT signature' });
     }
 
     // Decode + validate claims.
@@ -211,15 +211,15 @@ export class JwksVerifier implements JwtVerifier {
     try {
       claims = JSON.parse(base64UrlDecode(payloadB64).toString('utf8')) as Record<string, unknown>;
     } catch {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT payload' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT payload' });
     }
 
     const now = Date.now() / 1000;
     if (typeof claims['exp'] === 'number' && now > (claims['exp'] as number) + this._clockToleranceSecs) {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT expired' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT expired' });
     }
     if (typeof claims['nbf'] === 'number' && now < (claims['nbf'] as number) - this._clockToleranceSecs) {
-      throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT not yet valid' });
+      throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT not yet valid' });
     }
 
     return claims as unknown as JwtPayload;
@@ -235,7 +235,7 @@ export class JwksVerifier implements JwtVerifier {
     await this.refreshKeys();
     const key = this.lookupKey(kid);
     if (!key) {
-      throw new ConfusedAIError({
+      throw new PersonaForgeError({
         code: ERROR_CODES.UNAUTHORIZED,
         message: kid ? `No JWKS key matching kid '${kid}'` : 'No JWKS keys available',
       });
@@ -258,13 +258,13 @@ export class JwksVerifier implements JwtVerifier {
       try {
         res = await fetch(this._jwksUri);
       } catch (e) {
-        throw new ConfusedAIError({
+        throw new PersonaForgeError({
           code: ERROR_CODES.UNAUTHORIZED,
           message: `Failed to fetch JWKS: ${e instanceof Error ? e.message : String(e)}`,
         });
       }
       if (!res.ok) {
-        throw new ConfusedAIError({
+        throw new PersonaForgeError({
           code: ERROR_CODES.UNAUTHORIZED,
           message: `JWKS endpoint returned ${res.status}`,
         });
@@ -286,7 +286,7 @@ export class JwksVerifier implements JwtVerifier {
         next.set(id, keyObject);
       }
       if (next.size === 0) {
-        throw new ConfusedAIError({
+        throw new PersonaForgeError({
           code: ERROR_CODES.UNAUTHORIZED,
           message: 'JWKS document contained no usable signing keys',
         });
@@ -311,12 +311,12 @@ function base64UrlDecode(str: string): Buffer {
 /**
  * Verify an HS256 JWT and return its decoded payload.
  *
- * @throws {ConfusedAIError} with code `UNAUTHORIZED` on any failure
+ * @throws {PersonaForgeError} with code `UNAUTHORIZED` on any failure
  */
 export function verifyJwt(token: string, secret: string): JwtPayload {
   const parts = token.split('.');
   if (parts.length !== 3) {
-    throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Malformed JWT' });
+    throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Malformed JWT' });
   }
 
   const [header, payload, sig] = parts as [string, string, string];
@@ -326,10 +326,10 @@ export function verifyJwt(token: string, secret: string): JwtPayload {
   try {
     headerObj = JSON.parse(base64UrlDecode(header).toString('utf8')) as Record<string, unknown>;
   } catch {
-    throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT header' });
+    throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT header' });
   }
   if (headerObj['alg'] !== 'HS256') {
-    throw new ConfusedAIError({
+    throw new PersonaForgeError({
       code: ERROR_CODES.UNAUTHORIZED,
       message: `Unsupported JWT algorithm: ${String(headerObj['alg'])}`,
     });
@@ -346,7 +346,7 @@ export function verifyJwt(token: string, secret: string): JwtPayload {
   const aPadded = Buffer.concat([actual, Buffer.alloc(safeLen - actual.length)]);
 
   if (expected.length !== actual.length || !timingSafeEqual(ePadded, aPadded)) {
-    throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT signature' });
+    throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT signature' });
   }
 
   // Decode claims
@@ -354,12 +354,12 @@ export function verifyJwt(token: string, secret: string): JwtPayload {
   try {
     claims = JSON.parse(base64UrlDecode(payload).toString('utf8')) as Record<string, unknown>;
   } catch {
-    throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT payload' });
+    throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid JWT payload' });
   }
 
   // Expiry check
   if (typeof claims['exp'] === 'number' && Date.now() / 1000 > claims['exp']) {
-    throw new ConfusedAIError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT expired' });
+    throw new PersonaForgeError({ code: ERROR_CODES.UNAUTHORIZED, message: 'JWT expired' });
   }
 
   return claims as unknown as JwtPayload;
@@ -409,7 +409,7 @@ export function jwtAuth(secret: string): AuthMiddleware {
       req.user = verifyJwt(auth.slice(7), secret);
       next();
     } catch (e) {
-      const msg = e instanceof ConfusedAIError ? e.message : 'Invalid token';
+      const msg = e instanceof PersonaForgeError ? e.message : 'Invalid token';
       res.status(401).json({ error: 'UNAUTHORIZED', message: msg });
     }
   };

@@ -6,8 +6,8 @@
  *
  * @example
  * ```ts
- * import { Agent } from 'confused-ai';
- * import { withResilience } from 'confused-ai/production';
+ * import { Agent } from 'personaforge';
+ * import { withResilience } from 'personaforge/production';
  *
  * const agent = new Agent({ instructions: 'You are helpful.' });
  * const resilient = withResilience(agent, {

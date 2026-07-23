@@ -8,7 +8,7 @@
  *
  * @example
  * ```ts
- * import { SQSBackgroundQueue } from 'confused-ai/background';
+ * import { SQSBackgroundQueue } from 'personaforge/background';
  *
  * const queue = new SQSBackgroundQueue({
  *   queueUrl: process.env.SQS_QUEUE_URL!,

@@ -6,13 +6,13 @@ outline: [2, 3]
 
 # Runnable / LCEL
 
-`Runnable<I, O>` is the universal unit of composition in confused-ai. Everything that takes input and produces output — a prompt template, an LLM call, a parser, a retriever — can be a `Runnable` and composed with `.pipe()`.
+`Runnable<I, O>` is the universal unit of composition in personaforge. Everything that takes input and produces output — a prompt template, an LLM call, a parser, a retriever — can be a `Runnable` and composed with `.pipe()`.
 
 ```ts
 import {
   Runnable, RunnableLambda, RunnableSequence,
   RunnableParallel, RunnablePassthrough,
-} from 'confused-ai/runnable';
+} from 'personaforge/runnable';
 ```
 
 ---
@@ -121,10 +121,10 @@ await par.invoke(10); // { a: 11, b: 20 }
 
 ## Building chains with parsers
 
-Every parser in `confused-ai/parsers` extends `Runnable`, so they compose:
+Every parser in `personaforge/parsers` extends `Runnable`, so they compose:
 
 ```ts
-import { JsonOutputParser } from 'confused-ai/parsers';
+import { JsonOutputParser } from 'personaforge/parsers';
 
 const chain = llm.pipe(new JsonOutputParser<{ answer: string }>());
 const result = await chain.invoke('What is 2+2?');

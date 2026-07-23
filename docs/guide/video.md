@@ -9,7 +9,7 @@ outline: [2, 3]
 The video module provides `VideoOrchestrator` — a pipeline that generates narrated video shorts by combining LLM-written scripts, TTS voiceovers, Pexels stock footage, and FFmpeg composition.
 
 ```ts
-import { VideoOrchestrator } from 'confused-ai';
+import { VideoOrchestrator } from 'personaforge';
 ```
 
 > **Prerequisites**  
@@ -22,7 +22,7 @@ import { VideoOrchestrator } from 'confused-ai';
 ## Generate a short video
 
 ```ts
-import { VideoOrchestrator } from 'confused-ai';
+import { VideoOrchestrator } from 'personaforge';
 
 const orchestrator = new VideoOrchestrator();
 
@@ -76,8 +76,8 @@ The orchestrator uses a `temp_videos/` directory in the current working director
 Expose `VideoOrchestrator` as an agent tool:
 
 ```ts
-import { tool, createAgent } from 'confused-ai';
-import { VideoOrchestrator } from 'confused-ai';
+import { tool, createAgent } from 'personaforge';
+import { VideoOrchestrator } from 'personaforge';
 import { z } from 'zod';
 
 const orchestrator = new VideoOrchestrator();

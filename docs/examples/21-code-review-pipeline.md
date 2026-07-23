@@ -23,7 +23,7 @@ Sequential pipelines are the simplest multi-agent pattern: the output of each st
 ## Three-stage code review pipeline
 
 ```ts
-import { createAgent, compose } from 'confused-ai';
+import { createAgent, compose } from 'personaforge';
 
 // ── Stage 1: Understand the diff ─────────────────────────────────────────────
 const diffAnalyser = createAgent({
@@ -93,7 +93,7 @@ console.log(result.text);
 `pipe()` is the step-by-step alternative to `compose()`. It's easier to read when you need per-step options.
 
 ```ts
-import { createAgent, pipe } from 'confused-ai';
+import { createAgent, pipe } from 'personaforge';
 
 const result = await pipe(diffAnalyser)
   .then(securityReviewer, {

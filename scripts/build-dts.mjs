@@ -2,7 +2,7 @@
  * build-dts.mjs — Generate self-contained .d.ts files for all entry points.
  *
  * Uses dts-bundle-generator to inline all transitive types so that
- * @confused-ai/* workspace packages are NOT needed by consumers.
+ * @personaforge/* workspace packages are NOT needed by consumers.
  *
  * Speed strategy:
  *   1. Worker threads  — generateDtsBundle is synchronous/CPU-bound; Promise.all

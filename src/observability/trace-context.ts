@@ -10,7 +10,7 @@
  *
  * @example
  * ```ts
- * import { extractTraceContext, injectTraceHeaders, generateTraceparent } from 'confused-ai/observability';
+ * import { extractTraceContext, injectTraceHeaders, generateTraceparent } from 'personaforge/observability';
  *
  * // In an incoming HTTP handler:
  * const traceCtx = extractTraceContext(req.headers);

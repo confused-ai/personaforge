@@ -14,7 +14,7 @@ import {
   ElevenLabsVoiceProvider,
   createVoiceProvider,
   VoiceStreamSession,
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -22,7 +22,7 @@ import {
 ## Text-to-Speech (TTS)
 
 ```ts
-import { OpenAIVoiceProvider } from 'confused-ai';
+import { OpenAIVoiceProvider } from 'personaforge';
 
 const voice = new OpenAIVoiceProvider({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -57,7 +57,7 @@ const transcript = await voice.speechToText(audioBuffer, { language: 'en' });
 ## ElevenLabs provider
 
 ```ts
-import { ElevenLabsVoiceProvider } from 'confused-ai';
+import { ElevenLabsVoiceProvider } from 'personaforge';
 
 const voice = new ElevenLabsVoiceProvider({
   apiKey: process.env.ELEVENLABS_API_KEY!,
@@ -73,7 +73,7 @@ const result = await voice.textToSpeech('Welcome back!', {
 ## `createVoiceProvider` factory
 
 ```ts
-import { createVoiceProvider } from 'confused-ai';
+import { createVoiceProvider } from 'personaforge';
 
 const voice = createVoiceProvider({
   provider: process.env.VOICE_PROVIDER as 'openai' | 'elevenlabs',
@@ -90,8 +90,8 @@ const voice = createVoiceProvider({
 `VoiceStreamSession` connects a microphone stream to an agent and streams synthesised audio back:
 
 ```ts
-import { OpenAIVoiceProvider, VoiceStreamSession } from 'confused-ai';
-import { createAgent } from 'confused-ai';
+import { OpenAIVoiceProvider, VoiceStreamSession } from 'personaforge';
+import { createAgent } from 'personaforge';
 
 const voiceProvider = new OpenAIVoiceProvider();
 const agent = createAgent({

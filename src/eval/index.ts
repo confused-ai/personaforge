@@ -1,5 +1,5 @@
 /**
- * @confused-ai/eval — Evaluation framework for AI agents.
+ * @personaforge/eval — Evaluation framework for AI agents.
  *
  * Provides:
  * - LLM-as-judge rubric scoring

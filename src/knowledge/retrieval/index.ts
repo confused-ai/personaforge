@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge/retrieval — advanced retrieval toolkit.
+ * @personaforge/knowledge/retrieval — advanced retrieval toolkit.
  *
  * Splitters, keyword (BM25) + hybrid (RRF) retrieval, rerankers, and composable
  * retriever primitives that bring the framework to LangChain-grade RAG depth.

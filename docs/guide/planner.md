@@ -15,7 +15,7 @@ import {
   PlanValidator,
   TaskPriority,
   TaskStatus,
-} from 'confused-ai';
+} from 'personaforge';
 ```
 
 ---
@@ -23,8 +23,8 @@ import {
 ## `LLMPlanner` — LLM-driven decomposition
 
 ```ts
-import { createAgent, OpenAIProvider } from 'confused-ai';
-import { LLMPlanner, TaskPriority } from 'confused-ai';
+import { createAgent, OpenAIProvider } from 'personaforge';
+import { LLMPlanner, TaskPriority } from 'personaforge';
 
 const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o' });
 
@@ -93,7 +93,7 @@ interface Task {
 Validate a plan before executing it:
 
 ```ts
-import { PlanValidator } from 'confused-ai';
+import { PlanValidator } from 'personaforge';
 
 const validator = new PlanValidator();
 
@@ -114,7 +114,7 @@ if (!validation.valid) {
 Execute tasks in dependency order with agents:
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 // Map task names to agents
 const executors: Record<string, ReturnType<typeof createAgent>> = {
@@ -149,7 +149,7 @@ console.log('Done!', taskResults);
 ## `ClassicalPlanner` — deterministic rules
 
 ```ts
-import { ClassicalPlanner, PlanningAlgorithm, TaskPriority } from 'confused-ai';
+import { ClassicalPlanner, PlanningAlgorithm, TaskPriority } from 'personaforge';
 
 // `algorithm` is required: A_STAR | BFS | DFS | GREEDY | HIERARCHICAL
 const planner = new ClassicalPlanner({

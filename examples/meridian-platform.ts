@@ -1,7 +1,7 @@
 /**
  * Meridian — Role Intelligence Platform
  *
- * Full demonstration of building an enterprise AI persona platform with confused-ai.
+ * Full demonstration of building an enterprise AI persona platform with personaforge.
  * Meridian turns organizational knowledge into always-on, role-specific AI co-pilots
  * that assist teams in real time.
  *
@@ -58,44 +58,44 @@ loadEnv({
 });
 
 // ── Agent factory ──────────────────────────────────────────────────────────
-import { createAgent, resolveLlmForCreateAgent } from 'confused-ai';
-import { bare } from 'confused-ai';
-import { defineAgent } from 'confused-ai';
-import { compose, pipe } from 'confused-ai';
-import { definePersona, buildPersonaInstructions } from 'confused-ai';
+import { createAgent, resolveLlmForCreateAgent } from 'personaforge';
+import { bare } from 'personaforge';
+import { defineAgent } from 'personaforge';
+import { compose, pipe } from 'personaforge';
+import { definePersona, buildPersonaInstructions } from 'personaforge';
 
 // ── Session & memory ───────────────────────────────────────────────────────
-import { InMemorySessionStore } from 'confused-ai';
-import { SessionState } from 'confused-ai/session';
-import { InMemoryStore, MemoryType } from 'confused-ai';
-import { InMemoryVectorStore } from 'confused-ai';
+import { InMemorySessionStore } from 'personaforge';
+import { SessionState } from 'personaforge/session';
+import { InMemoryStore, MemoryType } from 'personaforge';
+import { InMemoryVectorStore } from 'personaforge';
 
 // ── Learning / profiles ────────────────────────────────────────────────────
-import { InMemoryUserProfileStore } from 'confused-ai';
-import { LearningMode } from 'confused-ai';
+import { InMemoryUserProfileStore } from 'personaforge';
+import { LearningMode } from 'personaforge';
 
 // ── Knowledge / RAG ────────────────────────────────────────────────────────
-import { KnowledgeEngine, splitText } from 'confused-ai/knowledge';
-import type { DocumentInput } from 'confused-ai/knowledge';
+import { KnowledgeEngine, splitText } from 'personaforge/knowledge';
+import type { DocumentInput } from 'personaforge/knowledge';
 
 // ── Tools ──────────────────────────────────────────────────────────────────
-import { CalculatorAddTool } from 'confused-ai';
-import { HttpClientTool } from 'confused-ai';
+import { CalculatorAddTool } from 'personaforge';
+import { HttpClientTool } from 'personaforge';
 
 // ── Orchestration ──────────────────────────────────────────────────────────
-import { createHandoff } from 'confused-ai';
-import { createAgentRouter } from 'confused-ai';
-import { createSupervisor, createRole } from 'confused-ai';
-import { createConsensus } from 'confused-ai';
-import { createPipeline } from 'confused-ai';
-import { asOrchestratorAgent } from 'confused-ai';
-import { createRunnableAgent } from 'confused-ai';
-import { AgentState } from 'confused-ai';
-import type { AgentInput } from 'confused-ai';
+import { createHandoff } from 'personaforge';
+import { createAgentRouter } from 'personaforge';
+import { createSupervisor, createRole } from 'personaforge';
+import { createConsensus } from 'personaforge';
+import { createPipeline } from 'personaforge';
+import { asOrchestratorAgent } from 'personaforge';
+import { createRunnableAgent } from 'personaforge';
+import { AgentState } from 'personaforge';
+import type { AgentInput } from 'personaforge';
 
 // ── SDK workflows ──────────────────────────────────────────────────────────
-import { defineAgent as defineTypedAgent, createWorkflow } from 'confused-ai';
-import type { DefinedAgent } from 'confused-ai';
+import { defineAgent as defineTypedAgent, createWorkflow } from 'personaforge';
+import type { DefinedAgent } from 'personaforge';
 
 // ── Guardrails ─────────────────────────────────────────────────────────────
 import {
@@ -105,40 +105,40 @@ import {
     createForbiddenTopicsRule,
     detectPromptInjection,
     createPromptInjectionRule,
-} from 'confused-ai';
+} from 'personaforge';
 
 // ── Observability ──────────────────────────────────────────────────────────
-import { ConsoleLogger } from 'confused-ai';
-import { MetricsCollectorImpl } from 'confused-ai';
-import { InMemoryTracer } from 'confused-ai';
-import { LogLevel } from 'confused-ai';
-import { ExactMatchAccuracy, LevenshteinAccuracy } from 'confused-ai';
+import { ConsoleLogger } from 'personaforge';
+import { MetricsCollectorImpl } from 'personaforge';
+import { InMemoryTracer } from 'personaforge';
+import { LogLevel } from 'personaforge';
+import { ExactMatchAccuracy, LevenshteinAccuracy } from 'personaforge';
 
 // ── Production resilience ──────────────────────────────────────────────────
-import { CircuitBreaker, CircuitState } from 'confused-ai/production';
-import { RateLimiter } from 'confused-ai/production';
+import { CircuitBreaker, CircuitState } from 'personaforge/production';
+import { RateLimiter } from 'personaforge/production';
 import {
     HealthCheckManager,
     HealthStatus,
     createSessionStoreHealthCheck,
     createCustomHealthCheck,
-} from 'confused-ai/production';
+} from 'personaforge/production';
 
 // ── Artifacts ─────────────────────────────────────────────────────────────
-import { InMemoryArtifactStorage, createTextArtifact } from 'confused-ai/artifacts';
+import { InMemoryArtifactStorage, createTextArtifact } from 'personaforge/artifacts';
 
 // ── HTTP runtime ───────────────────────────────────────────────────────────
-import { createHttpService, listenService } from 'confused-ai/serve';
-import { getRuntimeOpenApiJson } from 'confused-ai/serve';
+import { createHttpService, listenService } from 'personaforge/serve';
+import { getRuntimeOpenApiJson } from 'personaforge/serve';
 
 // ── Config & version ───────────────────────────────────────────────────────
-import { loadConfig } from 'confused-ai/config';
-import { VERSION } from 'confused-ai';
+import { loadConfig } from 'personaforge/config';
+import { VERSION } from 'personaforge';
 
 // ── Core builder (planner, context) ───────────────────────────────────────
-import { AgentContextBuilder } from 'confused-ai';
-import { ToolRegistryImpl } from 'confused-ai';
-import { ClassicalPlanner, PlanningAlgorithm } from 'confused-ai';
+import { AgentContextBuilder } from 'personaforge';
+import { ToolRegistryImpl } from 'personaforge';
+import { ClassicalPlanner, PlanningAlgorithm } from 'personaforge';
 
 // ──────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -352,7 +352,7 @@ function buildKnowledgeBase() {
     // Shape of a KnowledgeEngine (embedding + retrieve requires a real API key at runtime)
     const vectorStore = new InMemoryVectorStore();
     console.log('InMemoryVectorStore ready — attach an EmbeddingProvider at runtime for live RAG.');
-    console.log('Import path: KnowledgeEngine, OpenAIEmbeddingProvider from "confused-ai"');
+    console.log('Import path: KnowledgeEngine, OpenAIEmbeddingProvider from "personaforge"');
 
     return { chunks, vectorStore };
 }
@@ -691,10 +691,10 @@ async function sectionMemoryAndProfiles() {
     // InMemoryStore is for dev/testing only. In production, replace it with a
     // persistent, production-grade MemoryStoreAdapter and pass it to createAgent:
     //
-    //   import { InMemoryMemoryStoreAdapter } from 'confused-ai/adapters';        // dev
-    //   import { PgVectorStore }              from 'confused-ai/memory';           // Postgres + pgvector
-    //   import { PineconeVectorStore }        from 'confused-ai/memory';           // Pinecone
-    //   import { QdrantVectorStore }          from 'confused-ai/memory';           // Qdrant
+    //   import { InMemoryMemoryStoreAdapter } from 'personaforge/adapters';        // dev
+    //   import { PgVectorStore }              from 'personaforge/memory';           // Postgres + pgvector
+    //   import { PineconeVectorStore }        from 'personaforge/memory';           // Pinecone
+    //   import { QdrantVectorStore }          from 'personaforge/memory';           // Qdrant
     //
     //   const pgMemory = new PgVectorStore({ pool, table: 'agent_memory', dimension: 1536 });
     //   const agent = createAgent({ ..., memoryStoreAdapter: pgMemory });
@@ -950,7 +950,7 @@ async function main() {
 
     console.log('╔══════════════════════════════════════════════════════╗');
     console.log('║          Meridian — Role Intelligence Platform        ║');
-    console.log(`║  confused-ai v${VERSION.padEnd(6)}   ${hasLlm ? 'LLM: ✓ active' : 'LLM: ✗ key missing — demo mode'}  ║`);
+    console.log(`║  personaforge v${VERSION.padEnd(6)}   ${hasLlm ? 'LLM: ✓ active' : 'LLM: ✗ key missing — demo mode'}  ║`);
     console.log('╚══════════════════════════════════════════════════════╝');
 
     if (!hasLlm) {

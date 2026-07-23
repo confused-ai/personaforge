@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db — Unified agent database layer.
+ * @personaforge/db — Unified agent database layer.
  *
  * Re-exports everything from all backends so you can import from the
  * package root or from the specific sub-path entry point.

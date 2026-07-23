@@ -15,7 +15,7 @@
  *
  * @example
  * ```ts
- * import { bare } from 'confused-ai';
+ * import { bare } from 'personaforge';
  *
  * const myAgent = bare({
  *   llm: new OpenAIProvider({ model: 'gpt-4o', apiKey: '...' }),

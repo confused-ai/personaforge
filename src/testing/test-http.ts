@@ -8,9 +8,9 @@
  * @example
  * ```ts
  * import { describe, it, afterEach, expect } from 'vitest';
- * import { createTestHttpService } from 'confused-ai/testing';
- * import { MockLLMProvider } from 'confused-ai/testing';
- * import { createAgent } from 'confused-ai';
+ * import { createTestHttpService } from 'personaforge/testing';
+ * import { MockLLMProvider } from 'personaforge/testing';
+ * import { createAgent } from 'personaforge';
  *
  * describe('my agent API', () => {
  *   let server: Awaited<ReturnType<typeof createTestHttpService>>;

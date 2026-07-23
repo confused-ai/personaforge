@@ -1,5 +1,5 @@
 /**
- * @confused-ai/memory — SummaryBufferMemory middleware.
+ * @personaforge/memory — SummaryBufferMemory middleware.
  *
  * Keeps the conversation history manageable by compressing older messages into
  * a running summary when the buffer grows beyond a configurable threshold.
@@ -30,7 +30,7 @@
 
 import type { Message } from '../core/index.js';
 
-// ── Minimal LLM interface (avoids hard dep on @confused-ai/core for type) ────
+// ── Minimal LLM interface (avoids hard dep on @personaforge/core for type) ────
 
 interface SummaryLLM {
   generateText(

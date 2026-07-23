@@ -8,7 +8,7 @@
  * - Media artifact support (images, audio, video)
  */
 
-// Inline minimal metrics types to avoid dependency on @confused-ai/observe
+// Inline minimal metrics types to avoid dependency on @personaforge/observe
 // (artifacts is a leaf package with no external deps)
 import { newId } from '../contracts/index.js';
 

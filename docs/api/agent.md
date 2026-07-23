@@ -9,7 +9,7 @@ outline: [2, 3]
 The root package exposes four agent authoring functions for different levels of control. All share the same underlying runtime — the differences are in how much they configure by default and what contract they expose.
 
 ```ts
-import { agent, createAgent, defineAgent, bare } from 'confused-ai';
+import { agent, createAgent, defineAgent, bare } from 'personaforge';
 ```
 
 ---
@@ -30,7 +30,7 @@ import { agent, createAgent, defineAgent, bare } from 'confused-ai';
 Both functions accept an identical `AgentConfig` object and return an `Agent` instance. Prefer `agent()` for new code; use `createAgent()` when the explicit factory name reads better in context.
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const assistant = createAgent({
   name: 'assistant',
@@ -94,7 +94,7 @@ console.log(result.text);
 | Option | Type | Description |
 |---|---|---|
 | `hooks` | `AgenticLifecycleHooks` | Lifecycle callbacks for logging, tracing, and metrics |
-| `observer` | `Observer` | Structured event emitter for `confused-ai/observe` integration |
+| `observer` | `Observer` | Structured event emitter for `personaforge/observe` integration |
 
 ### Advanced
 
@@ -214,7 +214,7 @@ See the [Observability example](../examples/12-observability) for a full walkthr
 Use `defineAgent()` when the agent sits behind a typed API boundary, workflow step, or internal SDK.
 
 ```ts
-import { defineAgent } from 'confused-ai';
+import { defineAgent } from 'personaforge';
 import { z } from 'zod';
 
 const classifier = defineAgent('classifier')
@@ -242,7 +242,7 @@ The output schema is validated on every run. Use this pattern for agent-to-agent
 `bare()` creates an agent with no default sessions, no guardrails, and minimal wiring. Ideal for `compose()` pipelines, tests, and background workers.
 
 ```ts
-import { bare } from 'confused-ai';
+import { bare } from 'personaforge';
 
 const worker = bare({
   name: 'worker',
@@ -265,7 +265,7 @@ console.log(result.text);
 Pass any object implementing `{ generateText(messages): Promise<{ text, finishReason }> }` as `llm`:
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const myProvider = {
   async generateText(messages: Array<{ role: string; content: unknown }>) {

@@ -1,10 +1,10 @@
 /**
- * CLI — `confused-ai inspect` command
+ * CLI — `personaforge inspect` command
  *
  * Shows a per-node execution summary table for a durable run.
  *
  * Usage:
- *   confused-ai inspect --run-id <executionId> [--db <path>]
+ *   personaforge inspect --run-id <executionId> [--db <path>]
  */
 
 import type { Command } from 'commander';

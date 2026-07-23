@@ -1,9 +1,9 @@
 /**
  * LLM provider abstraction — types, providers, utilities.
  *
- * @deprecated This implementation folder will be merged into `@confused-ai/models` in the
+ * @deprecated This implementation folder will be merged into `@personaforge/models` in the
  *   next major version. Imports will continue to work via this re-export shim.
- *   Migrate new code to import from `@confused-ai/models` directly.
+ *   Migrate new code to import from `@personaforge/models` directly.
  */
 
 // Core types

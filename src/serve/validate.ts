@@ -3,7 +3,7 @@
  *
  * The package does not take a hard dependency on Express — instead we expose
  * a small `validateBody` function plus thin Express/Fastify-style adapters.
- * This keeps `@confused-ai/serve` usable from any HTTP runtime.
+ * This keeps `@personaforge/serve` usable from any HTTP runtime.
  *
  * @module
  */

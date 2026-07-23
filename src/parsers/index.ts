@@ -1,5 +1,5 @@
 /**
- * @confused-ai/parsers — output parsers for LLM text.
+ * @personaforge/parsers — output parsers for LLM text.
  *
  * Each parser extends Runnable<string, T> so it composes with pipe():
  *   const chain = llm.pipe(jsonParser);

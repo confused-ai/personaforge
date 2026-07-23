@@ -1,5 +1,5 @@
 /**
- * @confused-ai/prompts — in-process prompt management & versioning.
+ * @personaforge/prompts — in-process prompt management & versioning.
  *
  * Closes the "prompt registry" gap that hosted tools (Langfuse, Braintrust)
  * normally cover: register named prompt templates, keep every version, pin a
@@ -12,8 +12,8 @@
  * prompts.register('greet', 'Hey {{name}}! Welcome aboard {{product}}.'); // v2
  * prompts.pin('greet', 'v1');
  *
- * prompts.render('greet', { name: 'Sam', product: 'confused-ai' });
- * // → "Hello Sam, welcome to confused-ai."
+ * prompts.render('greet', { name: 'Sam', product: 'personaforge' });
+ * // → "Hello Sam, welcome to personaforge."
  * ```
  */
 

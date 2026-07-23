@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — retriever primitives.
+ * @personaforge/knowledge — retriever primitives.
  *
  * Each retriever implements the `Retriever` interface so they compose
  * (chain them, pass one as the `base` of another).

@@ -1,5 +1,5 @@
 /**
- * @confused-ai/tools — file system tool.
+ * @personaforge/tools — file system tool.
  * Uses built-in node:fs/promises — zero external deps.
  *
  * SECURITY: every path is resolved inside a sandbox root (default:

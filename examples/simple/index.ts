@@ -1,5 +1,5 @@
-import { agent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
+import { agent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
 
 async function main(): Promise<void> {
   const base = agent({

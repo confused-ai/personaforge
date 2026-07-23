@@ -9,7 +9,7 @@ outline: [2, 3]
 `createStorage()` is the generic key-value persistence layer. Use it for caches, run metadata, configuration, durable outputs, and any application state that doesn't belong in sessions, memory, or a retrieval index.
 
 ```ts
-import { createStorage } from 'confused-ai/storage';
+import { createStorage } from 'personaforge/storage';
 ```
 
 ---
@@ -17,7 +17,7 @@ import { createStorage } from 'confused-ai/storage';
 ## `createStorage()` — create a store
 
 ```ts
-import { createStorage } from 'confused-ai/storage';
+import { createStorage } from 'personaforge/storage';
 
 // In-memory (default) — data lost on restart, ideal for dev and tests
 const cache = createStorage();

@@ -1,12 +1,12 @@
 /**
- * LLM provider type definitions — canonical source moved to @confused-ai/core.
+ * LLM provider type definitions — canonical source moved to @personaforge/core.
  *
  * This file is now a compatibility re-export barrel.
  * Import from '../core/index.js' directly in new code.
  *
  * NOTE: LLMProvider and StreamOptions are kept local for backward compatibility —
  * the src/ legacy providers use StreamDelta-based onChunk. Once Wave 2 (provider
- * migration to @confused-ai/models) is complete, these will be removed.
+ * migration to @personaforge/models) is complete, these will be removed.
  */
 
 // Re-export all canonical LLM types from the package
@@ -53,7 +53,7 @@ export interface StreamOptions {
 
 /**
  * Legacy GenerateResult — allows any string for finishReason for backward compat
- * with src/ providers. Packages use the stricter literal union from @confused-ai/core.
+ * with src/ providers. Packages use the stricter literal union from @personaforge/core.
  */
 export interface GenerateResult {
     readonly text: string;

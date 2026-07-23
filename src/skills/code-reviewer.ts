@@ -8,7 +8,7 @@
  * Usage:
  * ```ts
  * import { codeReviewerSkill } from './index.js';
- * import { agent } from 'confused-ai';
+ * import { agent } from 'personaforge';
  *
  * const bot = agent({
  *   name: 'CodeReviewer',

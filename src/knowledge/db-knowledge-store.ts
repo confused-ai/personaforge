@@ -1,5 +1,5 @@
 /**
- * @confused-ai/knowledge — DbKnowledgeEngine.
+ * @personaforge/knowledge — DbKnowledgeEngine.
  *
  * A KnowledgeEngine variant that persists documents in AgentDb (agent_knowledge table).
  * On first use it loads the stored corpus into the in-memory vector index,

@@ -16,9 +16,9 @@ Some tools should not run immediately. The current approval flow is built around
 
 ```ts
 import { z } from 'zod/v3';
-import { createAgent, tool } from 'confused-ai';
-import { createHttpService, listenService } from 'confused-ai/serve';
-import { createSqliteApprovalStore } from 'confused-ai/production';
+import { createAgent, tool } from 'personaforge';
+import { createHttpService, listenService } from 'personaforge/serve';
+import { createSqliteApprovalStore } from 'personaforge/production';
 
 const sendEmail = tool({
   name: 'send_email',

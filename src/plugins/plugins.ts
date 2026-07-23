@@ -5,7 +5,7 @@
  *
  * @example
  * ```ts
- * import { createPluginRegistry, createLoggingPlugin, createRateLimitPlugin } from 'confused-ai/plugins';
+ * import { createPluginRegistry, createLoggingPlugin, createRateLimitPlugin } from 'personaforge/plugins';
  *
  * const plugins = createPluginRegistry();
  * plugins.register(createLoggingPlugin());

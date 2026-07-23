@@ -1,5 +1,5 @@
 /**
- * @confused-ai/db/mongo — MongoAgentDb.
+ * @personaforge/db/mongo — MongoAgentDb.
  *
  * Uses the official `mongodb` driver. Each table maps to a MongoDB collection.
  * Peer dep: `mongodb` (optional — install only if you want MongoDB).
@@ -16,7 +16,7 @@ import type {
 } from './types.js';
 
 const MISSING =
-  '[confused-ai/db] MongoAgentDb requires mongodb.\n' +
+  '[personaforge/db] MongoAgentDb requires mongodb.\n' +
   '  Install: npm install mongodb';
 
 
@@ -96,7 +96,7 @@ export class MongoAgentDb extends AgentDb {
   }
 
   private col(name: string): MongoCollection {
-    if (!this._db) throw new Error('[confused-ai/db] MongoAgentDb not initialised — call init() first');
+    if (!this._db) throw new Error('[personaforge/db] MongoAgentDb not initialised — call init() first');
     return this._db.collection(name);
   }
 

@@ -6,14 +6,14 @@ outline: [2, 3]
 
 # Introduction
 
-`confused-ai` gives you three primitives for building AI systems in TypeScript: **agents**, **teams**, and **workflows**. The goal is not to make the first version look like a platform. The goal is to make the first useful version small, then let it grow into a real system without changing frameworks.
+`personaforge` gives you three primitives for building AI systems in TypeScript: **agents**, **teams**, and **workflows**. The goal is not to make the first version look like a platform. The goal is to make the first useful version small, then let it grow into a real system without changing frameworks.
 
 ## One quick example
 
 This is the kind of example that should feel immediately understandable: one focused tool, one agent, one useful response.
 
 ```ts
-import { agent, tool } from 'confused-ai';
+import { agent, tool } from 'personaforge';
 import { z } from 'zod/v3';
 
 const getQuote = tool({
@@ -50,13 +50,13 @@ That is the intended feel of the framework: plain application code, explicit cap
 
 Most applications should begin with one agent. Teams and workflows become useful only when one agent stops being the right unit of control.
 
-## Why confused-ai
+## Why personaforge
 
 The framework is organized around a small set of engineering choices that are easy to explain and hard to outgrow.
 
 ### One package, clear public subpaths
 
-Install `confused-ai` once. Use focused public subpaths only when a module has its own runtime surface, such as sessions, orchestration, scheduling, or observability.
+Install `personaforge` once. Use focused public subpaths only when a module has its own runtime surface, such as sessions, orchestration, scheduling, or observability.
 
 ### Plain TypeScript, not a separate DSL
 

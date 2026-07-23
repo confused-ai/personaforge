@@ -1,12 +1,12 @@
 ---
 title: Concepts
-description: Learn the mental model behind confused-ai so the modules make sense before you wire them together.
+description: Learn the mental model behind personaforge so the modules make sense before you wire them together.
 outline: [2, 3]
 ---
 
 # Concepts
 
-`confused-ai` becomes much easier to use when you stop thinking of it as a pile of modules and start thinking of it as a layered system. Each layer solves a different problem, and most applications only need some of them.
+`personaforge` becomes much easier to use when you stop thinking of it as a pile of modules and start thinking of it as a layered system. Each layer solves a different problem, and most applications only need some of them.
 
 ## The core mental model
 
@@ -24,7 +24,7 @@ At the center is the agent. Around that core are the layers that give the agent 
 
 ## Why the single-package story matters
 
-The public install story is intentionally simple: install `confused-ai` once, then move to dedicated public subpaths only when a concern becomes explicit.
+The public install story is intentionally simple: install `personaforge` once, then move to dedicated public subpaths only when a concern becomes explicit.
 
 That matters because it lets the architecture grow without forcing you to reorganize the entire app just because the agent got more capable.
 

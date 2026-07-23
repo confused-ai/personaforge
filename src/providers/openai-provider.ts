@@ -42,7 +42,7 @@ interface OpenAICreateParams {
  * Re-throw an SDK error with its HTTP `status` and `headers` preserved on the
  * thrown object, so the retry layer can read `Retry-After` / rate-limit headers.
  * The OpenAI/Anthropic SDKs already expose `.status` and `.headers`; this is a
- * defensive normalisation that also surfaces them in `context` for ConfusedAIError.
+ * defensive normalisation that also surfaces them in `context` for PersonaForgeError.
  */
 function rethrowWithStatus(err: unknown): never {
     if (err && typeof err === 'object') {

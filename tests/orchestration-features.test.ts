@@ -20,11 +20,11 @@ import {
   buildTaskContextBlock,
   TaskCycleError,
   buildDelegationTools,
-} from '@confused-ai/orchestration';
-import type { TaskHandle } from '@confused-ai/orchestration';
-import { defineRole } from '@confused-ai/orchestration';
-import { createTeam } from '@confused-ai/orchestration';
-import type { LLMProvider, Message, GenerateResult } from '@confused-ai/core';
+} from '@personaforge/orchestration';
+import type { TaskHandle } from '@personaforge/orchestration';
+import { defineRole } from '@personaforge/orchestration';
+import { createTeam } from '@personaforge/orchestration';
+import type { LLMProvider, Message, GenerateResult } from '@personaforge/core';
 
 // ── LLM stub helpers ─────────────────────────────────────────────────────────
 

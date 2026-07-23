@@ -1,20 +1,20 @@
 ---
 title: Getting Started
-description: Install confused-ai, run your first agent, and follow a clean upgrade path toward tools, sessions, retrieval, and production runtime features.
+description: Install personaforge, run your first agent, and follow a clean upgrade path toward tools, sessions, retrieval, and production runtime features.
 outline: [2, 3]
 ---
 
 # Getting Started
 
-The fastest way to learn `confused-ai` is to get one working result quickly, then add capability in the order the application actually needs it. This page is that first path.
+The fastest way to learn `personaforge` is to get one working result quickly, then add capability in the order the application actually needs it. This page is that first path.
 
 ## Step 1: Install the package
 
 ```bash
-npm install confused-ai
+npm install personaforge
 ```
 
-If you use Bun or pnpm, the package name is still the same. The public install story is one package: `confused-ai`.
+If you use Bun or pnpm, the package name is still the same. The public install story is one package: `personaforge`.
 
 ## Step 2: Set one provider key
 
@@ -27,7 +27,7 @@ OPENAI_API_KEY=sk-...
 ## Step 3: Run one agent
 
 ```ts
-import { createAgent } from 'confused-ai';
+import { createAgent } from 'personaforge';
 
 const assistant = createAgent({
 	name: 'hello-agent',
@@ -45,7 +45,7 @@ If this run is not working reliably, stop here and fix it before layering anythi
 
 The minimum starting point is small:
 
-- the `confused-ai` package installed in your project
+- the `personaforge` package installed in your project
 - one working model or provider configuration
 - one task simple enough to validate in a single run
 
@@ -93,7 +93,7 @@ This order keeps the moving parts separated so you can tell which layer introduc
 The next upgrade should still feel simple.
 
 ```ts
-import { agent, tool } from 'confused-ai';
+import { agent, tool } from 'personaforge';
 import { z } from 'zod/v3';
 
 const getWeather = tool({

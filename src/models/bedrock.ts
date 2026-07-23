@@ -1,12 +1,12 @@
 /**
- * @confused-ai/models — AWS Bedrock adapter. Lazy SDK import.
+ * @personaforge/models — AWS Bedrock adapter. Lazy SDK import.
  */
 
 import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../core/index.js';
 import type { ModelAdapterConfig } from './types.js';
 
 const MISSING_SDK_MSG =
-  '[confused-ai] Bedrock adapter requires @aws-sdk/client-bedrock-runtime.\n' +
+  '[personaforge] Bedrock adapter requires @aws-sdk/client-bedrock-runtime.\n' +
   '  Install: npm install @aws-sdk/client-bedrock-runtime';
 
 const DEFAULT_MODEL = 'anthropic.claude-3-5-sonnet-20241022-v2:0';

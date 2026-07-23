@@ -9,7 +9,7 @@ outline: [2, 3]
 `createSecretManager()` gives you a unified interface to fetch secrets from any cloud provider. Swap backends at deploy time without changing application code.
 
 ```ts
-import { createSecretManager } from 'confused-ai/config';
+import { createSecretManager } from 'personaforge/config';
 ```
 
 ---
@@ -17,7 +17,7 @@ import { createSecretManager } from 'confused-ai/config';
 ## Quick start
 
 ```ts
-import { createSecretManager } from 'confused-ai/config';
+import { createSecretManager } from 'personaforge/config';
 
 // Reads from AWS Secrets Manager
 const secrets = createSecretManager({ provider: 'aws', region: 'us-east-1' });

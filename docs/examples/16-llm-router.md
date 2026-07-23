@@ -13,7 +13,7 @@ import {
   createAgent,
   createSmartRouter,
   TaskType,
-} from 'confused-ai';
+} from 'personaforge';
 
 // Build your provider table
 const routerEntries = [
@@ -88,7 +88,7 @@ import {
   createCostOptimizedRouter,
   createQualityFirstRouter,
   createSpeedOptimizedRouter,
-} from 'confused-ai';
+} from 'personaforge';
 
 // Balanced: quality vs cost trade-off
 const balanced = createBalancedRouter(routerEntries);
@@ -110,7 +110,7 @@ const fast = createSpeedOptimizedRouter(routerEntries);
 Override the automatic decision for specific conditions:
 
 ```ts
-import { LLMRouter, TaskType } from 'confused-ai';
+import { LLMRouter, TaskType } from 'personaforge';
 
 const router2 = new LLMRouter({
   entries: routerEntries,

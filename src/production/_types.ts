@@ -1,5 +1,5 @@
 /**
- * Internal inline type definitions for @confused-ai/production.
+ * Internal inline type definitions for @personaforge/production.
  *
  * These are structural interfaces for external integrations (observability, Redis)
  * where we don't want to introduce a hard package dependency.

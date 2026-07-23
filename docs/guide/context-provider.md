@@ -9,7 +9,7 @@ outline: [2, 3]
 A `ContextProvider` is a typed, reusable context source that agents can query. It wraps a backend (database, API, web) and exposes it either as injected system-prompt text, callable tools, or an agent sub-capability.
 
 ```ts
-import { ContextProvider, ContextMode } from 'confused-ai';
+import { ContextProvider, ContextMode } from 'personaforge';
 ```
 
 ---
@@ -27,8 +27,8 @@ import { ContextProvider, ContextMode } from 'confused-ai';
 ## Implement a custom provider
 
 ```ts
-import { ContextProvider, ContextMode } from 'confused-ai';
-import type { Answer, QueryOptions } from 'confused-ai';
+import { ContextProvider, ContextMode } from 'personaforge';
+import type { Answer, QueryOptions } from 'personaforge';
 
 class CompanyDocsProvider extends ContextProvider {
   constructor() {
@@ -59,7 +59,7 @@ class CompanyDocsProvider extends ContextProvider {
 
 // Attach to agent — there is no `contextProviders` option. Wire a provider in
 // through the tools and instructions it exposes.
-import { createAgent, tool } from 'confused-ai';
+import { createAgent, tool } from 'personaforge';
 import { z } from 'zod';
 
 const provider = new CompanyDocsProvider();
@@ -93,7 +93,7 @@ const agent = createAgent({
 ## Database context provider
 
 ```ts
-import { ContextProvider, ContextMode } from 'confused-ai';
+import { ContextProvider, ContextMode } from 'personaforge';
 
 class CustomerContextProvider extends ContextProvider {
   constructor(private db: Database) {

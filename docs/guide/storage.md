@@ -9,7 +9,7 @@ outline: [2, 3]
 `createStorage()` gives you a typed, JSON-serializing key-value store on top of a pluggable `StorageAdapter`. Use it for durable run state, cached results, generated outputs, or any application data that should survive beyond a single agent run.
 
 ```ts
-import { createStorage } from 'confused-ai';
+import { createStorage } from 'personaforge';
 ```
 
 ---
@@ -17,7 +17,7 @@ import { createStorage } from 'confused-ai';
 ## Quick start
 
 ```ts
-import { createStorage } from 'confused-ai';
+import { createStorage } from 'personaforge';
 
 // In-memory (dev / testing)
 const store = createStorage();
@@ -64,7 +64,7 @@ await store.set('config', { theme: 'dark' });
 Implement the `StorageAdapter` interface to use any backend:
 
 ```ts
-import type { StorageAdapter } from 'confused-ai';
+import type { StorageAdapter } from 'personaforge';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
 class S3StorageAdapter implements StorageAdapter {

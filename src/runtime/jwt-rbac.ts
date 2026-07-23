@@ -6,8 +6,8 @@
  *
  * @example
  * ```ts
- * import { createHttpService } from 'confused-ai/runtime';
- * import { jwtAuth } from 'confused-ai/runtime';
+ * import { createHttpService } from 'personaforge/runtime';
+ * import { jwtAuth } from 'personaforge/runtime';
  *
  * createHttpService({
  *   agents: [{ name: 'support', agent: supportAgent }],

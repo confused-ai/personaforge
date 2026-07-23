@@ -1,5 +1,5 @@
 /**
- * @confused-ai/core — package barrel.
+ * @personaforge/core — package barrel.
  *
  * Public API surface — nothing else is exported.
  * Internal helpers (queue, loop, retry fallback) stay private (ISP).
@@ -69,7 +69,7 @@ export type {
 } from './llm-types.js';
 
 // ── Errors ────────────────────────────────────────────────────────────────────
-export { ConfusedAIError, ConfigError, LLMError, BudgetExceededError } from './errors.js';
+export { PersonaForgeError, ConfigError, LLMError, BudgetExceededError } from './errors.js';
 
 // ── Runner (advanced usage) ───────────────────────────────────────────────────
 export { AgentRunner } from './runner/agent-runner.js';

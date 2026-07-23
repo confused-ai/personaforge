@@ -15,7 +15,7 @@
  *
  * @example
  * ```ts
- * import { ComponentRegistry } from 'confused-ai/production';
+ * import { ComponentRegistry } from 'personaforge/production';
  *
  * const registry = new ComponentRegistry();
  * const id = registry.register({ name: 'assistant', type: 'agent', config: agentConfig });

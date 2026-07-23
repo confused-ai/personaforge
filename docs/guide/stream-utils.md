@@ -6,7 +6,7 @@ outline: [2, 3]
 
 # Stream Utilities
 
-`confused-ai/models` exports a set of helpers for `AsyncIterable<StreamDelta>` streams produced by model providers. These utilities are low-level building blocks for buffering, filtering, merging, and piping provider output to HTTP responses.
+`personaforge/models` exports a set of helpers for `AsyncIterable<StreamDelta>` streams produced by model providers. These utilities are low-level building blocks for buffering, filtering, merging, and piping provider output to HTTP responses.
 
 ```ts
 import {
@@ -19,7 +19,7 @@ import {
   streamFilter,
   streamMerge,
   streamToNodeCallback,
-} from 'confused-ai/models';
+} from 'personaforge/models';
 ```
 
 ---
@@ -41,7 +41,7 @@ type StreamDelta =
 Buffer an entire stream into one string. Tool-call deltas are ignored.
 
 ```ts
-import { streamToText } from 'confused-ai/models';
+import { streamToText } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'Petals fall softly ' } as const;
@@ -59,7 +59,7 @@ console.log(text); // "Petals fall softly through the morning light."
 Collect just the text segments from a stream while preserving chunk boundaries.
 
 ```ts
-import { streamToChunks } from 'confused-ai/models';
+import { streamToChunks } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'alpha ' } as const;
@@ -75,11 +75,11 @@ console.log(chunks); // ['alpha ', 'gamma']
 
 ## `streamToSSE()`
 
-Pipe a provider stream directly to a Node HTTP response as Server-Sent Events. The third argument is typed `StreamToSSEOptions` (also exported from `confused-ai/models`).
+Pipe a provider stream directly to a Node HTTP response as Server-Sent Events. The third argument is typed `StreamToSSEOptions` (also exported from `personaforge/models`).
 
 ```ts
 import { createServer } from 'node:http';
-import { streamToSSE } from 'confused-ai/models';
+import { streamToSSE } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'Hello' } as const;
@@ -109,10 +109,10 @@ data: {}
 
 ## `streamWithBudget()`
 
-Stop yielding deltas after an approximate token budget is reached. The options object is typed `StreamBudgetOptions` (also exported from `confused-ai/models`).
+Stop yielding deltas after an approximate token budget is reached. The options object is typed `StreamBudgetOptions` (also exported from `personaforge/models`).
 
 ```ts
-import { streamWithBudget } from 'confused-ai/models';
+import { streamWithBudget } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'A short sentence.' } as const;
@@ -136,7 +136,7 @@ for await (const chunk of budgetedStream) {
 Duplicate one stream into two independent consumers.
 
 ```ts
-import { streamTee, streamToText } from 'confused-ai/models';
+import { streamTee, streamToText } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'Explain ' } as const;
@@ -168,7 +168,7 @@ void (async () => {
 Transform each delta without buffering the entire stream.
 
 ```ts
-import { streamMap, streamToText } from 'confused-ai/models';
+import { streamMap, streamToText } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'hello ' } as const;
@@ -190,7 +190,7 @@ console.log(await streamToText(uppercaseStream)); // "HELLO WORLD"
 Drop chunks that don't satisfy a predicate:
 
 ```ts
-import { streamFilter, streamToText } from 'confused-ai/models';
+import { streamFilter, streamToText } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'visible ' } as const;
@@ -209,7 +209,7 @@ console.log(await streamToText(textOnly)); // "visible text"
 Merge multiple concurrent streams into one stream. Deltas are yielded as they arrive.
 
 ```ts
-import { streamMerge } from 'confused-ai/models';
+import { streamMerge } from 'personaforge/models';
 
 async function* streamA() {
   yield { type: 'text', text: 'A1 ' } as const;
@@ -232,7 +232,7 @@ for await (const chunk of streamMerge([streamA(), streamB()])) {
 Adapt an `AsyncIterable<StreamDelta>` to a Node-style callback.
 
 ```ts
-import { streamToNodeCallback } from 'confused-ai/models';
+import { streamToNodeCallback } from 'personaforge/models';
 
 async function* demoStream() {
   yield { type: 'text', text: 'Hello' } as const;
@@ -264,7 +264,7 @@ import {
   streamToSSE,
   streamToText,
   streamWithBudget,
-} from 'confused-ai/models';
+} from 'personaforge/models';
 import { createServer } from 'node:http';
 
 async function* rawStream() {

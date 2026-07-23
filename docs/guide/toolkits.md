@@ -9,7 +9,7 @@ outline: [2, 3]
 A toolkit is a named set of tools **plus** a system-prompt fragment describing how the agent should use them. Ship a starter set of related capabilities to an agent in one line.
 
 ```ts
-import { sqlToolkit, httpToolkit, fileToolkit, combineToolkits } from 'confused-ai/toolkits';
+import { sqlToolkit, httpToolkit, fileToolkit, combineToolkits } from 'personaforge/toolkits';
 ```
 
 ---

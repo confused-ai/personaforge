@@ -3,7 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
- * `confused-ai serve <file>` — import an agent file and start an HTTP service.
+ * `personaforge serve <file>` — import an agent file and start an HTTP service.
  *
  * The agent file must export one of:
  *   - `export const agent = createAgent(...)` — a CreateAgentResult
@@ -11,8 +11,8 @@ import { pathToFileURL } from 'node:url';
  *   - `export const agents = { name: createAgent(...), ... }` — named agents
  *
  * @example
- * confused-ai serve ./my-agent.ts --port 3000
- * confused-ai serve ./my-agent.ts --port 3000 --cors '*' --websocket
+ * personaforge serve ./my-agent.ts --port 3000
+ * personaforge serve ./my-agent.ts --port 3000 --cors '*' --websocket
  */
 export function registerServeCommand(program: Command): void {
     program
