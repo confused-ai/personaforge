@@ -132,6 +132,14 @@ export interface WaitConfig {
 export interface GraphEdgeDef {
   id: EdgeId;
   from: NodeId;
+  /**
+   * LangGraph-style conditional edge mapping.
+   * Maps output values to target node IDs.
+   * Node output determines which edge to take.
+   */
+  conditional?: Record<string, NodeId>;
+  /** Default target when no conditional mapping matches */
+  defaultTarget?: NodeId;
   to: NodeId;
   /** For conditional routing: the route label this edge matches */
   label?: string;
@@ -419,6 +427,8 @@ export interface GraphBuilderNode<TInput = unknown, TOutput = unknown> {
   kind: NodeKind;
   name: string;
   config: Partial<GraphNodeDef<TInput, TOutput>>;
+  /** Channels this node produces/consumes */
+  channels?: { producers?: ChannelId[]; consumers?: ChannelId[] };
 }
 
 // ── Plugin Types ────────────────────────────────────────────────────────────
@@ -577,3 +587,63 @@ export interface ToolContext {
   metadata?: Record<string, unknown>;
 }
 
+
+// ── State Machine Types (LangGraph parity) ─────────────────────────────
+
+export type ChannelId = string;
+export type ChannelMode = 'last-value' | 'append' | 'accumulate';
+
+/**
+ * LangGraph-style state channel with reducer.
+ * 'last-value': replace (default)
+ * 'append': concat arrays
+ * 'accumulate': custom reducer function
+ */
+export interface Channel<T = unknown> {
+  id: ChannelId;
+  mode: ChannelMode;
+  reducer?: Reducer<T>;
+  default: T;
+  value: T;
+}
+
+export type Reducer<T = unknown> = (current: T, update: T) => T;
+
+/**
+ * Typed state machine definition with Zod schema and channels.
+ */
+export interface StateMachineDef {
+  schema: z.ZodTypeAny;
+  channels: Record<ChannelId, Channel>;
+  producers?: ChannelId[];
+  consumers?: ChannelId[];
+}
+
+/**
+ * Send / receive for dynamic message passing between nodes.
+ * Enables LangGraph Send() where running nodes dynamically add work.
+ */
+export interface Send {
+  to: NodeId;
+  data?: unknown;
+  channel?: ChannelId;
+}
+
+/**
+ * State reducer — maps channel updates to state mutations.
+ */
+export interface StateReducer {
+  channel: ChannelId;
+  reduce: (state: GraphState, update: unknown) => GraphState;
+}
+
+export interface ConditionalEdgeMapping {
+  /** Map of output values to target node IDs */
+  map: Record<string, NodeId>;
+  /** Default target when no mapping matches */
+  default?: NodeId;
+}
+
+export type EdgeTarget =
+  | { to: NodeId; label?: string }
+  | { conditional: ConditionalEdgeMapping };

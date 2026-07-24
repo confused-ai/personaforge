@@ -1,0 +1,18 @@
+{
+  "name": "personaforge-starter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "personaforge": "latest",
+    "zod": "^3.22"
+  },
+  "devDependencies": {
+    "tsx": "^4.0",
+    "typescript": "^5.4"
+  }
+}

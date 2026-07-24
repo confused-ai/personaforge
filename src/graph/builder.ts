@@ -243,6 +243,63 @@ export class GraphBuilder {
 
   // ── Edge Addition ─────────────────────────────────────────────────────
 
+  /**
+   * Add conditional edges: node output value determines which edge to follow.
+   * LangGraph parity — maps output values to target nodes.
+   *
+   * @example
+   * 
+   */
+  /**
+   * Add conditional edges: node output value determines which edge to follow.
+   * LangGraph parity — maps output values to target nodes.
+   *
+   * @example
+   * addConditionalEdges('classify', {
+   *   map: { positive: 'handlePositive', negative: 'handleNegative' },
+   *   default: 'handleNeutral',
+   * })
+   */
+  addConditionalEdges(
+    fromName: string,
+    conditional: { map: Record<string, string>; default?: string },
+  ): this {
+    const fromId = this._resolveNodeId(fromName);
+    for (const [value, toName] of Object.entries(conditional.map)) {
+      const toId = this._resolveNodeId(toName);
+      const id = `edge-${fromId}-${value}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      this._edges.set(id, {
+        id,
+        from: fromId,
+        to: toId,
+        label: value,
+        conditional: { [value]: toId },
+        priority: 0,
+      });
+      this._outgoing.get(fromId)!.push(id);
+      this._incoming.get(toId)!.push(id);
+    }
+    if (conditional.default) {
+      const defaultId = this._resolveNodeId(conditional.default);
+      const existing = Array.from(this._edges.values()).find(
+        e => e.from === fromId && e.to === defaultId && e.label === '__default__'
+      );
+      if (!existing) {
+        const id = `edge-${fromId}-default-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        this._edges.set(id, {
+          id,
+          from: fromId,
+          to: defaultId,
+          label: '__default__',
+          priority: 999,
+        });
+        this._outgoing.get(fromId)!.push(id);
+        this._incoming.get(defaultId)!.push(id);
+      }
+    }
+    return this;
+  }
+
   addEdge(fromName: string, toName: string, config?: EdgeConfig): this {
     const fromId = this._resolveNodeId(fromName);
     const toId = this._resolveNodeId(toName);

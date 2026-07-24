@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>personaforge · Control Plane</title>
+<style>
+:root{--bg:#0d0e17;--surface:#151729;--surface2:#1c1f33;--border:#2a2d45;--text:#e0e2f0;--text2:#888bb0;--accent:#4f6ef7;--accent2:#7c96ff;--green:#2d8f5e;--red:#d14b4b;--orange:#e8a838;--radius:8px;--shadow:0 2px 12px rgba(0,0,0,.3)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:ui-monospace,'SF Mono','Cascadia Code','Fira Code',monospace;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;overflow-x:hidden}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+/* Layout */
+.app{display:flex;height:100vh}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;overflow-y:auto}
+.sidebar .brand{padding:4px 20px 20px;font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.sidebar .brand span{color:var(--accent2)}
+.sidebar button{display:block;width:100%;text-align:left;padding:10px 20px;background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+.sidebar button:hover{background:var(--surface2);color:var(--text)}
+.sidebar button.active{background:var(--surface2);color:var(--accent2);border-right:2px solid var(--accent2);font-weight:600}
+.main{flex:1;overflow-y:auto;padding:28px 32px;max-width:1200px}
+.main h2{font-size:18px;font-weight:600;margin-bottom:20px;color:#fff}
+/* Panels */
+.panel{display:none}.panel.active{display:block}
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.card .meta{color:var(--text2);font-size:12px}
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border)}
+th{color:var(--text2);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+td{color:var(--text)}
+tr:hover td{background:var(--surface2)}
+/* Form elements */
+input,textarea,select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:13px;font-family:inherit;width:100%;outline:none;transition:border .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical}
+.btn{padding:8px 16px;border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{opacity:.85}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{opacity:.85}
+.btn-sm{padding:4px 10px;font-size:12px}
+/* Badge */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green);color:#fff}
+.badge-red{background:var(--red);color:#fff}
+.badge-orange{background:var(--orange);color:#000}
+/* Chat */
+#chatLog{min-height:300px;max-height:65vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:8px 0;font-size:14px;line-height:1.6;white-space:pre-wrap;font-family:inherit}
+.chat-msg{margin:8px 0;padding:8px 12px;border-radius:var(--radius)}
+.chat-msg.user{background:var(--surface2);border-left:3px solid var(--accent)}
+.chat-msg.assistant{background:var(--surface);border-left:3px solid var(--green)}
+.chat-msg .sender{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.chat-msg .time{float:right;color:var(--text2);font-size:11px}
+/* Trace waterfall */
+.trace-bar{height:20px;border-radius:4px;margin:2px 0;position:relative;min-width:4px;display:inline-block}
+.trace-label{font-size:11px;color:var(--text2);margin-left:8px}
+/* Stats grid */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.stat-card .value{font-size:28px;font-weight:700;color:#fff}
+.stat-card .label{font-size:12px;color:var(--text2);margin-top:4px}
+/* Search */
+.search-bar{margin-bottom:16px;max-width:400px}
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:100;justify-content:center;align-items:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto}
+.modal h3{font-size:16px;margin-bottom:16px;color:#fff}
+.modal-close{float:right;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+/* Graph viz */
+.graph-viz{width:100%;height:400px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:relative}
+.graph-viz svg{width:100%;height:100%}
+/* Split */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.split{grid-template-columns:1fr}}
+.empty{color:var(--text2);font-style:italic;padding:16px}
+.loading{color:var(--text2);padding:16px}
+/* Flex row */
+.flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mt{margin-top:12px}
+.mb{margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="brand">persona<span>forge</span></div>
+    <button class="active" onclick="show('overview')" id="tab-overview">📊 Overview</button>
+    <button onclick="show('sessions')" id="tab-sessions">💬 Sessions</button>
+    <button onclick="show('memory')" id="tab-memory">🧠 Memory</button>
+    <button onclick="show('evals')" id="tab-evals">✅ Evals</button>
+    <button onclick="show('traces')" id="tab-traces">🔍 Traces</button>
+    <button onclick="show('approvals')" id="tab-approvals">🛂 Approvals</button>
+    <button onclick="show('knowledge')" id="tab-knowledge">📚 Knowledge</button>
+    <button onclick="show('chat')" id="tab-chat">💬 Chat</button>
+    <button onclick="show('graph')" id="tab-graph">🔗 Graph</button>
+  </nav>
+  <main class="main">
+
+    <!-- Overview -->
+    <div class="panel active" id="p-overview">
+      <h2>Dashboard Overview</h2>
+      <div class="stats" id="statCards"><div class="stat-card"><div class="value">—</div><div class="label">Loading...</div></div></div>
+      <div class="split">
+        <div class="card"><h3>Recent Sessions</h3><div id="recentSessions" class="empty">Loading...</div></div>
+        <div class="card"><h3>Pending Approvals</h3><div id="recentApprovals" class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- Sessions -->
+    <div class="panel" id="p-sessions">
+      <h2>Sessions</h2>
+      <div class="search-bar"><input type="text" id="sessionSearch" placeholder="Search sessions..." oninput="renderSessions()"></div>
+      <div id="sessionList" class="loading">Loading...</div>
+    </div>
+
+    <!-- Memory -->
+    <div class="panel" id="p-memory">
+      <h2>Memory Inspector</h2>
+      <div class="search-bar"><input type="text" id="memorySearch" placeholder="Search memories..." oninput="renderMemory()"></div>
+      <div id="memoryList" class="empty">No memory store connected.</div>
+    </div>
+
+    <!-- Evals -->
+    <div class="panel" id="p-evals">
+      <h2>Eval Runs</h2>
+      <div class="stats" id="evalStats"></div>
+      <div id="evalList" class="loading">Loading...</div>
+    </div>
+
+    <!-- Traces -->
+    <div class="panel" id="p-traces">
+      <h2>Traces</h2>
+      <div id="traceList" class="loading">Loading...</div>
+      <div id="traceWaterfall" class="mt"></div>
+    </div>
+
+    <!-- Approvals -->
+    <div class="panel" id="p-approvals">
+      <h2>HITL Approval Queue</h2>
+      <div id="approvalList" class="loading">Loading...</div>
+    </div>
+
+    <!-- Knowledge -->
+    <div class="panel" id="p-knowledge">
+      <h2>Knowledge Base</h2>
+      <div class="search-bar"><input type="text" id="knowledgeSearch" placeholder="Search documents..." oninput="renderKnowledge()"></div>
+      <div id="knowledgeList" class="loading">Loading...</div>
+    </div>
+
+    <!-- Chat -->
+    <div class="panel" id="p-chat">
+      <h2>Chat Playground</h2>
+      <div class="flex mb">
+        <select id="agentSelect" style="max-width:250px"></select>
+        <span id="chatStatus" style="font-size:12px;color:var(--text2)"></span>
+      </div>
+      <div id="chatLog" class="empty">Select an agent and send a message.</div>
+      <div class="flex" style="margin-top:8px">
+        <textarea id="chatInput" rows="2" style="flex:1" placeholder="Type a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+        <button class="btn btn-primary" onclick="sendChat()" style="height:fit-content">Send</button>
+      </div>
+    </div>
+
+    <!-- Graph -->
+    <div class="panel" id="p-graph">
+      <h2>Graph Workflow Visualizer</h2>
+      <div class="card">
+        <p style="color:var(--text2);margin-bottom:12px">Visualize loaded graph workflows. Enter a JSON graph definition below to render.</p>
+        <textarea id="graphInput" rows="6" style="font-size:12px" placeholder='Paste graph JSON or use default...'></textarea>
+        <button class="btn btn-primary mt" onclick="renderGraph()">Render Graph</button>
+      </div>
+      <div id="graphViz" class="graph-viz mt"><svg><text x="20" y="30" fill="#888">Enter graph JSON and click Render</text></svg></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+let _data = { sessions: [], evals: [], traces: [], approvals: [], agents: [], knowledge: [] };
+const api = async (path, opts) => { const r = await fetch('/api/'+path, opts); return r.json(); };
+
+// ── Navigation ─────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+  const tab = document.getElementById('tab-'+id);
+  if (tab) tab.classList.add('active');
+  loadPanel(id);
+}
+
+async function loadPanel(id) {
+  switch(id) {
+    case 'overview': loadOverview(); break;
+    case 'sessions': loadSessions(); break;
+    case 'evals': loadEvals(); break;
+    case 'traces': loadTraces(); break;
+    case 'approvals': loadApprovals(); break;
+    case 'knowledge': loadKnowledge(); break;
+    case 'chat': loadChat(); break;
+  }
+}
+
+// ── Overview ───────────────────────────────────────────────────────────
+async function loadOverview() {
+  const [sessions, evals, traces, approvals] = await Promise.all([
+    api('sessions'), api('evals'), api('traces'), api('approvals')
+  ]);
+  _data.sessions = sessions.sessions ?? [];
+  _data.evals = evals.evals ?? [];
+  _data.traces = traces.traces ?? [];
+  _data.approvals = approvals.pending ?? [];
+
+  document.getElementById('statCards').innerHTML = `
+    <div class="stat-card"><div class="value">${_data.sessions.length}</div><div class="label">Sessions</div></div>
+    <div class="stat-card"><div class="value">${_data.evals.length}</div><div class="label">Eval Runs</div></div>
+    <div class="stat-card"><div class="value">${_data.traces.length}</div><div class="label">Traces</div></div>
+    <div class="stat-card"><div class="value">${_data.approvals.length}</div><div class="label">Pending Approvals</div></div>
+  `;
+
+  const recent = _data.sessions.slice(-5).reverse();
+  document.getElementById('recentSessions').innerHTML = recent.length
+    ? recent.map(s => `<div class="flex" style="margin:4px 0"><span style="flex:1">${s.id || s.sessionId || '—'}</span><span class="meta">${s.createdAt ? new Date(s.createdAt).toLocaleString() : ''}</span></div>`).join('')
+    : '<div class="empty">No sessions</div>';
+
+  document.getElementById('recentApprovals').innerHTML = _data.approvals.length
+    ? _data.approvals.slice(0,5).map(a => `<div class="flex" style="margin:4px 0"><span style="flex:1">${a.id}</span><span class="meta">${a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}</span></div>`).join('')
+    : '<div class="empty">No pending approvals</div>';
+}
+
+// ── Sessions ───────────────────────────────────────────────────────────
+async function loadSessions() {
+  const d = await api('sessions');
+  _data.sessions = d.sessions ?? [];
+  renderSessions();
+}
+
+function renderSessions() {
+  const q = (document.getElementById('sessionSearch').value || '').toLowerCase();
+  const filtered = _data.sessions.filter(s => JSON.stringify(s).toLowerCase().includes(q));
+  const el = document.getElementById('sessionList');
+  if (!filtered.length) { el.innerHTML = '<div class="empty">No sessions found</div>'; return; }
+  el.innerHTML = `<table><tr><th>ID</th><th>Created</th><th>Metadata</th></tr>${filtered.map(s => `<tr onclick="showSessionDetail('${s.id || s.sessionId}')" style="cursor:pointer">
+    <td>${(s.id || s.sessionId || '—').slice(0,24)}</td>
+    <td>${s.createdAt ? new Date(s.createdAt).toLocaleString() : '—'}</td>
+    <td class="meta">${s.metadata ? Object.keys(s.metadata).join(', ') : '—'}</td>
+  </tr>`).join('')}</table>`;
+}
+
+async function showSessionDetail(id) {
+  const d = await api('sessions/detail?id='+encodeURIComponent(id));
+  const el = document.getElementById('modalContent');
+  el.innerHTML = `<button class="modal-close" onclick="closeModal()">✕</button>
+  <h3>Session: ${id.slice(0,24)}</h3>
+  <pre style="background:var(--surface2);padding:12px;border-radius:var(--radius);overflow:auto;max-height:50vh;font-size:12px;line-height:1.4">${JSON.stringify(d.session || d, null, 2)}</pre>`;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+
+// ── Evals ──────────────────────────────────────────────────────────────
+async function loadEvals() {
+  const d = await api('evals');
+  _data.evals = d.evals ?? [];
+  renderEvals();
+}
+
+function renderEvals() {
+  const evals = _data.evals;
+  const passed = evals.filter(e => e.passed === true || e.status === 'passed').length;
+  const failed = evals.filter(e => e.passed === false || e.status === 'failed').length;
+  const total = evals.length;
+
+  document.getElementById('evalStats').innerHTML = `
+    <div class="stat-card"><div class="value">${total}</div><div class="label">Total Runs</div></div>
+    <div class="stat-card"><div class="value">${passed}</div><div class="label">Passed</div></div>
+    <div class="stat-card"><div class="value">${failed}</div><div class="label">Failed</div></div>
+    <div class="stat-card"><div class="value">${total ? Math.round(passed/total*100) : 0}%</div><div class="label">Pass Rate</div></div>
+  `;
+
+  const el = document.getElementById('evalList');
+  if (!evals.length) { el.innerHTML = '<div class="empty">No eval runs yet</div>'; return; }
+  el.innerHTML = `<table><tr><th>ID</th><th>Status</th><th>Score</th><th>Date</th></tr>${evals.map(e => `<tr>
+    <td>${(e.id || '').slice(0,20)}</td>
+    <td><span class="badge ${e.passed === true || e.status === 'passed' ? 'badge-green' : e.passed === false || e.status === 'failed' ? 'badge-red' : 'badge-orange'}">${e.status || (e.passed ? 'passed' : 'pending')}</span></td>
+    <td>${e.score != null ? e.score : '—'}</td>
+    <td class="meta">${e.createdAt ? new Date(e.createdAt).toLocaleString() : '—'}</td>
+  </tr>`).join('')}</table>`;
+}
+
+// ── Traces ─────────────────────────────────────────────────────────────
+async function loadTraces() {
+  const d = await api('traces');
+  _data.traces = d.traces ?? [];
+  renderTraces();
+}
+
+function renderTraces() {
+  const traces = _data.traces;
+  const el = document.getElementById('traceList');
+  if (!traces.length) { el.innerHTML = '<div class="empty">No traces</div>'; return; }
+
+  // Find time range for waterfall
+  const times = traces.filter(t => t.startTime && t.endTime);
+  const minTime = times.length ? Math.min(...times.map(t => t.startTime)) : 0;
+  const maxTime = times.length ? Math.max(...times.map(t => t.endTime)) : 1;
+  const range = maxTime - minTime || 1;
+
+  el.innerHTML = `<table><tr><th>Name</th><th>Duration</th><th>Timeline</th></tr>${traces.map(t => {
+    const start = t.startTime || 0;
+    const end = t.endTime || start + 1;
+    const left = ((start - minTime) / range * 100).toFixed(1);
+    const width = Math.max(0.5, ((end - start) / range * 100)).toFixed(1);
+    const dur = ((end - start) / 1000).toFixed(2);
+    return `<tr>
+      <td>${t.name || (t.id || '').slice(0,20)}</td>
+      <td>${dur}s</td>
+      <td><div style="position:relative;height:24px"><div class="trace-bar" style="left:${left}%;width:${width}%;background:var(--accent);position:absolute"></div></div></td>
+    </tr>`;
+  }).join('')}</table>`;
+}
+
+// ── Approvals ──────────────────────────────────────────────────────────
+async function loadApprovals() {
+  const d = await api('approvals');
+  _data.approvals = d.pending ?? [];
+  renderApprovals();
+}
+
+function renderApprovals() {
+  const el = document.getElementById('approvalList');
+  if (!_data.approvals.length) { el.innerHTML = '<div class="empty">No pending approvals</div>'; return; }
+  el.innerHTML = _data.approvals.map(a => `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:start">
+      <div>
+        <div style="font-weight:600;margin-bottom:4px">${a.id}</div>
+        <div class="meta">${a.description || a.prompt || JSON.stringify(a).slice(0,200)}</div>
+        ${a.createdAt ? `<div class="meta mt">${new Date(a.createdAt).toLocaleString()}</div>` : ''}
+      </div>
+      <div class="flex" style="flex-shrink:0">
+        <button class="btn btn-green btn-sm" onclick="doApproval('approve','${a.id}')">✓ Approve</button>
+        <button class="btn btn-red btn-sm" onclick="doApproval('reject','${a.id}')">✕ Reject</button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+async function doApproval(action, id) {
+  await api('approvals/'+action+'?id='+encodeURIComponent(id), { method:'POST' });
+  loadApprovals();
+}
+
+// ── Knowledge ──────────────────────────────────────────────────────────
+async function loadKnowledge() {
+  const d = await api('knowledge');
+  _data.knowledge = d.documents ?? [];
+  renderKnowledge();
+}
+
+function renderKnowledge() {
+  const q = (document.getElementById('knowledgeSearch').value || '').toLowerCase();
+  const filtered = _data.knowledge.filter(k => JSON.stringify(k).toLowerCase().includes(q));
+  const el = document.getElementById('knowledgeList');
+  if (!filtered.length) { el.innerHTML = '<div class="empty">No documents</div>'; return; }
+  el.innerHTML = filtered.map(k => `<div class="card">
+    <h3>${k.id}</h3>
+    <div class="meta" style="white-space:pre-wrap;max-height:120px;overflow:hidden">${(k.content || '').slice(0,500)}</div>
+    ${k.metadata ? `<div class="meta mt">${JSON.stringify(k.metadata)}</div>` : ''}
+  </div>`).join('');
+}
+
+// ── Chat ───────────────────────────────────────────────────────────────
+async function loadChat() {
+  const d = await api('agents');
+  _data.agents = d.agents ?? [];
+  const sel = document.getElementById('agentSelect');
+  sel.innerHTML = _data.agents.map(a => '<option value="'+a.name+'">'+a.name+'</option>').join('');
+  if (!_data.agents.length) document.getElementById('chatStatus').textContent = 'No agents registered';
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const log = document.getElementById('chatLog');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  const agent = document.getElementById('agentSelect').value;
+
+  // Clear placeholder
+  if (log.classList.contains('empty')) { log.innerHTML = ''; log.classList.remove('empty'); }
+
+  log.innerHTML += `<div class="chat-msg user"><div class="sender">You <span class="time">${new Date().toLocaleTimeString()}</span></div>${escapeHtml(msg)}</div>`;
+  log.scrollTop = log.scrollHeight;
+
+  log.innerHTML += `<div class="chat-msg assistant" id="streamResp"><div class="sender">${escapeHtml(agent)} <span class="time">${new Date().toLocaleTimeString()}</span></div><span class="loading">...</span></div>`;
+
+  try {
+    const d = await api('chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ agent, prompt: msg })
+    });
+    const respEl = document.getElementById('streamResp');
+    if (respEl) respEl.innerHTML = `<div class="sender">${escapeHtml(agent)} <span class="time">${new Date().toLocaleTimeString()}</span></div>${escapeHtml(d.text || d.error || '(no response)')}`;
+  } catch(e) {
+    const respEl = document.getElementById('streamResp');
+    if (respEl) respEl.innerHTML = `<div class="sender">Error <span class="time">${new Date().toLocaleTimeString()}</span></div>${escapeHtml(e.message)}`;
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+// ── Graph Visualizer ───────────────────────────────────────────────────
+function renderGraph() {
+  const input = document.getElementById('graphInput');
+  let graphDef;
+  try {
+    graphDef = input.value.trim() ? JSON.parse(input.value) : null;
+  } catch(e) {
+    document.getElementById('graphViz').innerHTML = `<div style="padding:20px;color:var(--red)">Invalid JSON: ${e.message}</div>`;
+    return;
+  }
+
+  if (!graphDef) {
+    // Default demo graph
+    graphDef = {
+      nodes: [
+        { id: 'start', label: 'Start', kind: 'start' },
+        { id: 'classify', label: 'Classify', kind: 'router' },
+        { id: 'process_pos', label: 'Process Positive', kind: 'task' },
+        { id: 'process_neg', label: 'Process Negative', kind: 'task' },
+        { id: 'end', label: 'End', kind: 'end' }
+      ],
+      edges: [
+        { from: 'start', to: 'classify' },
+        { from: 'classify', to: 'process_pos', label: 'positive' },
+        { from: 'classify', to: 'process_neg', label: 'negative' },
+        { from: 'process_pos', to: 'end' },
+        { from: 'process_neg', to: 'end' }
+      ]
+    };
+    input.value = JSON.stringify(graphDef, null, 2);
+  }
+
+  const { nodes, edges } = graphDef;
+  const svg = document.getElementById('graphViz').querySelector('svg') || document.getElementById('graphViz');
+  const W = 680, H = 400, R = 28;
+
+  // Simple layered layout
+  const layers = {};
+  let maxLayer = 0;
+  const assignLayer = (nid, depth) => {
+    if (layers[nid] !== undefined && layers[nid] <= depth) return;
+    layers[nid] = depth;
+    if (depth > maxLayer) maxLayer = depth;
+    edges.filter(e => e.from === nid).forEach(e => assignLayer(e.to, depth + 1));
+  };
+  nodes.filter(n => n.kind === 'start').forEach(n => assignLayer(n.id, 0));
+  // Fallback: unassigned nodes
+  nodes.forEach(n => { if (layers[n.id] === undefined) assignLayer(n.id, 0); });
+
+  const layerCounts = {};
+  nodes.forEach(n => { layerCounts[layers[n.id]] = (layerCounts[layers[n.id]] || 0) + 1; });
+  const layerW = (W - 60) / (maxLayer + 1);
+  const positions = {};
+  const counters = {};
+  nodes.forEach(n => {
+    const l = layers[n.id];
+    const count = layerCounts[l] || 1;
+    const idx = counters[l] || 0;
+    counters[l] = idx + 1;
+    const spacing = (H - 60) / (count + 1);
+    positions[n.id] = { x: 30 + l * layerW + layerW/2, y: 30 + (idx + 1) * spacing };
+  });
+
+  const colors = { start: '#4f6ef7', end: '#4f6ef7', router: '#e8a838', task: '#2d8f5e', agent: '#7c96ff', wait: '#d14b4b', subgraph: '#888bb0' };
+
+  let svgContent = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+      </marker>
+    </defs>
+    <rect width="${W}" height="${H}" fill="var(--surface,#151729)" rx="8"/>`;
+
+  // Edges
+  edges.forEach(e => {
+    const from = positions[e.from], to = positions[e.to];
+    if (!from || !to) return;
+    const midX = (from.x + to.x) / 2;
+    svgContent += `<line x1="${from.x}" y1="${from.y + R}" x2="${to.x}" y2="${to.y - R}" stroke="#555" stroke-width="1.5" marker-end="url(#arrowhead)"/>`;
+    if (e.label) {
+      svgContent += `<text x="${midX}" y="${(from.y + to.y)/2 - 8}" fill="#888" font-size="11" text-anchor="middle">${escapeHtml(e.label)}</text>`;
+    }
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const p = positions[n.id];
+    if (!p) return;
+    const color = colors[n.kind] || '#555';
+    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${R}" fill="${color}" opacity="0.9" stroke="#fff" stroke-width="1.5"/>`;
+    svgContent += `<text x="${p.x}" y="${p.y + 4}" fill="#fff" font-size="10" font-weight="600" text-anchor="middle">${escapeHtml((n.label || n.id).slice(0, 12))}</text>`;
+  });
+
+  svgContent += '</svg>';
+  const container = document.getElementById('graphViz');
+  container.innerHTML = svgContent;
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────
+loadOverview();
+</script>
+</body>
+</html>

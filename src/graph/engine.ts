@@ -489,8 +489,40 @@ export class DAGEngine {
       this.state.results[nodeDef.name] = output;
 
       // Successors of this node may now be ready — add them to the candidate set
-      for (const eid of (this.graph.outgoing.get(nid) ?? [])) {
-        this._readyCandidates.add(this.graph.edges.get(eid)!.to);
+      // Conditional edges: only matching target added, else default fallback
+      const outgoing = this.graph.outgoing.get(nid) ?? [];
+      const added = new Set<string>();
+      for (const eid of outgoing) {
+        const edge = this.graph.edges.get(eid)!;
+        // If edge has conditional mapping, evaluate it against output
+        if (edge.conditional && Object.keys(edge.conditional).length > 0) {
+          // Find which conditional value matches the node output
+          const outputKey = typeof output === 'string'
+            ? output
+            : (output && typeof output === 'object' && 'value' in (output as object)
+              ? (output as Record<string, unknown>).value as string
+              : undefined);
+          if (outputKey !== undefined && edge.conditional[outputKey]) {
+            const targetId = edge.conditional[outputKey];
+            if (!added.has(targetId)) {
+              this._readyCandidates.add(targetId);
+              added.add(targetId);
+            }
+          } else if (edge.label === '__default__' && !added.has(edge.to)) {
+            // Default edge: only add if no conditional matched
+            this._readyCandidates.add(edge.to);
+            added.add(edge.to);
+          }
+        } else if (edge.label !== '__default__' || !outgoing.some(
+          e => this.graph.edges.get(e)?.conditional && Object.keys(this.graph.edges.get(e)?.conditional ?? {}).length > 0
+        )) {
+          // Non-conditional edge: always add (skip explicit __default__ labels
+          // when conditional edges exist on the same source)
+          if (!added.has(edge.to)) {
+            this._readyCandidates.add(edge.to);
+            added.add(edge.to);
+          }
+        }
       }
 
       this._emitEvent(GraphEventType.NODE_COMPLETED, nid, {

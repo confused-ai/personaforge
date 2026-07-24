@@ -159,6 +159,18 @@ export {
 
 // ── Plugins ─────────────────────────────────────────────────────────────────
 
+export type {
+  Channel,
+  ChannelId,
+  ChannelMode,
+  Reducer,
+  StateMachineDef,
+  Send,
+  StateReducer,
+  ConditionalEdgeMapping,
+  EdgeTarget,
+} from './types.js';
+
 export {
   TelemetryPlugin,
   LoggingPlugin,
