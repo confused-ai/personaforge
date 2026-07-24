@@ -373,11 +373,7 @@ function getFrameworkConfig(): AppConfig | null {
 /**
  * One-line production agent. Wires LLM (from env or options), tools, session store, and optional guardrails.
  *
- * @deprecated Prefer the `agent()` helper from `personaforge` — it has the same
- * surface area with a shorter call: `agent('You are helpful.')` or
- * `agent({ instructions: '...', model: 'openai:gpt-4o', tools: [] })`.
- * `createAgent()` will be removed in v2.0.
- *
+ * 
  * All defaults are explicitly escapable:
  * - `tools: false`        → pure text reasoning (no tools)
  * - `sessionStore: false` → stateless (no session tracking)

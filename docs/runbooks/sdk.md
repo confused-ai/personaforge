@@ -1,0 +1,59 @@
+---
+title: "Runbook: Sdk"
+description: "Operational runbook for personaforge/sdk — import, run, verify, recover. 458 public symbols."
+outline: [2, 3]
+generated: true
+---
+
+# Runbook: Sdk
+
+> Auto-generated from `./dist/sdk.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+
+**Import path:** `personaforge/sdk`  ·  **Public symbols:** 458
+
+## What it is
+`personaforge/sdk` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
+
+## Install
+```bash
+npm i personaforge
+# or: bun add personaforge · pnpm add personaforge · yarn add personaforge
+```
+
+## Import
+```ts
+import { createDbMemoryStore, generateEntityId, summariseMemories } from 'personaforge/sdk';
+```
+
+## Public API surface
+- **Factories / functions** — `generateEntityId`, `createDbMemoryStore`, `summariseMemories`, `summariseConversation`, `createAgentMemoryTools`, `createTieredMemoryTools`, `createGraphMemoryTools`, `createSummaryBufferHook`, `toToolRegistry`, `tool`, `createTools`, `isLightweightTool`, …(+32)
+- **Classes** — `InMemoryStore`, `VectorMemoryStore`, `OpenAIEmbeddingProvider`, `InMemoryVectorStore`, `PineconeVectorStore`, `QdrantVectorStore`, `PgVectorStore`, `DbMemoryStore`, `MemoryDistiller`, `TieredMemory`, `GraphMemory`, `BaseTool`, …(+53)
+- **Constants** — `DEFAULT_BLOCK_LIMIT`, `createTool`, `httpClient`, `fileSystem`, `browserTool`, `ShellToolkit`, `CalculatorToolkit`, `EngineEvent`
+- **Enums** — `AgentState`, `MemoryType`, `ToolCategory`, `TaskPriority`, `TaskStatus`, `PlanExecutionStatus`, `PlanningAlgorithm`, `BackoffStrategy`, `ExecutionNodeStatus`, `ExecutionState`, `NodeType`, `TransitionType`, …(+2)
+- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `Skill`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, …(+274)
+- **Types** — `LearningType`, `EntityId`, `MessageContent`, `StreamChunk`, `IFullLLMProvider`, `ContentPart`, `SummaryBeforeStepHook`, `ToolParameters`, `ToolProvider`, `SafeParseResult`, `InferToolSchema`, `ToolWrapMiddleware`, …(+29)
+
+## Minimal use
+```ts
+import { createDbMemoryStore, generateEntityId, summariseMemories } from 'personaforge/sdk';
+
+// `createDbMemoryStore` is the primary entry for this feature.
+// See the guide/type signature for full options.
+const result = createDbMemoryStore(/* opts */);
+```
+
+## Verify it works
+- Type-check: `npx tsc --noEmit` resolves `personaforge/sdk` with no missing-module error.
+- Runtime: `node -e "import('personaforge/sdk').then(m => console.log(Object.keys(m)))"` lists the exports above.
+
+## Common failures
+- `Cannot find module 'personaforge/sdk'` — package not installed or stale build; run `npm i personaforge` and rebuild.
+- `Cannot find module '<peer>'` at call time — this feature lazy-loads an optional native/SDK dep; install the one named in the error.
+- Type errors after upgrade — check `CHANGELOG.md` for the symbol you import; names above are the current contract.
+
+## Rollback
+- Remove the import and the feature is gone from your bundle (subpaths are isolated; nothing else depends on importing it).
+- Pin a known-good version: `npm i personaforge@<version>`.
+
+## Related
+- Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)

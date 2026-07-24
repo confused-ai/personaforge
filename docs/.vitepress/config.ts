@@ -101,6 +101,7 @@ export default defineConfig({
             { text: 'Guide', link: '/guide/introduction', activeMatch: '/guide/' },
             { text: 'Examples', link: '/examples/', activeMatch: '/examples/' },
             { text: 'API Reference', link: '/api/', activeMatch: '/api/' },
+            { text: 'Runbooks', link: '/runbooks/', activeMatch: '/runbooks/' },
             {
                 text: 'Ecosystem',
                 items: [
