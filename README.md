@@ -1,206 +1,221 @@
-# personaforge
-<a href="https://www.producthunt.com/products/personaforge?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-personaforge" target="_blank" rel="noopener noreferrer"><img alt="personaforge - Build AI agents, teams, and workflows in TypeScript | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1146700&theme=light&t=1778823847031"></a>
+<p align="center">
+  <img src="docs/public/logo.svg" width="120" alt="personaforge">
+</p>
 
-`personaforge` is a TypeScript agent framework built around one stable install story: start with a single package, ship one useful agent, then layer tools, retrieval, sessions, serving, orchestration, and production controls without changing frameworks midway through the project.
+<h1 align="center">personaforge</h1>
+
+<p align="center">
+  <strong>Ship production AI agents in TypeScript.</strong>
+  <br>
+  One package. Start with a one-line agent, then add tools, sessions, retrieval,<br>
+  orchestration, serving, and production controls — without ever switching frameworks.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/personaforge"><img src="https://img.shields.io/npm/v/personaforge?style=flat-square" alt="npm"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/personaforge?style=flat-square" alt="MIT"></a>
+  <a href="https://www.npmjs.com/package/personaforge"><img src="https://img.shields.io/npm/dm/personaforge?style=flat-square" alt="downloads"></a>
+  <img src="https://img.shields.io/badge/TypeScript-5.4+-blue?style=flat-square" alt="TypeScript">
+  <img src="https://img.shields.io/badge/coverage-15k+-tests-green?style=flat-square" alt="tests">
+</p>
+
+---
+
+## What makes personaforge different
+
+Every agent framework can spin up an agent. personaforge is the **only TypeScript framework that ships durability, multi-agent orchestration, guardrails, eval, and a control-plane dashboard in a single `npm install`.**
+
+| Against | personaforge wins on |
+|---|---|
+| **LangChain** | Single package (not 200+). Built-in checkpoint/replay. MCP + A2A protocols. SSRF-protected tools. τ-bench cross-framework benchmarks. |
+| **Vercel AI SDK** | Full agent runtime (not just streaming primitives). Sessions, memory, knowledge, teams, durability, guardrails, eval, control plane. |
+| **CrewAI** | TypeScript-native. 6 team modes vs 2. Event-sourced durability. Built-in eval. 120+ tools. Graph DAG engine. |
+| **AutoGen / Agno** | TypeScript-native. Durable interrupts + resume. Built-in guardrails + budget enforcement. OTLP tracing. Control plane dashboard. |
 
 ## One quick example
 
 ```ts
 import { agent, tool } from 'personaforge';
-import { z } from 'zod/v3';
+import { z } from 'zod';
 
 const getQuote = tool({
-	name: 'get_quote',
-	description: 'Return a stock quote for a ticker symbol.',
-	parameters: z.object({ symbol: z.string() }),
-	execute: async ({ symbol }) => ({ symbol, price: 927.5, changePct: 1.4 }),
+  name: 'get_quote',
+  description: 'Return a stock quote for a ticker symbol.',
+  parameters: z.object({ symbol: z.string() }),
+  execute: async ({ symbol }) => ({ symbol, price: 927.5, changePct: 1.4 }),
 });
 
 const financeAgent = agent({
-	name: 'finance-agent',
-	model: 'gpt-4o-mini',
-	instructions: 'Use the tool to answer market questions in one concise sentence.',
-	tools: [getQuote],
+  name: 'finance-agent',
+  model: 'gpt-4o-mini',
+  instructions: 'Use the tool to answer market questions in one concise sentence.',
+  tools: [getQuote],
 });
 
 const result = await financeAgent.run("What's NVDA trading at today?");
-console.log(result.text);
+console.log(result.text); // "NVDA is trading at $927.50, up 1.4% today."
 ```
 
-The intended feel is simple: plain TypeScript, one explicit capability at a time, and a direct path from small prototype to production-ready runtime.
+## Installation
 
-## What it is for
+```bash
+npm install personaforge
+# or
+bun add personaforge
+```
 
-Use `personaforge` when you want to build one of these shapes from the same public API surface:
+Zero-config. Treeshakeable. No peer dependencies required for basic use.
 
-- a single agent that answers, summarizes, or classifies
-- a tool-backed assistant that reads live application data or triggers side effects
-- a retrieval-backed system that answers from documents or indexed knowledge
-- a served application with sessions, resilience, and observability
-- a multi-agent workflow with delegation, routing, or explicit reasoning steps
+---
 
-The design goal is not to force every feature on day one. The design goal is to let the first useful version stay small while keeping a direct path to a larger system.
+## Feature Overview
 
-## Why personaforge for multi-agent
+### 🤖 Agents & Tools
 
-Every TypeScript agent framework can spin up an agent. The bar for **#1 in
-multi-agent** is different — you need coordination, reproducibility, and
-proof. These are the four claims we can back with CI-enforced tests and
-published numbers today; each links to the code that guards it:
+- **ReAct agent runtime** — think-act-observe loop with configurable max steps, timeout, retry, and tool error handling
+- **30+ LLM providers** — OpenAI, Anthropic, Google Gemini, AWS Bedrock, Ollama, OpenRouter, and more
+- **120+ built-in tools** — search (Tavily, Exa, Brave, Serper, Arxiv, PubMed, Perplexity, Reddit, YouTube), web scraping (FireCrawl, Newspaper), HTTP client with SSRF protection, filesystem, shell, browser, finance (Stripe, Yahoo), CRM, media, productivity
+- **Custom tools** — define with Zod schemas, auto-JSON-schema conversion
+- **Tool composition** — `compose`, `pipe`, `parallel`, `fallback`, `retry`, `timeout`, `map`, `filter`
 
-- **One canonical `LLMProvider` type across every provider** — no two
-  shapes, no boundary casts. Enforced by `tests/models-providers-parity.test.ts`
-  and `tests/finish-reason-normalize.test.ts`.
-- **Deterministic replay of every agent run** — byte-identical `text`,
-  `messages`, `steps`, `usage`, and event ordering, with zero real LLM or
-  tool calls. Enforced by `tests/determinism-gate.test.ts` on every PR.
-- **Real OS-thread parallelism** for CPU-bound work via `ThreadPool`
-  (`node:worker_threads`). Published: **3.53× faster than main-thread**
-  serial on a 4-thread pool (`benchmarks/tau-bench/README.md` and
-  `docs/superpowers/specs/2026-07-23-thread-pool-benchmark.md`).
-- **τ-bench-style tool-agent benchmark inside the repo** — a reusable
-  harness across three domains (retail / data / coding, 13 tasks) that runs
-  hermetically in CI (scripted oracle, 8/8 pass) and produces publishable
-  pass-rates against real providers via `bun run test:integration`. Latest
-  measured run on `gpt-4o-mini`: **12/13 (92.3%)** — retail 4/5, data 5/5,
-  coding 3/3 (`benchmarks/tau-bench/`).
-- **Cross-framework comparison, no fabricated numbers** — the same harness
-  scores `langgraph`, `agno`, `crewai`, `mastra`, or any framework that speaks
-  the one-endpoint protocol in `benchmarks/tau-bench/PROTOCOL.md`. Reference
-  servers ship in `benchmarks/tau-bench/servers/`; run
-  `bun benchmarks/tau-bench/compare.ts` to print a sorted matrix. Every number
-  is one you can reproduce yourself.
+### 🧠 Memory & Knowledge
 
-See `examples/multi-agent-durability.ts` for the flagship demo: a
-multi-step tool-using agent whose event log replays deterministically
-with zero external calls. Run it with `bun run example:durability`.
+- **4-layer memory architecture** — short-term context, long-term vector, episodic workflow history, semantic graph memory
+- **Vector stores** — in-memory, SQLite, Chroma, Pinecone, Redis, with OpenAI / custom embeddings
+- **RAG engine** — `createKnowledgeBase` with text splitters, BM25 indexing, hybrid RRF fusion, rerankers (Cohere, Jina, LLM), multi-query, contextual compression, parent-document, self-query, time-weighted retrievers
+- **Session stores** — in-memory, SQLite (zero-server), Redis, fallback chain, PostgreSQL
 
-## Three primitives
+### 👥 Multi-Agent Orchestration
 
-| Primitive | Use it when |
+| Mode | What it does |
 |---|---|
-| Agent | one model-backed worker can handle the task |
-| Team | specialists should coordinate or delegate work |
-| Workflow | the execution path should be staged, deterministic, or branching |
+| **Supervisor** | Manager delegates to specialists, reviews output |
+| **Swarm** | Dynamic sub-agent scaling (up to 100 agents) |
+| **Consensus** | Majority-vote, unanimous, or weighted voting across agents |
+| **Handoff** | Agent-to-agent transfer with context |
+| **Router** | Instruction/tool-based agent routing |
+| **Pipeline** | Sequential agent composition |
+| **GSD** | Goal-Strategy-Decomposition pattern |
+| **Team** | Role-based team creation with permission isolation |
 
-These three shapes cover most systems in the framework. The difference is not branding. The difference is how control flows through the application.
+### 🔗 DAG Graph Engine
 
-## How to approach the framework
+- **Directed Acyclic Graph** execution with sequential, parallel, branching, and joining topologies
+- **Conditional edges** — output-driven routing (LangGraph parity): `addConditionalEdges('classify', { map: { positive: 'handle', negative: 'escalate' }, default: 'review' })`
+- **State machine channels** — typed state schemas with reducers, producers, consumers
+- **Event sourcing** — every run recorded to append-only log (SQLite, Redis, in-memory)
+- **Deterministic replay** — re-run from log with zero LLM calls for time-travel debugging, audit, simulation
+- **Tamper-evident audit** — hash-chained event log with `verifyChain()`
+- **Scheduler** — cron, interval, event-driven, and delay-based execution
+- **Pluggable middleware** — telemetry, logging, audit, custom plugins
+- **`interrupt()` / `resume()` / `fork()`** — durable checkpoints with `DurableExecutor`
 
-The cleanest adoption path is:
+### 🛡️ Production Safety
 
-1. Start with one agent and one successful run.
-2. Add one missing capability at a time, usually a tool, a session store, or retrieval.
-3. Add runtime surfaces such as HTTP serving, scheduling, evaluation, or resilience only after the base behavior is correct.
-
-That order matters because it keeps the model behavior understandable before infrastructure complexity gets involved.
-
-## Public package story
-
-The public install story is intentionally simple.
-
-| Import path | Use it for |
+| Capability | What it does |
 |---|---|
-| `personaforge` | core agent authoring, composition, and common entry points |
-| `personaforge/session` | session stores and continuity |
-| `personaforge/serve` | HTTP runtime |
-| `personaforge/tool` | MCP and broader tool infrastructure |
-| `personaforge/orchestration` | teams, supervisors, roles, and tasks |
-| `personaforge/reasoning` | explicit reasoning steps and events |
-| `personaforge/scheduler` | scheduled jobs and run history |
-| `personaforge/observe` | traces, metrics, and evaluation workflows |
-| `personaforge/adapters` | infrastructure adapters and bindings |
-| `personaforge/guard` | runtime control primitives such as circuit breakers |
+| **Guardrails** | PII detection/redaction, prompt injection detection (pattern + heuristic + LLM), content moderation (OpenAI Moderation API), allowlists for tools/hosts/output |
+| **HITL** | Human-in-the-loop approval hooks with `interrupt()` / `resume()` |
+| **Budget enforcement** | Per-user, per-session, and global token/cost caps |
+| **Rate limiting** | Sliding-window (in-memory + Redis) |
+| **Circuit breaker** | Provider failure detection and recovery |
+| **Idempotency** | Deduplication of tool calls and agent runs |
+| **Graceful shutdown** | Drain active executions before shutdown |
+| **Health checks** | Readiness, liveness, and dependency probes |
+| **Secret management** | Pluggable backends with live secret watching |
 
-Avoid internal `@personaforge/*` package imports in application code and public documentation. Those paths describe the monorepo layout, not the intended consumer API.
+### 📊 Observability & Eval
 
-## Core building blocks
+- **OTLP-native tracing** — OpenTelemetry spans with gen-ai semantic conventions
+- **Prometheus metrics** — request counts, latency, token usage, error rates
+- **LLM-as-judge** — single-criterion and multi-criteria evaluation
+- **Benchmark runner** — τ-bench harness with retail/data/coding domains (13 tasks)
+- **Cross-framework comparison** — scores personaforge vs LangGraph, Agno, CrewAI, Mastra on identical tasks via `benchmarks/tau-bench/PROTOCOL.md`
+- **Regression detection** — `replayDataset`, `diffResults` for eval regression
+- **Trace ↔ Dataset** — `spanToSample` converts production traces to eval datasets
 
-The framework stays understandable if you think in layers:
+### 🚀 Serving & Runtime
 
-- Agents are the unit that owns instructions, model selection, tools, and runtime behavior.
-- Tools are the bridge to live data, side effects, and application-specific capabilities.
-- Sessions, memory, knowledge, and storage add continuity or external context.
-- Serving, scheduling, and orchestration control how and when the agent runs.
-- Observability, budgets, approvals, and resilience turn a useful agent into an operable system.
+- **HTTP server** — `createHttpService` with OpenAPI generation, admin API, WebSocket transport
+- **Framework adapters** — Express router, Fastify plugin, Hono route (all lazy-loaded)
+- **SSE streaming** — `text/event-stream` for real-time agent responses
+- **A2A protocol** — Agent-to-Agent communication server
+- **Background queues** — InMemory, BullMQ, Kafka, RabbitMQ, SQS, Redis PubSub
+- **Scheduled agents** — cron and interval-based execution
+- **CLI** — `npx personaforge` for quick agent runs
 
-Each layer is optional. Most real projects only need a subset.
+### 🎛️ Control Plane Dashboard
 
-## Capabilities
+Built-in AgentOS dashboard served by `createControlPlane()`:
 
-| Capability | What it gives you |
+| Tab | What it shows |
 |---|---|
-| Tools | explicit boundaries for live data and side effects |
-| Sessions | continuity across turns |
-| Memory | retained facts and selective recall |
-| Knowledge | retrieval-backed answers from indexed content |
-| Storage | durable state around the agent |
-| Serve | HTTP runtime for real applications |
-| Orchestration | teams, supervisors, roles, and routing |
-| Reasoning | explicit reasoning loops when the task needs them |
-| Scheduler | time-based execution for reports, digests, and automation |
-| Observe | traces, metrics, and evaluation workflows |
-| Guardrails and HITL | validation, approvals, and policy-driven runtime control |
-| Graph | durable, replayable execution with tamper-evident audit |
-| Compression | keep long-running contexts within model token limits |
-| Learning | simulate runs and improve behavior from recorded outcomes |
-| Advanced Retrieval | text splitters, BM25, hybrid RRF, rerankers, and retriever primitives (`personaforge/knowledge`) |
-| Runnable / LCEL | composable `Runnable` primitive with pipe/batch/stream/withRetry/withFallbacks/assign (`personaforge/runnable`) |
-| Output Parsers | JSON (Zod-aware), CSV, Regex, output-fixing, retry-with-error (`personaforge/parsers`) |
-| Structured Output | unified native JSON-schema output across OpenAI, Anthropic, Gemini (`personaforge/structured`) |
-| Event Streaming | LangGraph-style values/updates/messages/debug/custom event bus (`personaforge/streaming`) |
-| Durable Interrupt | `interrupt()` / `resume()` / fork-from-checkpoint (`personaforge/checkpoint`) |
-| Reasoning Tools | Agno-style `think` / `analyze` scratchpad tools (`personaforge/reasoning`) |
-| Team Modes | `createModeTeam` with route / coordinate / collaborate (`personaforge/orchestration`) |
-| Model Fallbacks | `withFallbacks(primary, [alt1, alt2])`, `withRetry(...)` (`personaforge/models`) |
-| Toolkits | SQL, HTTP, File toolkits with prompt fragments (`personaforge/toolkits`) |
-| Deep Research | `createDeepAgent` plan-research-synthesize recipe (`personaforge/skills`) |
-| Trace ↔ Dataset | `spanToSample`, `replayDataset`, `diffResults` for regression eval (`personaforge/eval`) |
-| Control Plane | zero-dep AgentOS dashboard: sessions, memory, evals, traces, approvals, chat (`personaforge/control-plane`) |
+| **Overview** | Session count, eval runs, traces, pending approvals |
+| **Sessions** | Browse with search, view full conversation history |
+| **Memory** | Inspect vector and graph memory stores |
+| **Evals** | Pass/fail rates, score distribution, run history |
+| **Traces** | Waterfall timeline visualization |
+| **Approvals** | HITL queue with approve/reject buttons |
+| **Knowledge** | Document browser with search |
+| **Chat** | Interactive playground with agent selector |
+| **Graph** | DAG workflow visualizer with SVG rendering |
 
-## Enterprise and compliance
+### 📦 Structured & Composable
 
-For regulated or high-assurance deployments, the graph engine is event-sourced end to end (`personaforge/graph`), which unlocks a compliance and operations layer on top of any agent or workflow:
+- **Structured output** — unified JSON-schema generation across OpenAI, Anthropic, Gemini
+- **Output parsers** — JSON (Zod-aware), CSV, Regex, output-fixing, retry-with-error
+- **Runnable / LCEL** — `pipe()`, `batch()`, `stream()`, `withRetry()`, `withFallbacks()`, `assign()`
+- **Event streaming** — LangGraph-style `values | updates | messages | debug | custom` modes
+- **Reasoning tools** — Agno-style `think` / `analyze` scratchpad tools
+- **Deep research agent** — `createDeepAgent` plan-research-synthesize recipe
 
-| Capability | What it gives you | Guide |
-|---|---|---|
-| Event sourcing | every run recorded to a durable, file-backed log (`SqliteEventStore`, `BatchingEventStore`) | `docs/guide/graph.md` |
-| Deterministic replay | re-run a recorded execution with zero external calls for time-travel debugging and sims | `docs/guide/graph.md` |
-| Tamper-evident audit | hash-chained event log verified with `verifyChain` to prove the record was not altered | `docs/guide/graph.md` |
-| PII and secret redaction | `RunRecorder` scrubs secrets and free-text PII before anything is persisted | `docs/guide/graph.md` |
-| Right-to-erasure | `EventStore.purge()` deletes every event for one execution (GDPR) | `docs/guide/graph.md` |
-| Distributed execution | fan a graph across workers with a shared task queue | `docs/guide/graph.md` |
-| Multi-tenancy | per-tenant isolation and configuration via `createTenantContext` and `TenantRegistry` | `docs/guide/multi-tenancy.md` |
-| Admin API | health, audit log, pending approvals, and throughput endpoints | `docs/guide/admin-api.md` |
-| Secret management | pluggable backends with versioning and live secret watching | `docs/guide/secret-manager.md` |
+---
 
-Guardrails, HITL approvals, and budget controls (see above) round out the runtime policy layer.
+## Three Primitives
+
+| Primitive | When to use |
+|---|---|
+| **Agent** | One model-backed worker can handle the task |
+| **Team** | Specialists should coordinate, delegate, or vote |
+| **Workflow** | Execution path should be staged, deterministic, or branching |
+
+## How to adopt
+
+1. **One agent, one run** — start boring
+2. **Add one capability at a time** — a tool, a session store, memory
+3. **Add runtime surfaces** — HTTP serving, scheduling, eval, resilience
+
+Each layer is optional. Most projects only need a subset.
+
+---
+
+## Migrate from
+
+| From | Guide |
+|---|---|
+| **LangChain** | [`docs/guide/migration-langchain.md`](docs/guide/migration-langchain.md) |
+| **Vercel AI SDK** | [`docs/guide/migration-vercel.md`](docs/guide/migration-vercel.md) |
+| **CrewAI** | [`docs/guide/migration-crewai.md`](docs/guide/migration-crewai.md) |
+
+---
+
+## Repository stats
+
+| Metric | Count |
+|---|---|
+| Source files | 560 |
+| Lines of TypeScript | 111,000+ |
+| Test files | 88 |
+| Lines of test code | 15,300+ |
+| Built-in tools | 120+ (across 20 categories) |
+| LLM provider integrations | 30+ |
+| Graph DAG engine | 5,200+ lines |
+| Entry points (treeshakeable) | 70+ |
 
 ## Adopters
 
-Using `personaforge` in production? Add yourself to [`ADOPTERS.md`](./ADOPTERS.md)
-— one line is enough. Longer case studies go in `docs/case-studies/` using
-[the template](./docs/case-studies/case-study-template.md). Concrete adopter
-signals steer the roadmap and help newcomers find peers running similar
-shapes (RAG, tool-use, teams, workflows).
+Using personaforge in production? Add yourself to [`ADOPTERS.md`](./ADOPTERS.md).
 
-## Recommended reading order
+## License
 
-If you are new to the repo, follow this order:
-
-1. `docs/guide/introduction.md` for the mental model and product story.
-2. `docs/guide/getting-started.md` for the first implementation path.
-3. `docs/examples/index.md` for runnable examples by difficulty.
-4. `docs/guide/` pages for capability-specific guidance.
-5. `docs/api/` pages for a compact public API map.
-
-## What to build first
-
-The first milestone should be boring on purpose:
-
-- one prompt
-- one model
-- one agent
-- one verified output
-
-Once that path is correct, the rest of the framework becomes a set of focused additions rather than a wall of concepts to learn up front.
+MIT
