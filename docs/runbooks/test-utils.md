@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/test-utils.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/test-utils`  ·  **Public symbols:** 21
+**Import path:** `personaforge/test-utils`  ·  **Public symbols:** 21  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/test-utils` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -35,13 +35,14 @@ import { createMockLLM, createMockAgent, runScenario } from 'personaforge/test-u
 import { createMockLLM, createMockAgent, runScenario } from 'personaforge/test-utils';
 
 // `createMockLLM` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createMockLLM(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/test-utils` with no missing-module error.
 - Runtime: `node -e "import('personaforge/test-utils').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/eval](../guide/eval.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/test-utils'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +55,4 @@ const result = createMockLLM(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/eval](../guide/eval.md)

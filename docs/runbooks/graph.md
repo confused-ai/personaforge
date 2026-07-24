@@ -34,12 +34,22 @@ import { createGraph, uid, replayState } from 'personaforge/graph';
 - **Types** — `NodeId`, `EdgeId`, `GraphId`, `ExecutionId`, `WorkerId`, `NodeConfig`, `MessageContent`, `LogLevel`
 
 ## Minimal use
-```ts
-import { createGraph, uid, replayState } from 'personaforge/graph';
+Real example from the graph guide:
 
-// `createGraph` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createGraph(/* opts */);
+```ts
+import { createGraph } from 'personaforge';
+import { DAGEngine } from 'personaforge/graph';
+
+const graph = createGraph('content-pipeline', { version: '1.0' })
+  .addNode('fetch',    { kind: 'task', execute: (ctx) => fetchContent(ctx.state.variables.input as string) })
+  .addNode('analyse',  { kind: 'task', execute: (ctx) => analyseContent(ctx.state.results['fetch']) })
+  .addNode('publish',  { kind: 'task', execute: (ctx) => publishContent(ctx.state.results['analyse']) })
+  .chain('fetch', 'analyse', 'publish')  // linear shorthand
+  .build();
+
+const engine = new DAGEngine(graph);
+const execution = await engine.execute({ variables: { input: 'https://example.com/article' } });
+// execution.state.results — keyed by node name
 ```
 
 ## Verify it works

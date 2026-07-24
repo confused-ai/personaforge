@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/search.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/search`  ·  **Public symbols:** 86
+**Import path:** `personaforge/tools/search`  ·  **Public symbols:** 86  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/search` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -31,17 +31,35 @@ import { TavilySearchTool, TavilyExtractTool, TavilyToolkit } from 'personaforge
 - **Types** — `EntityId`, `ToolParameters`
 
 ## Minimal use
-```ts
-import { TavilySearchTool, TavilyExtractTool, TavilyToolkit } from 'personaforge/tools/search';
+Real example from the tools guide:
 
-// `TavilySearchTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new TavilySearchTool(/* opts */);
+```ts
+import {
+  TavilySearchTool,       // AI-optimised web search
+  BraveSearchTool,        // privacy-first web search
+  ExaSearchTool,          // neural search
+  PerplexitySearchTool,   // web-grounded LLM search
+  ArxivSearchTool,        // academic papers
+  PubMedSearchTool,       // biomedical papers
+  YouTubeSearchTool,
+  RedditSearchTool,
+  OpenWeatherToolkit,
+  GoogleMapsToolkit,
+} from 'personaforge/tools/search';
+
+const agent = createAgent({
+  name: 'researcher',
+  instructions: 'Research the topic thoroughly.',
+  model: 'gpt-4o',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: [new TavilySearchTool({ apiKey: process.env.TAVILY_API_KEY! })],
+});
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/search` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/search').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/search'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +72,4 @@ const instance = new TavilySearchTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

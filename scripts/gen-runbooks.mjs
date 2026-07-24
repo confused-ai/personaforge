@@ -78,10 +78,114 @@ function primary(s) {
   return factory || s.functions[0] || s.classes[0] || s.consts[0] || s.interfaces[0] || null;
 }
 
+const GUIDE_ALIAS = {
+  'router': 'llm-router',
+  'structured': 'structured-output',
+  'parsers': 'output-parsers',
+  'streaming': 'stream-utils',
+  'create-agent': 'agents',
+  'agentic': 'agents',
+  'lite': 'getting-started',
+  'model': 'providers',
+  'models': 'providers',
+  'serve': 'websocket',
+  'test': 'eval',
+  'test-utils': 'eval',
+  'test-utils-conformance': 'eval',
+  'tools-shell': 'tools',
+  'tools-core': 'tools',
+  'tools-mcp': 'mcp',
+  'tools-utils': 'tools',
+  'tools-communication': 'tools',
+  'tools-productivity': 'tools',
+  'tools-devtools': 'tools',
+  'tools-crm': 'tools',
+  'tools-search': 'tools',
+  'tools-scraping': 'tools',
+  'tools-media': 'tools',
+  'tools-memory': 'tools',
+  'tools-ai': 'tools',
+  'tools-data': 'tools',
+  'tools-finance': 'tools',
+  'tools-social': 'tools',
+  'toolkits': 'toolkits',
+  'checkpoint': 'checkpoint',
+  'control-plane': 'control-plane',
+  'runnable': 'runnable',
+  'runtime': 'production',
+  'skills': 'skills',
+  'reasoning': 'reasoning',
+  'scheduler': 'scheduler',
+  'playground': 'websocket',
+  'index': 'introduction',
+  'context': 'context-provider',
+  'compression': 'compression',
+  'config': 'getting-started',
+  'sdk': 'getting-started',
+  'dx': 'getting-started',
+  'observe': 'observability',
+  'observability': 'observability',
+  'graph': 'graph',
+  'db': 'database',
+  'simulation': 'eval',
+  'video': 'video',
+  'voice': 'voice',
+  'guard': 'guardrails',
+  'guardrails': 'guardrails',
+  'shared': 'getting-started',
+  'interfaces': 'concepts',
+  'adapters': 'adapters',
+  'adapter-redis': 'adapters',
+  'plugins': 'plugins',
+  'production': 'production',
+  'artifacts': 'artifacts',
+  'background': 'background-queues',
+  'cli': 'admin-api',
+  'workflow': 'workflows',
+  'session': 'session',
+  'memory': 'memory',
+  'knowledge': 'rag',
+  'storage': 'storage',
+  'planner': 'planner',
+  'execution': 'workflows',
+  'orchestration': 'orchestration',
+  'core': 'concepts',
+  'providers': 'providers',
+  'learning': 'learning-machine',
+  'eval': 'eval',
+};
+
 function matchGuide(sub) {
   const base = slug(sub);
+  if (GUIDE_ALIAS[base] && guides.includes(GUIDE_ALIAS[base])) return GUIDE_ALIAS[base];
   const cands = [base, base.replace(/^tools-/, ''), base.replace(/s$/, ''), base + 's'];
   return guides.find((g) => cands.includes(g)) || null;
+}
+
+function guideExample(guide, primarySym, spec) {
+  if (!guide) return null;
+  const gp = join(GUIDE_DIR, `${guide}.md`);
+  if (!existsSync(gp)) return null;
+  const md = readFileSync(gp, 'utf8');
+  const blocks = [];
+  const re = /```(?:ts|typescript)\n([\s\S]*?)```/g;
+  let m;
+  while ((m = re.exec(md))) blocks.push(m[1].replace(/\s+$/, ''));
+  if (!blocks.length) return null;
+  const nonTrivial = blocks.filter((b) => b.split('\n').length > 1);
+  const pool = nonTrivial.length ? nonTrivial : blocks;
+  // Prefer a block that both imports from this subpath AND uses the primary symbol.
+  const usesSpec = (b) => b.includes(`'${spec}'`) || b.includes(`"${spec}"`);
+  const usesPrimary = (b) => primarySym && new RegExp(`\\b${primarySym}\\b`).test(b);
+  const relevant = pool.filter((b) => usesSpec(b) || usesPrimary(b));
+  if (!relevant.length) return null; // honest: no matching example, fall through to placeholder
+  const score = (b) => (usesSpec(b) ? 3 : 0) + (usesPrimary(b) ? 2 : 0) + Math.min(b.split('\n').length, 20) / 20;
+  const best = [...relevant].sort((a, b) => score(b) - score(a))[0];
+  if (!best) return null;
+  // Cap length so runbooks stay scannable.
+  const lines = best.split('\n');
+  const capped = lines.length > 26 ? lines.slice(0, 26).concat('// …see full example in the guide').join('\n') : best;
+  return capped;
 }
 
 function importLine(sub, s) {
@@ -146,11 +250,15 @@ function runbook(sub, dts, s) {
   md += (api || '- _No named runtime exports; import for side effects or types._\n') + '\n';
 
   md += `## Minimal use\n`;
-  if (p) {
+  const example = guideExample(guide, p, spec);
+  if (example) {
+    md += `Real example from the ${guide} guide:\n\n`;
+    md += '```ts\n' + example + '\n```\n\n';
+  } else if (p) {
     md += '```ts\n';
     md += importLine(sub, s) + '\n\n';
     md += `// \`${p}\` is the primary entry for this feature.\n`;
-    md += `// See the guide/type signature for full options.\n`;
+    md += `// See the type signature for full options.\n`;
     md += `const ${/^[A-Z]/.test(p) ? 'instance' : 'result'} = ${/^[A-Z]/.test(p) ? 'new ' + p + '(/* opts */)' : p + '(/* opts */)'};\n`;
     md += '```\n\n';
   } else {

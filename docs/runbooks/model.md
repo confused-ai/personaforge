@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/model.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/model`  ·  **Public symbols:** 61
+**Import path:** `personaforge/model`  ·  **Public symbols:** 61  ·  **Guide:** [/guide/providers](../guide/providers.md)
 
 ## What it is
 `personaforge/model` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -33,17 +33,21 @@ import { createOpenRouterProvider, openai, anthropic } from 'personaforge/model'
 - **Types** — `MessageContent`, `StreamDelta`, `OpenAIContent`, `OpenAIMessageParam`, `AnthropicContent`, `AnthropicMessageParam`, `GooglePart`
 
 ## Minimal use
-```ts
-import { createOpenRouterProvider, openai, anthropic } from 'personaforge/model';
+Real example from the providers guide:
 
-// `createOpenRouterProvider` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createOpenRouterProvider(/* opts */);
+```ts
+import { createOpenRouterProvider } from 'personaforge';
+
+const llm = createOpenRouterProvider({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  model: 'anthropic/claude-sonnet-4',  // any OpenRouter model id
+});
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/model` with no missing-module error.
 - Runtime: `node -e "import('personaforge/model').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/providers](../guide/providers.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/model'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -56,3 +60,4 @@ const result = createOpenRouterProvider(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/providers](../guide/providers.md)

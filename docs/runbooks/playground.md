@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/playground.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/playground`  ·  **Public symbols:** 4
+**Import path:** `personaforge/playground`  ·  **Public symbols:** 4  ·  **Guide:** [/guide/websocket](../guide/websocket.md)
 
 ## What it is
 `personaforge/playground` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -34,13 +34,14 @@ import { createPlayground } from 'personaforge/playground';
 import { createPlayground } from 'personaforge/playground';
 
 // `createPlayground` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createPlayground(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/playground` with no missing-module error.
 - Runtime: `node -e "import('personaforge/playground').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/websocket](../guide/websocket.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/playground'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -53,3 +54,4 @@ const result = createPlayground(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/websocket](../guide/websocket.md)

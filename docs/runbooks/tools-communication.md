@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/communication.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/communication`  ·  **Public symbols:** 67
+**Import path:** `personaforge/tools/communication`  ·  **Public symbols:** 67  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/communication` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -32,17 +32,25 @@ import { SlackSendMessageTool, SlackListChannelsTool, SlackGetChannelHistoryTool
 - **Types** — `EntityId`, `ToolParameters`, `EmailResult`
 
 ## Minimal use
-```ts
-import { SlackSendMessageTool, SlackListChannelsTool, SlackGetChannelHistoryTool } from 'personaforge/tools/communication';
+Real example from the tools guide:
 
-// `SlackSendMessageTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new SlackSendMessageTool(/* opts */);
+```ts
+import {
+  SlackToolkit,
+  GmailToolkit,
+  EmailToolkit,
+  DiscordToolkit,
+  TelegramTool,
+  TwilioToolkit,
+  ZoomToolkit,
+  ResendToolkit,
+} from 'personaforge/tools/communication';
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/communication` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/communication').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/communication'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +63,4 @@ const instance = new SlackSendMessageTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

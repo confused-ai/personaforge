@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./src/structured/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/structured`  ·  **Public symbols:** 7
+**Import path:** `personaforge/structured`  ·  **Public symbols:** 7  ·  **Guide:** [/guide/structured-output](../guide/structured-output.md)
 
 ## What it is
 `personaforge/structured` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -31,17 +31,19 @@ import { detectProviderKind, generateStructured } from 'personaforge/structured'
 - **Types** — `ProviderKind`
 
 ## Minimal use
-```ts
-import { detectProviderKind, generateStructured } from 'personaforge/structured';
+Real example from the structured-output guide:
 
-// `detectProviderKind` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = detectProviderKind(/* opts */);
+```ts
+import { detectProviderKind } from 'personaforge/structured';
+
+const kind = detectProviderKind(llm);
+// 'openai' | 'anthropic' | 'gemini' | 'bedrock' | 'unknown'
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/structured` with no missing-module error.
 - Runtime: `node -e "import('personaforge/structured').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/structured-output](../guide/structured-output.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/structured'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +56,4 @@ const result = detectProviderKind(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/structured-output](../guide/structured-output.md)

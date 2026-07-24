@@ -30,12 +30,36 @@ import { VideoOrchestrator } from 'personaforge/video';
 - **Interfaces** — `VideoGenerationResult`
 
 ## Minimal use
-```ts
-import { VideoOrchestrator } from 'personaforge/video';
+Real example from the video guide:
 
-// `VideoOrchestrator` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new VideoOrchestrator(/* opts */);
+```ts
+import { tool, createAgent } from 'personaforge';
+import { VideoOrchestrator } from 'personaforge';
+import { z } from 'zod';
+
+const orchestrator = new VideoOrchestrator();
+
+const generateVideoTool = tool({
+  name: 'generate_video_short',
+  description: 'Generate a 30-45 second narrated video short on any topic.',
+  schema: z.object({
+    topic: z.string().describe('Topic or theme for the video'),
+  }),
+  timeoutMs: 120_000,   // video generation can take up to 2 minutes
+  execute: async ({ topic }) => {
+    const result = await orchestrator.generateShort(topic);
+    if (!result.success) return { error: result.error };
+    return { videoPath: result.videoPath, message: 'Video generated successfully.' };
+  },
+});
+
+const agent = createAgent({
+  name: 'video-creator',
+  instructions: 'Create short video clips for users on any topic they request.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: [generateVideoTool],
+// …see full example in the guide
 ```
 
 ## Verify it works

@@ -34,12 +34,36 @@ import { createSqliteEvalStore, wordOverlapF1, rougeLWords } from 'personaforge/
 - **Types** — `EvalScorer`, `MultiCriteriaJudge`, `DatasetFormat`, `ScorerFn`
 
 ## Minimal use
-```ts
-import { createSqliteEvalStore, wordOverlapF1, rougeLWords } from 'personaforge/eval';
+Real example from the eval guide:
 
-// `createSqliteEvalStore` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createSqliteEvalStore(/* opts */);
+```ts
+import {
+  runBenchmark,
+  exactMatchScorer,
+  containsScorer,
+  wordOverlapScorer,
+  rougeLScorer,
+  llmJudgeScorer,
+  formatBenchmarkReport,
+} from 'personaforge/eval';
+
+const report = await runBenchmark({
+  name: 'qa-benchmark-v3',
+  dataset: [
+    { input: 'What is the boiling point of water?', expected: '100°C' },
+    { input: 'Who invented the telephone?',          expected: 'Alexander Graham Bell' },
+  ],
+  // `run` receives the input string as the first argument
+  run: async (input) => {
+    const result = await agent.run(input);
+    return result.text;
+  },
+  // Built-in scorers take no arguments
+  scorers: [
+    exactMatchScorer(),
+    containsScorer(),
+    wordOverlapScorer(),
+// …see full example in the guide
 ```
 
 ## Verify it works

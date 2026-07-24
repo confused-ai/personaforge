@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/test.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/test`  ·  **Public symbols:** 258
+**Import path:** `personaforge/test`  ·  **Public symbols:** 258  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/test` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -36,13 +36,14 @@ import { createMockAgent, createScenarioRunner, createTestInstructions } from 'p
 import { createMockAgent, createScenarioRunner, createTestInstructions } from 'personaforge/test';
 
 // `createMockAgent` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createMockAgent(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/test` with no missing-module error.
 - Runtime: `node -e "import('personaforge/test').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/eval](../guide/eval.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/test'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +56,4 @@ const result = createMockAgent(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/eval](../guide/eval.md)

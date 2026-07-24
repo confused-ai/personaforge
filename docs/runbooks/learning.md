@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/learning.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/learning`  ·  **Public symbols:** 77
+**Import path:** `personaforge/learning`  ·  **Public symbols:** 77  ·  **Guide:** [/guide/learning-machine](../guide/learning-machine.md)
 
 ## What it is
 `personaforge/learning` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -37,13 +37,14 @@ import { createSqliteUserProfileStore, InMemoryUserProfileStore, SqliteUserProfi
 import { createSqliteUserProfileStore, InMemoryUserProfileStore, SqliteUserProfileStore } from 'personaforge/learning';
 
 // `createSqliteUserProfileStore` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createSqliteUserProfileStore(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/learning` with no missing-module error.
 - Runtime: `node -e "import('personaforge/learning').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/learning-machine](../guide/learning-machine.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/learning'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -56,3 +57,4 @@ const result = createSqliteUserProfileStore(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/learning-machine](../guide/learning-machine.md)

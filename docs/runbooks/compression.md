@@ -37,7 +37,7 @@ import { createSlidingWindow, serializeTable, deserializeTable } from 'personafo
 import { createSlidingWindow, serializeTable, deserializeTable } from 'personaforge/compression';
 
 // `createSlidingWindow` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createSlidingWindow(/* opts */);
 ```
 

@@ -31,12 +31,33 @@ import { createStorage, MemoryStorageAdapter, FileStorageAdapter } from 'persona
 - **Interfaces** — `StorageAdapter`, `StorageOptions`
 
 ## Minimal use
-```ts
-import { createStorage, MemoryStorageAdapter, FileStorageAdapter } from 'personaforge/storage';
+Real example from the storage guide:
 
-// `createStorage` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createStorage(/* opts */);
+```ts
+import type { StorageAdapter } from 'personaforge';
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+
+class S3StorageAdapter implements StorageAdapter {
+  private s3 = new S3Client({});
+  private bucket = process.env.S3_BUCKET!;
+
+  async get(key: string): Promise<string | undefined> {
+    try {
+      const res = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      return res.Body?.transformToString();
+    } catch { return undefined; }
+  }
+
+  async set(key: string, value: string, ttl?: number): Promise<void> {
+    await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: value }));
+  }
+
+  async delete(key: string): Promise<void> { /* ... */ }
+  async list(prefix?: string): Promise<string[]> { /* ... */ return []; }
+  async has(key: string): Promise<boolean> { /* ... */ return false; }
+}
+
+const store = createStorage({ adapter: new S3StorageAdapter() });
 ```
 
 ## Verify it works

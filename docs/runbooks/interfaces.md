@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/interfaces.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/interfaces`  ·  **Public symbols:** 94
+**Import path:** `personaforge/interfaces`  ·  **Public symbols:** 94  ·  **Guide:** [/guide/concepts](../guide/concepts.md)
 
 ## What it is
 `personaforge/interfaces` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -35,13 +35,14 @@ import { BaseInterface, SlackInterface, TelegramInterface } from 'personaforge/i
 import { BaseInterface, SlackInterface, TelegramInterface } from 'personaforge/interfaces';
 
 // `BaseInterface` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const instance = new BaseInterface(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/interfaces` with no missing-module error.
 - Runtime: `node -e "import('personaforge/interfaces').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/concepts](../guide/concepts.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/interfaces'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +55,4 @@ const instance = new BaseInterface(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/concepts](../guide/concepts.md)

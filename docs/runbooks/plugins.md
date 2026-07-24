@@ -32,12 +32,36 @@ import { createPluginRegistry, hooksToPlugin, createLoggingPlugin } from 'person
 - **Types** — `ToolMiddleware`, `MessageContent`
 
 ## Minimal use
-```ts
-import { createPluginRegistry, hooksToPlugin, createLoggingPlugin } from 'personaforge/plugins';
+Real example from the plugins guide:
 
-// `createPluginRegistry` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createPluginRegistry(/* opts */);
+```ts
+import { createAgent } from 'personaforge';
+import {
+  createPluginRegistry,
+  createLoggingPlugin,
+  createRateLimitPlugin,
+} from 'personaforge/plugins';
+
+const plugins = createPluginRegistry();
+
+plugins.register(createLoggingPlugin());
+plugins.register(createRateLimitPlugin({ maxRpm: 60 }));
+
+const agent = createAgent({
+  name: 'my-agent',
+  instructions: '...',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// There is no `plugins` option on createAgent — a registry is applied
+// manually around each run. `runBeforeHooks` folds every plugin's beforeRun
+// over the input (in registration order) and may transform it:
+const context = { agentId: 'my-agent', logger: console, metadata: {} };
+const input = await plugins.runBeforeHooks({ prompt: 'Summarize the latest report.' }, context);
+
+const result = await agent.run(input.prompt);
+// …see full example in the guide
 ```
 
 ## Verify it works

@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/productivity.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/productivity`  ·  **Public symbols:** 90
+**Import path:** `personaforge/tools/productivity`  ·  **Public symbols:** 90  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/productivity` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -32,17 +32,25 @@ import { NotionCreatePageTool, NotionSearchTool, NotionUpdatePageTool } from 'pe
 - **Types** — `EntityId`, `ToolParameters`
 
 ## Minimal use
-```ts
-import { NotionCreatePageTool, NotionSearchTool, NotionUpdatePageTool } from 'personaforge/tools/productivity';
+Real example from the tools guide:
 
-// `NotionCreatePageTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new NotionCreatePageTool(/* opts */);
+```ts
+import {
+  JiraToolkit,
+  NotionToolkit,
+  ConfluenceToolkit,
+  LinearToolkit,
+  ClickUpToolkit,
+  GoogleDriveToolkit,
+  GoogleSheetsToolkit,
+  GoogleCalendarToolkit,
+} from 'personaforge/tools/productivity';
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/productivity` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/productivity').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/productivity'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +63,4 @@ const instance = new NotionCreatePageTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

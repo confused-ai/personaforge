@@ -34,12 +34,28 @@ import { createLLMCircuitBreaker, createOpenAIRateLimiter, createLLMHealthCheck 
 - **Types** — `EntityId`, `MessageContent`, `ErrorCodeType`, `CleanupHandler`, `BudgetExceededAction`, `IdempotencyState`, `FeedbackEntry`, `SafeParseResult`, `InferToolSchema`, `ApprovalStatus`, `ComponentType`, `ComponentStatus`
 
 ## Minimal use
-```ts
-import { createLLMCircuitBreaker, createOpenAIRateLimiter, createLLMHealthCheck } from 'personaforge/production';
+Real example from the production guide:
 
-// `createLLMCircuitBreaker` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createLLMCircuitBreaker(/* opts */);
+```ts
+import { CircuitBreaker, CircuitState, createLLMCircuitBreaker } from 'personaforge/production';
+
+// Factory for LLM circuit breakers (pre-configured sensible defaults)
+const cb = createLLMCircuitBreaker('openai', {
+  failureThreshold: 5,
+  resetTimeoutMs: 30_000,
+  onStateChange: (from, to) => {
+    console.log(`Circuit: ${from} → ${to}`);
+    if (to === CircuitState.OPEN) alert('OpenAI circuit opened!');
+  },
+});
+
+// Wrap any async operation
+const result = await cb.execute(async () => {
+  return await openai.chat(messages);
+});
+
+console.log(cb.getState());  // CLOSED | OPEN | HALF_OPEN
+console.log(cb.getMetrics()); // { totalCalls, failures, successes, lastFailure }
 ```
 
 ## Verify it works

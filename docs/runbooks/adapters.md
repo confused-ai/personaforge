@@ -32,12 +32,33 @@ import { createAdapterRegistry, createProductionSetup, AdapterNotFoundError } fr
 - **Types** — `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `AnyAdapter`
 
 ## Minimal use
-```ts
-import { createAdapterRegistry, createProductionSetup, AdapterNotFoundError } from 'personaforge/adapters';
+Real example from the adapters guide:
 
-// `createAdapterRegistry` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createAdapterRegistry(/* opts */);
+```ts
+import { createAgent } from 'personaforge';
+import {
+  InMemoryCacheAdapter,
+  InMemorySessionStoreAdapter,
+  InMemoryVectorAdapter,
+  createAdapterRegistry,
+} from 'personaforge/adapters';
+
+const registry = createAdapterRegistry();
+registry.register(new InMemoryCacheAdapter());
+registry.register(new InMemoryVectorAdapter());
+registry.register(new InMemorySessionStoreAdapter());
+
+await registry.connectAll();
+
+const agent = createAgent({
+  name: 'assistant',
+  instructions: 'Use the registered adapters.',
+  model: 'gpt-4o-mini',
+  adapters: registry,
+});
+
+console.log(registry.toBindings());
+void agent;
 ```
 
 ## Verify it works

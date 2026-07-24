@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/router.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/router`  ·  **Public symbols:** 11
+**Import path:** `personaforge/router`  ·  **Public symbols:** 11  ·  **Guide:** [/guide/llm-router](../guide/llm-router.md)
 
 ## What it is
 `personaforge/router` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -31,17 +31,20 @@ import { createCostOptimizedRouter } from 'personaforge/router';
 - **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `ModelCost`, `RouterOptions`, `RoutingDecision`
 
 ## Minimal use
-```ts
-import { createCostOptimizedRouter } from 'personaforge/router';
+Real example from the llm-router guide:
 
-// `createCostOptimizedRouter` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createCostOptimizedRouter(/* opts */);
+```ts
+import { createCostOptimizedRouter, createQualityFirstRouter, createSpeedOptimizedRouter } from 'personaforge';
+
+const cheap   = createCostOptimizedRouter(entries);
+const quality = createQualityFirstRouter(entries);
+const fast    = createSpeedOptimizedRouter(entries);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/router` with no missing-module error.
 - Runtime: `node -e "import('personaforge/router').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/llm-router](../guide/llm-router.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/router'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +57,4 @@ const result = createCostOptimizedRouter(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/llm-router](../guide/llm-router.md)

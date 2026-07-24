@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/ai.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/ai`  ·  **Public symbols:** 20
+**Import path:** `personaforge/tools/ai`  ·  **Public symbols:** 20  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/ai` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -36,13 +36,14 @@ import { OpenAIGenerateImageTool, OpenAITranscribeAudioTool, SerpApiGoogleSearch
 import { OpenAIGenerateImageTool, OpenAITranscribeAudioTool, SerpApiGoogleSearchTool } from 'personaforge/tools/ai';
 
 // `OpenAIGenerateImageTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const instance = new OpenAIGenerateImageTool(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/ai` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/ai').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/ai'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +56,4 @@ const instance = new OpenAIGenerateImageTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

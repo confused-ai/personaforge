@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/observe.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/observe`  ·  **Public symbols:** 83
+**Import path:** `personaforge/observe`  ·  **Public symbols:** 83  ·  **Guide:** [/guide/observability](../guide/observability.md)
 
 ## What it is
 `personaforge/observe` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -38,13 +38,14 @@ import { createMultiCriteriaJudge, wordOverlapF1, rougeLWords } from 'personafor
 import { createMultiCriteriaJudge, wordOverlapF1, rougeLWords } from 'personaforge/observe';
 
 // `createMultiCriteriaJudge` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createMultiCriteriaJudge(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/observe` with no missing-module error.
 - Runtime: `node -e "import('personaforge/observe').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/observability](../guide/observability.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/observe'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -57,3 +58,4 @@ const result = createMultiCriteriaJudge(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/observability](../guide/observability.md)

@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/data.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/data`  ·  **Public symbols:** 47
+**Import path:** `personaforge/tools/data`  ·  **Public symbols:** 47  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/data` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -31,17 +31,22 @@ import { PostgreSQLQueryTool, PostgreSQLInsertTool, MySQLQueryTool } from 'perso
 - **Types** — `EntityId`, `ToolParameters`
 
 ## Minimal use
-```ts
-import { PostgreSQLQueryTool, PostgreSQLInsertTool, MySQLQueryTool } from 'personaforge/tools/data';
+Real example from the tools guide:
 
-// `PostgreSQLQueryTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new PostgreSQLQueryTool(/* opts */);
+```ts
+import {
+  BigQueryToolkit,
+  CsvToolkit,
+  DatabaseToolkit,
+  Neo4jToolkit,
+  RedisToolkit,
+} from 'personaforge/tools/data';
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/data` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/data').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/data'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +59,4 @@ const instance = new PostgreSQLQueryTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

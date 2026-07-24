@@ -32,12 +32,36 @@ import { LLMPlanner, ClassicalPlanner, PlanValidator } from 'personaforge/planne
 - **Types** — `EntityId`, `ValidationRule`
 
 ## Minimal use
-```ts
-import { LLMPlanner, ClassicalPlanner, PlanValidator } from 'personaforge/planner';
+Real example from the planner guide:
 
-// `LLMPlanner` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new LLMPlanner(/* opts */);
+```ts
+import { createAgent, OpenAIProvider } from 'personaforge';
+import { LLMPlanner, TaskPriority } from 'personaforge';
+
+const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o' });
+
+const planner = new LLMPlanner(
+  {
+    maxIterations: 10,
+    allowParallelExecution: true,
+    model: 'gpt-4o',
+    temperature: 0.3,
+    maxTokens: 2_000,
+  },
+  {
+    generateText: async (prompt) => {
+      const result = await llm.generateText([{ role: 'user', content: prompt }]);
+      return result.text;
+    },
+  },
+);
+
+// Generate a plan
+const plan = await planner.plan('Launch a new product blog post', {
+  availableTools: ['search_web', 'write_content', 'publish_post'],
+  constraints: ['Must be done in 2 hours', 'Use SEO best practices'],
+});
+// …see full example in the guide
 ```
 
 ## Verify it works

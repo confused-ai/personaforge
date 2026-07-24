@@ -33,12 +33,36 @@ import { createContentRule, createToolAllowlistRule, createMaxLengthRule } from 
 - **Types** — `PiiType`
 
 ## Minimal use
-```ts
-import { createContentRule, createToolAllowlistRule, createMaxLengthRule } from 'personaforge/guardrails';
+Real example from the guardrails guide:
 
-// `createContentRule` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createContentRule(/* opts */);
+```ts
+import {
+  createContentRule,
+  createMaxLengthRule,
+  createAllowlistRule,
+  createSensitiveDataRule,
+  createUrlValidationRule,
+} from 'personaforge';
+
+const rules = [
+  // Block responses that contain specific patterns.
+  // Signature: createContentRule(name, description, pattern, severity?)
+  createContentRule(
+    'no-credentials',
+    'Blocks responses containing credential patterns.',
+    /\b(password|secret|token)\s*[:=]/i,
+    'error',
+  ),
+
+  // Limit output length.
+  // Signature: createMaxLengthRule(name, maxLength, severity?)
+  createMaxLengthRule('max-length', 10_000, 'error'),
+
+  // Enforce an allowlist over tools, hosts, paths, outputs, and blocked patterns.
+  createAllowlistRule({
+    allowedTools: ['search', 'get_order'],
+    allowedHosts: ['api.company.com', 'docs.company.com'],
+// …see full example in the guide
 ```
 
 ## Verify it works

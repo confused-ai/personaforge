@@ -31,12 +31,19 @@ import { createDeepAgent } from 'personaforge/skills';
 - **Interfaces** — `Skill`, `DeepAgentConfig`, `DeepResearchResult`, `DeepStep`
 
 ## Minimal use
-```ts
-import { createDeepAgent } from 'personaforge/skills';
+Real example from the skills guide:
 
-// `createDeepAgent` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createDeepAgent(/* opts */);
+```ts
+import { webResearchSkill } from 'personaforge/skills';
+
+const agent = defineAgent('researcher')
+  .instructions('Research questions using the web.')
+  .model('openai:gpt-4o-mini')
+  .skills([webResearchSkill])
+  .build();
+
+const result = await agent.run('What is the latest version of Node.js?');
+// Agent will call fetch_page('https://nodejs.org/en/download/releases') internally
 ```
 
 ## Verify it works

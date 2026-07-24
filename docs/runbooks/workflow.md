@@ -34,12 +34,36 @@ import { createGraph, compose, pipe } from 'personaforge/workflow';
 - **Types** — `EntityId`, `MessageContent`, `StreamChunk`, `ContentPart`, `ToolParameters`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `BudgetExceededAction`, `McpAuthConfig`, `CompressionAlgorithm`, …(+15)
 
 ## Minimal use
-```ts
-import { createGraph, compose, pipe } from 'personaforge/workflow';
+Real example from the workflows guide:
 
-// `createGraph` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createGraph(/* opts */);
+```ts
+import { createGraph, DAGEngine } from 'personaforge/workflow';
+
+const graph = createGraph('data-pipeline')
+  .addNode('fetch', {
+    kind: 'task',
+    execute: async (ctx) => {
+      const url = ctx.state.variables.url as string;
+      return { data: await fetchData(url) };
+    },
+  })
+  .addNode('transform', {
+    kind: 'task',
+    execute: async (ctx) => {
+      const { data } = ctx.state.results['fetch'] as { data: unknown };
+      return { transformed: transform(data) };
+    },
+  })
+  .addNode('save', {
+    kind: 'task',
+    execute: async (ctx) => {
+      const { transformed } = ctx.state.results['transform'] as { transformed: unknown };
+      await saveToDatabase(transformed);
+      return { saved: true };
+    },
+  })
+  .chain('fetch', 'transform', 'save')  // linear shorthand for addEdge
+// …see full example in the guide
 ```
 
 ## Verify it works

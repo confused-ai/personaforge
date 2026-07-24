@@ -34,12 +34,27 @@ import { createToolkit, toolkitsToRegistry, createRunnableAgent } from 'personaf
 - **Types** — `EntityId`, `MessageContent`, `StreamChunk`, `MessageHandler`, `ToolParameters`, `McpAuthConfig`, `ToolProvider`, `BudgetExceededAction`, `ActorMessageType`, `StartWorkflowPayload`, `ExecuteToolPayload`, `PauseWorkflowPayload`, …(+12)
 
 ## Minimal use
-```ts
-import { createToolkit, toolkitsToRegistry, createRunnableAgent } from 'personaforge/orchestration';
+Real example from the orchestration guide:
 
-// `createToolkit` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createToolkit(/* opts */);
+```ts
+import { createSupervisor, createRole } from 'personaforge/orchestration';
+import { createAgent } from 'personaforge';
+
+const supervisor = createSupervisor({
+  name: 'triage',
+  description: 'Coordinates specialist agents to resolve each request.',
+  // Each sub-agent is paired with a role describing its responsibilities.
+  subAgents: [
+    { agent: createAgent({ name: 'billing', instructions: 'Handle billing and payment questions.', model: 'gpt-4o-mini', apiKey: '...' }), role: createRole('billing', ['Handle billing and payment questions']) },
+    { agent: createAgent({ name: 'tech',    instructions: 'Solve technical product issues.',        model: 'gpt-4o',      apiKey: '...' }), role: createRole('tech',    ['Solve technical product issues']) },
+    { agent: createAgent({ name: 'general', instructions: 'Answer general questions.',               model: 'gpt-4o-mini', apiKey: '...' }), role: createRole('general', ['Answer general questions']) },
+  ],
+  guidelines: ['Assign each request to the most relevant specialist.'],
+  // coordinationType?: 'sequential' (default) | 'parallel'
+});
+
+const result = await supervisor.run('My invoice shows the wrong amount.');
+console.log(result);
 ```
 
 ## Verify it works

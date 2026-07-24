@@ -31,12 +31,12 @@ import { InterruptSignal, InMemoryCheckpointStore, DurableExecutor } from 'perso
 - **Types** — `NodeFn`
 
 ## Minimal use
-```ts
-import { InterruptSignal, InMemoryCheckpointStore, DurableExecutor } from 'personaforge/checkpoint';
+Real example from the checkpoint guide:
 
-// `InterruptSignal` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new InterruptSignal(/* opts */);
+```ts
+import {
+  DurableExecutor, InMemoryCheckpointStore, InterruptSignal,
+} from 'personaforge/checkpoint';
 ```
 
 ## Verify it works

@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/config.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/config`  ·  **Public symbols:** 28
+**Import path:** `personaforge/config`  ·  **Public symbols:** 28  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
 
 ## What it is
 `personaforge/config` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -36,13 +36,14 @@ import { createSecretManager, loadConfig, loadConfigWithDefaults } from 'persona
 import { createSecretManager, loadConfig, loadConfigWithDefaults } from 'personaforge/config';
 
 // `createSecretManager` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createSecretManager(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/config` with no missing-module error.
 - Runtime: `node -e "import('personaforge/config').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/getting-started](../guide/getting-started.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/config'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +56,4 @@ const result = createSecretManager(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/getting-started](../guide/getting-started.md)

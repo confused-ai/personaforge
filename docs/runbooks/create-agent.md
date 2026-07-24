@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/create-agent.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/create-agent`  ·  **Public symbols:** 146
+**Import path:** `personaforge/create-agent`  ·  **Public symbols:** 146  ·  **Guide:** [/guide/agents](../guide/agents.md)
 
 ## What it is
 `personaforge/create-agent` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -32,17 +32,38 @@ import { createAgent, resolveLlmForCreateAgent } from 'personaforge/create-agent
 - **Types** — `EntityId`, `MessageContent`, `ContentPart`, `ToolParameters`, `SafeParseResult`, `InferToolSchema`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `AnyAdapter`, `BudgetExceededAction`, …(+2)
 
 ## Minimal use
-```ts
-import { createAgent, resolveLlmForCreateAgent } from 'personaforge/create-agent';
+Real example from the agents guide:
 
-// `createAgent` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createAgent(/* opts */);
+```ts
+import { createAgent, tool } from 'personaforge';
+import { z } from 'zod';
+
+const getWeather = tool({
+  name: 'get_weather',
+  description: 'Get current weather for a city.',
+  parameters: z.object({ city: z.string() }),
+  execute: async ({ city }) => {
+    // call your weather API
+    return { city, temperature: 22, condition: 'sunny' };
+  },
+});
+
+const agent = createAgent({
+  name: 'weather-agent',
+  instructions: 'You help with weather queries. Always use the get_weather tool.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  tools: [getWeather],
+});
+
+const result = await agent.run('What is the weather in Tokyo?');
+console.log(result.text);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/create-agent` with no missing-module error.
 - Runtime: `node -e "import('personaforge/create-agent').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/agents](../guide/agents.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/create-agent'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +76,4 @@ const result = createAgent(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/agents](../guide/agents.md)

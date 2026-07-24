@@ -36,7 +36,7 @@ import { createReasoningTools, ReasoningManager, TreeOfThoughtEngine } from 'per
 import { createReasoningTools, ReasoningManager, TreeOfThoughtEngine } from 'personaforge/reasoning';
 
 // `createReasoningTools` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createReasoningTools(/* opts */);
 ```
 

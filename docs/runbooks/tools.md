@@ -34,12 +34,26 @@ import { createTools, toToolRegistry, tool } from 'personaforge/tools';
 - **Types** — `EntityId`, `ToolParameters`, `ToolProvider`, `SafeParseResult`, `InferToolSchema`, `ToolWrapMiddleware`, `CompressionStrategy`, `ToolInput`, `McpAuthConfig`, `NotificationHandler`, `McpResourceContent`, `McpMessageRole`, …(+1)
 
 ## Minimal use
-```ts
-import { createTools, toToolRegistry, tool } from 'personaforge/tools';
+Real example from the tools guide:
 
-// `createTools` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createTools(/* opts */);
+```ts
+import { createTools } from 'personaforge/tool';
+import { z } from 'zod';
+
+const tools = createTools({
+  search_orders: {
+    description: 'Find a customer order by id.',
+    parameters: z.object({ orderId: z.string() }),
+    execute: async ({ orderId }) => ({ orderId, status: 'shipped', eta: '2026-05-14' }),
+  },
+  cancel_order: {
+    description: 'Cancel an order. Only use if the customer explicitly requests cancellation.',
+    parameters: z.object({ orderId: z.string(), reason: z.string() }),
+    execute: async ({ orderId, reason }) => ({ cancelled: true, orderId, reason }),
+  },
+});
+
+const agent = createAgent({ name: 'support', instructions: '...', model: 'gpt-4o-mini', apiKey: process.env.OPENAI_API_KEY!, tools: Object.values(tools) });
 ```
 
 ## Verify it works

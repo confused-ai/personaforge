@@ -36,7 +36,7 @@ import { createTestInstructions, createTestUserId, createTestSessionId } from 'p
 import { createTestInstructions, createTestUserId, createTestSessionId } from 'personaforge/testing';
 
 // `createTestInstructions` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createTestInstructions(/* opts */);
 ```
 

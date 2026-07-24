@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/guard.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/guard`  ·  **Public symbols:** 99
+**Import path:** `personaforge/guard`  ·  **Public symbols:** 99  ·  **Guide:** [/guide/guardrails](../guide/guardrails.md)
 
 ## What it is
 `personaforge/guard` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -34,17 +34,42 @@ import { createContentRule, createToolAllowlistRule, createMaxLengthRule } from 
 - **Types** — `ErrorCodeType`, `BudgetExceededAction`, `MessageContent`, `ApprovalStatus`, `PiiType`, `IdempotencyState`
 
 ## Minimal use
-```ts
-import { createContentRule, createToolAllowlistRule, createMaxLengthRule } from 'personaforge/guard';
+Real example from the guardrails guide:
 
-// `createContentRule` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createContentRule(/* opts */);
+```ts
+import {
+  createContentRule,
+  createMaxLengthRule,
+  createAllowlistRule,
+  createSensitiveDataRule,
+  createUrlValidationRule,
+} from 'personaforge';
+
+const rules = [
+  // Block responses that contain specific patterns.
+  // Signature: createContentRule(name, description, pattern, severity?)
+  createContentRule(
+    'no-credentials',
+    'Blocks responses containing credential patterns.',
+    /\b(password|secret|token)\s*[:=]/i,
+    'error',
+  ),
+
+  // Limit output length.
+  // Signature: createMaxLengthRule(name, maxLength, severity?)
+  createMaxLengthRule('max-length', 10_000, 'error'),
+
+  // Enforce an allowlist over tools, hosts, paths, outputs, and blocked patterns.
+  createAllowlistRule({
+    allowedTools: ['search', 'get_order'],
+    allowedHosts: ['api.company.com', 'docs.company.com'],
+// …see full example in the guide
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/guard` with no missing-module error.
 - Runtime: `node -e "import('personaforge/guard').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/guardrails](../guide/guardrails.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/guard'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -57,3 +82,4 @@ const result = createContentRule(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/guardrails](../guide/guardrails.md)

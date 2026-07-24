@@ -30,12 +30,20 @@ import { sqlToolkit, httpToolkit, fileToolkit } from 'personaforge/toolkits';
 - **Interfaces** — `Tool`, `PromptedToolkit`, `SqlToolkitConfig`, `HttpToolkitConfig`, `FileToolkitConfig`
 
 ## Minimal use
-```ts
-import { sqlToolkit, httpToolkit, fileToolkit } from 'personaforge/toolkits';
+Real example from the toolkits guide:
 
-// `sqlToolkit` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = sqlToolkit(/* opts */);
+```ts
+const kit = sqlToolkit({
+  execute: async (q) => db.query(q),
+  listTables: async () => ['users', 'orders'],
+  describeTable: async (t) => db.getSchema(t),
+});
+
+const analyst = agent({
+  name: 'analyst',
+  instructions: [baseInstructions, kit.promptFragment].join('\n'),
+  tools: kit.tools,   // sql_list_tables, sql_describe_table, sql_query
+});
 ```
 
 ## Verify it works

@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/knowledge.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/knowledge`  ·  **Public symbols:** 83
+**Import path:** `personaforge/knowledge`  ·  **Public symbols:** 83  ·  **Guide:** [/guide/rag](../guide/rag.md)
 
 ## What it is
 `personaforge/knowledge` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -32,17 +32,42 @@ import { createKnowledgeEngine, withEmbeddingCache, createDbKnowledgeEngine } fr
 - **Types** — `EmbeddingFn`, `LearningType`
 
 ## Minimal use
-```ts
-import { createKnowledgeEngine, withEmbeddingCache, createDbKnowledgeEngine } from 'personaforge/knowledge';
+Real example from the rag guide:
 
-// `createKnowledgeEngine` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createKnowledgeEngine(/* opts */);
+```ts
+import { createAgent } from 'personaforge';
+import { createKnowledgeEngine, loadUrl } from 'personaforge';
+import { OpenAIEmbeddingProvider } from 'personaforge';
+
+// 1. Build the engine — `embed` is an EmbeddingFn: (text) => Promise<number[]>
+const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
+const kb = createKnowledgeEngine({
+  embed: (text) => embedder.embed(text),
+  // default: InMemoryVectorStore (cosine similarity)
+});
+
+// 2. Ingest documents
+const docs = await loadUrl('https://docs.example.com/api-reference', { recursive: true, maxPages: 20 });
+await kb.addDocuments(docs);
+
+// 3. Attach to agent
+const agent = createAgent({
+  name: 'docs-assistant',
+  instructions: 'Answer questions about our product using the provided documentation.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  knowledgebase: kb,
+  addKnowledgeToContext: true,   // automatically prepends retrieved chunks to system prompt (default: true when a knowledgebase is set)
+});
+
+const result = await agent.run('How do I authenticate API requests?');
+// …see full example in the guide
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/knowledge` with no missing-module error.
 - Runtime: `node -e "import('personaforge/knowledge').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/rag](../guide/rag.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/knowledge'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +80,4 @@ const result = createKnowledgeEngine(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/rag](../guide/rag.md)

@@ -32,12 +32,36 @@ import { createTextArtifact, createMarkdownArtifact, createDataArtifact } from '
 - **Types** — `ArtifactType`
 
 ## Minimal use
-```ts
-import { createTextArtifact, createMarkdownArtifact, createDataArtifact } from 'personaforge/artifacts';
+Real example from the artifacts guide:
 
-// `createTextArtifact` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createTextArtifact(/* opts */);
+```ts
+import {
+  createTextArtifact,
+  createMarkdownArtifact,
+  createDataArtifact,
+  createPlanArtifact,
+  createReasoningArtifact,
+} from 'personaforge/artifacts';
+
+// Plain text / code file
+const code = createTextArtifact({
+  name: 'auth-handler.ts',
+  content: `export function verifyToken(token: string) { ... }`,
+  type: 'code',
+  mimeType: 'text/typescript',
+  tags: ['auth', 'typescript'],
+  createdBy: 'code-agent',
+});
+
+// Markdown report
+const report = createMarkdownArtifact({
+  name: 'Q4-report.md',
+  content: '## Q4 Summary\n\nRevenue up 12% YoY...',
+  tags: ['report', 'q4'],
+});
+
+// Structured data
+// …see full example in the guide
 ```
 
 ## Verify it works

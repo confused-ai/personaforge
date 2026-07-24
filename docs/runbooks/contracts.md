@@ -38,7 +38,7 @@ import { newId, isPersonaForgeError, isRetryable } from 'personaforge/contracts'
 import { newId, isPersonaForgeError, isRetryable } from 'personaforge/contracts';
 
 // `newId` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = newId(/* opts */);
 ```
 

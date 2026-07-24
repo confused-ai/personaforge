@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/memory.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/memory`  ·  **Public symbols:** 45  ·  **Guide:** [/guide/memory](../guide/memory.md)
+**Import path:** `personaforge/tools/memory`  ·  **Public symbols:** 45  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/memory` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -35,14 +35,14 @@ import { Mem0AddMemoryTool, Mem0SearchMemoryTool, Mem0GetMemoriesTool } from 'pe
 import { Mem0AddMemoryTool, Mem0SearchMemoryTool, Mem0GetMemoriesTool } from 'personaforge/tools/memory';
 
 // `Mem0AddMemoryTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const instance = new Mem0AddMemoryTool(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/memory` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/memory').then(m => console.log(Object.keys(m)))"` lists the exports above.
-- Behavior: follow the runnable example in [/guide/memory](../guide/memory.md).
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/memory'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,4 +55,4 @@ const instance = new Mem0AddMemoryTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
-- Concept guide: [/guide/memory](../guide/memory.md)
+- Concept guide: [/guide/tools](../guide/tools.md)

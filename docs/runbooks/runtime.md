@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/runtime.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/runtime`  ·  **Public symbols:** 161
+**Import path:** `personaforge/runtime`  ·  **Public symbols:** 161  ·  **Guide:** [/guide/production](../guide/production.md)
 
 ## What it is
 `personaforge/runtime` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -35,13 +35,14 @@ import { createAuthMiddleware, apiKeyAuth, bearerAuth } from 'personaforge/runti
 import { createAuthMiddleware, apiKeyAuth, bearerAuth } from 'personaforge/runtime';
 
 // `createAuthMiddleware` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createAuthMiddleware(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/runtime` with no missing-module error.
 - Runtime: `node -e "import('personaforge/runtime').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/production](../guide/production.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/runtime'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +55,4 @@ const result = createAuthMiddleware(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/production](../guide/production.md)

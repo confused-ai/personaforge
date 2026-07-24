@@ -38,7 +38,7 @@ import { createMultiCriteriaJudge, wordOverlapF1, rougeLWords } from 'personafor
 import { createMultiCriteriaJudge, wordOverlapF1, rougeLWords } from 'personaforge/observability';
 
 // `createMultiCriteriaJudge` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createMultiCriteriaJudge(/* opts */);
 ```
 

@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/agentic.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/agentic`  ·  **Public symbols:** 54
+**Import path:** `personaforge/agentic`  ·  **Public symbols:** 54  ·  **Guide:** [/guide/agents](../guide/agents.md)
 
 ## What it is
 `personaforge/agentic` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -37,13 +37,14 @@ import { createStructuredAgent, toToolRegistry, background } from 'personaforge/
 import { createStructuredAgent, toToolRegistry, background } from 'personaforge/agentic';
 
 // `createStructuredAgent` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createStructuredAgent(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/agentic` with no missing-module error.
 - Runtime: `node -e "import('personaforge/agentic').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/agents](../guide/agents.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/agentic'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -56,3 +57,4 @@ const result = createStructuredAgent(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/agents](../guide/agents.md)

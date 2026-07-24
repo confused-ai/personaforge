@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/background.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/background`  ·  **Public symbols:** 20
+**Import path:** `personaforge/background`  ·  **Public symbols:** 20  ·  **Guide:** [/guide/background-queues](../guide/background-queues.md)
 
 ## What it is
 `personaforge/background` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -32,17 +32,42 @@ import { queueHook, generateTaskId, InMemoryBackgroundQueue } from 'personaforge
 - **Types** — `BackgroundTaskHandler`, `QueuedHook`
 
 ## Minimal use
-```ts
-import { queueHook, generateTaskId, InMemoryBackgroundQueue } from 'personaforge/background';
+Real example from the background-queues guide:
 
-// `queueHook` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = queueHook(/* opts */);
+```ts
+import { createAgent } from 'personaforge';
+import { InMemoryBackgroundQueue, queueHook } from 'personaforge/background';
+
+// In-memory queue — no dependencies, good for dev/test
+const queue = new InMemoryBackgroundQueue({ concurrency: 5 });
+
+const agent = createAgent({
+  name: 'analytics-agent',
+  instructions: 'Help users with their questions.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  hooks: {
+    // Dispatch post-run analytics to the queue without blocking the response
+    afterRun: queueHook(queue, 'analytics', (result) => ({
+      steps:  result.steps,
+      tokens: result.usage?.totalTokens,
+      runId:  result.runId,
+    })),
+  },
+});
+
+// Register the worker handler (same or separate process)
+await queue.consume('analytics', async (task) => {
+  await analyticsService.track('agent.run', task.payload);
+});
+
+// …see full example in the guide
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/background` with no missing-module error.
 - Runtime: `node -e "import('personaforge/background').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/background-queues](../guide/background-queues.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/background'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -55,3 +80,4 @@ const result = queueHook(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/background-queues](../guide/background-queues.md)

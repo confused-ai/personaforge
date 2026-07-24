@@ -30,12 +30,22 @@ import { createControlPlane } from 'personaforge/control-plane';
 - **Interfaces** — `ControlPlaneConfig`, `ControlPlaneServer`
 
 ## Minimal use
-```ts
-import { createControlPlane } from 'personaforge/control-plane';
+Real example from the control-plane guide:
 
-// `createControlPlane` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createControlPlane(/* opts */);
+```ts
+const cp = createControlPlane({
+  agents: [
+    { name: 'support', run: (prompt) => supportAgent.run(prompt) },
+  ],
+  sessionStore,
+  evalStore,
+  traceStore,
+  approvalStore,
+  knowledgeStore,
+});
+
+await cp.start(4100);
+console.log('Control plane on http://localhost:4100');
 ```
 
 ## Verify it works

@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/finance.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/finance`  ·  **Public symbols:** 30
+**Import path:** `personaforge/tools/finance`  ·  **Public symbols:** 30  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/finance` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -31,17 +31,19 @@ import { StripeCreateCustomerTool, StripeGetCustomerTool, StripeCreatePaymentInt
 - **Types** — `EntityId`, `ToolParameters`, `YFinanceParameters`
 
 ## Minimal use
-```ts
-import { StripeCreateCustomerTool, StripeGetCustomerTool, StripeCreatePaymentIntentTool } from 'personaforge/tools/finance';
+Real example from the tools guide:
 
-// `StripeCreateCustomerTool` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new StripeCreateCustomerTool(/* opts */);
+```ts
+import {
+  StripeToolkit,
+  YFinanceTool,      // Yahoo Finance market data
+} from 'personaforge/tools/finance';
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/finance` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/finance').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/finance'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +56,4 @@ const instance = new StripeCreateCustomerTool(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

@@ -32,12 +32,17 @@ import { validateCronExpr, computeNextRun, InMemoryScheduleStore } from 'persona
 - **Types** — `HttpMethod`, `ScheduleStatus`, `CreateScheduleInput`, `UpdateScheduleInput`, `LearningType`
 
 ## Minimal use
-```ts
-import { validateCronExpr, computeNextRun, InMemoryScheduleStore } from 'personaforge/scheduler';
+Real example from the scheduler guide:
 
-// `validateCronExpr` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = validateCronExpr(/* opts */);
+```ts
+import {
+  ScheduleManager,
+  InMemoryScheduleStore,
+  InMemoryScheduleRunStore,
+  DbScheduleStore,
+  validateCronExpr,
+  computeNextRun,
+} from 'personaforge/scheduler';
 ```
 
 ## Verify it works

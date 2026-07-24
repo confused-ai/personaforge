@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/test-utils/conformance.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/test-utils/conformance`  ·  **Public symbols:** 24
+**Import path:** `personaforge/test-utils/conformance`  ·  **Public symbols:** 24  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/test-utils/conformance` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -34,13 +34,14 @@ import { runSessionStoreConformance, runMemoryStoreConformance, runProviderConfo
 import { runSessionStoreConformance, runMemoryStoreConformance, runProviderConformance } from 'personaforge/test-utils/conformance';
 
 // `runSessionStoreConformance` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = runSessionStoreConformance(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/test-utils/conformance` with no missing-module error.
 - Runtime: `node -e "import('personaforge/test-utils/conformance').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/eval](../guide/eval.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/test-utils/conformance'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -53,3 +54,4 @@ const result = runSessionStoreConformance(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/eval](../guide/eval.md)

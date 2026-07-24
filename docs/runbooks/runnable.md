@@ -30,12 +30,13 @@ import { Runnable, RunnableLambda, RunnableSequence } from 'personaforge/runnabl
 - **Interfaces** — `RunnableConfig`
 
 ## Minimal use
-```ts
-import { Runnable, RunnableLambda, RunnableSequence } from 'personaforge/runnable';
+Real example from the runnable guide:
 
-// `Runnable` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new Runnable(/* opts */);
+```ts
+import {
+  Runnable, RunnableLambda, RunnableSequence,
+  RunnableParallel, RunnablePassthrough,
+} from 'personaforge/runnable';
 ```
 
 ## Verify it works

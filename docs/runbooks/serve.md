@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/serve.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/serve`  ·  **Public symbols:** 161
+**Import path:** `personaforge/serve`  ·  **Public symbols:** 161  ·  **Guide:** [/guide/websocket](../guide/websocket.md)
 
 ## What it is
 `personaforge/serve` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -35,13 +35,14 @@ import { createAuthMiddleware, apiKeyAuth, bearerAuth } from 'personaforge/serve
 import { createAuthMiddleware, apiKeyAuth, bearerAuth } from 'personaforge/serve';
 
 // `createAuthMiddleware` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const result = createAuthMiddleware(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/serve` with no missing-module error.
 - Runtime: `node -e "import('personaforge/serve').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/websocket](../guide/websocket.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/serve'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +55,4 @@ const result = createAuthMiddleware(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/websocket](../guide/websocket.md)

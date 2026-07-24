@@ -34,12 +34,15 @@ import { createDbMemoryStore, summariseMemories, summariseConversation } from 'p
 - **Types** — `LearningType`, `EntityId`, `MessageContent`, `SummaryBeforeStepHook`
 
 ## Minimal use
-```ts
-import { createDbMemoryStore, summariseMemories, summariseConversation } from 'personaforge/memory';
+Real example from the memory guide:
 
-// `createDbMemoryStore` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createDbMemoryStore(/* opts */);
+```ts
+import { createDbMemoryStore } from 'personaforge/memory';
+import { SqliteAgentDb } from 'personaforge/db';
+
+// Pass an AgentDb instance positionally; options are optional.
+const db = new SqliteAgentDb({ path: './agent.db' });
+const memoryStore = createDbMemoryStore(db, { agentId: 'my-agent' });
 ```
 
 ## Verify it works

@@ -34,12 +34,15 @@ import { createOpenRouterProvider, normalizeFinishReason, createGroqProvider } f
 - **Types** — `EntityId`, `MessageContent`, `ToolCallResult`, `IFullLLMProvider`, `MessageRole`, `ContentPart`, `StreamDelta`, `OpenAIContent`, `OpenAIMessageParam`, `AnthropicContent`, `AnthropicMessageParam`, `GooglePart`, …(+9)
 
 ## Minimal use
-```ts
-import { createOpenRouterProvider, normalizeFinishReason, createGroqProvider } from 'personaforge/providers';
+Real example from the providers guide:
 
-// `createOpenRouterProvider` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createOpenRouterProvider(/* opts */);
+```ts
+import { createOpenRouterProvider } from 'personaforge';
+
+const llm = createOpenRouterProvider({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  model: 'anthropic/claude-sonnet-4',  // any OpenRouter model id
+});
 ```
 
 ## Verify it works

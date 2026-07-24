@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/db.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/db`  ·  **Public symbols:** 38
+**Import path:** `personaforge/db`  ·  **Public symbols:** 38  ·  **Guide:** [/guide/database](../guide/database.md)
 
 ## What it is
 `personaforge/db` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -33,17 +33,27 @@ import { createAgentDb, AgentDb, InMemoryAgentDb } from 'personaforge/db';
 - **Types** — `LearningType`, `AgentDbType`
 
 ## Minimal use
-```ts
-import { createAgentDb, AgentDb, InMemoryAgentDb } from 'personaforge/db';
+Real example from the database guide:
 
-// `createAgentDb` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createAgentDb(/* opts */);
+```ts
+import {
+  SqliteAgentDb,
+  PostgresAgentDb,
+  MongoAgentDb,
+  RedisAgentDb,
+  MysqlAgentDb,
+  DynamoDbAgentDb,
+  TursoAgentDb,
+  JsonFileAgentDb,
+  InMemoryAgentDb,
+  createAgentDb,
+} from 'personaforge/db';
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/db` with no missing-module error.
 - Runtime: `node -e "import('personaforge/db').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/database](../guide/database.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/db'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -56,3 +66,4 @@ const result = createAgentDb(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/database](../guide/database.md)

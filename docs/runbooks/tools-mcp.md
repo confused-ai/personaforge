@@ -32,12 +32,32 @@ import { createMcpServer, loadMcpToolsFromUrl, handleMcpStdioLine } from 'person
 - **Types** — `EntityId`, `ToolParameters`, `McpAuthConfig`, `NotificationHandler`, `McpResourceContent`, `McpMessageRole`, `McpPromptContent`
 
 ## Minimal use
-```ts
-import { createMcpServer, loadMcpToolsFromUrl, handleMcpStdioLine } from 'personaforge/tools/mcp';
+Real example from the mcp guide:
 
-// `createMcpServer` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createMcpServer(/* opts */);
+```ts
+import { createMcpServer } from 'personaforge';
+import { searchTool, analysisTool, calculatorTool } from './tools.js';
+
+const server = createMcpServer(
+  [searchTool, analysisTool, calculatorTool],
+  {
+    name: 'my-agent-tools',
+    version: '1.0.0',
+    port: 3100,
+    auth: {
+      type: 'bearer',
+      token: process.env.MCP_SERVER_TOKEN!,
+    },
+    cors: { allowedOrigins: ['https://claude.ai', 'https://my-app.example.com'] },
+    toolTimeoutMs: 60_000,
+  },
+);
+
+await server.start();
+console.log('MCP server running on http://localhost:3100/mcp');
+
+// Graceful stop
+process.on('SIGTERM', () => server.stop());
 ```
 
 ## Verify it works

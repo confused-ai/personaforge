@@ -32,12 +32,17 @@ import { createVoiceProvider, OpenAIVoiceProvider, ElevenLabsVoiceProvider } fro
 - **Types** — `OpenAIVoice`, `VoiceStreamEventType`
 
 ## Minimal use
-```ts
-import { createVoiceProvider, OpenAIVoiceProvider, ElevenLabsVoiceProvider } from 'personaforge/voice';
+Real example from the voice guide:
 
-// `createVoiceProvider` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createVoiceProvider(/* opts */);
+```ts
+import { createVoiceProvider } from 'personaforge';
+
+const voice = createVoiceProvider({
+  provider: process.env.VOICE_PROVIDER as 'openai' | 'elevenlabs',
+  apiKey: process.env.VOICE_API_KEY!,
+  voiceId: 'nova',
+  model: 'tts-1',
+});
 ```
 
 ## Verify it works

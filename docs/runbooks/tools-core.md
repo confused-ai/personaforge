@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/tools/core.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/core`  ·  **Public symbols:** 55
+**Import path:** `personaforge/tools/core`  ·  **Public symbols:** 55  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/core` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -34,17 +34,32 @@ import { createTools, toToolRegistry, tool } from 'personaforge/tools/core';
 - **Types** — `EntityId`, `ToolParameters`, `ToolProvider`, `SafeParseResult`, `InferToolSchema`, `ToolWrapMiddleware`, `CompressionStrategy`
 
 ## Minimal use
-```ts
-import { createTools, toToolRegistry, tool } from 'personaforge/tools/core';
+Real example from the tools guide:
 
-// `createTools` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createTools(/* opts */);
+```ts
+import { createTools } from 'personaforge/tool';
+import { z } from 'zod';
+
+const tools = createTools({
+  search_orders: {
+    description: 'Find a customer order by id.',
+    parameters: z.object({ orderId: z.string() }),
+    execute: async ({ orderId }) => ({ orderId, status: 'shipped', eta: '2026-05-14' }),
+  },
+  cancel_order: {
+    description: 'Cancel an order. Only use if the customer explicitly requests cancellation.',
+    parameters: z.object({ orderId: z.string(), reason: z.string() }),
+    execute: async ({ orderId, reason }) => ({ cancelled: true, orderId, reason }),
+  },
+});
+
+const agent = createAgent({ name: 'support', instructions: '...', model: 'gpt-4o-mini', apiKey: process.env.OPENAI_API_KEY!, tools: Object.values(tools) });
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/tools/core` with no missing-module error.
 - Runtime: `node -e "import('personaforge/tools/core').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/tools](../guide/tools.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/tools/core'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -57,3 +72,4 @@ const result = createTools(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/tools](../guide/tools.md)

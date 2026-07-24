@@ -33,12 +33,27 @@ import { createInMemoryStore, createSqliteStore, createRedisStore } from 'person
 - **Types** — `SessionId`, `LearningType`
 
 ## Minimal use
-```ts
-import { createInMemoryStore, createSqliteStore, createRedisStore } from 'personaforge/session';
+Real example from the session guide:
 
-// `createInMemoryStore` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const result = createInMemoryStore(/* opts */);
+```ts
+import { createAgent, createInMemoryStore } from 'personaforge';
+
+const sessionStore = createInMemoryStore();
+
+const agent = createAgent({
+  name: 'chat',
+  instructions: 'You are a helpful assistant.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  sessionStore,
+});
+
+// Turn 1
+await agent.run('My name is Alice.', { sessionId: 'session-1' });
+
+// Turn 2 — agent remembers the name
+const result = await agent.run('What is my name?', { sessionId: 'session-1' });
+console.log(result.text); // "Your name is Alice."
 ```
 
 ## Verify it works

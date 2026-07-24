@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./dist/context.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/context`  ·  **Public symbols:** 10
+**Import path:** `personaforge/context`  ·  **Public symbols:** 10  ·  **Guide:** [/guide/context-provider](../guide/context-provider.md)
 
 ## What it is
 `personaforge/context` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -35,13 +35,14 @@ import { ContextBackend, ContextProvider } from 'personaforge/context';
 import { ContextBackend, ContextProvider } from 'personaforge/context';
 
 // `ContextBackend` is the primary entry for this feature.
-// See the guide/type signature for full options.
+// See the type signature for full options.
 const instance = new ContextBackend(/* opts */);
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/context` with no missing-module error.
 - Runtime: `node -e "import('personaforge/context').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/context-provider](../guide/context-provider.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/context'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -54,3 +55,4 @@ const instance = new ContextBackend(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/context-provider](../guide/context-provider.md)

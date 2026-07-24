@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./src/parsers/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/parsers`  ·  **Public symbols:** 9
+**Import path:** `personaforge/parsers`  ·  **Public symbols:** 9  ·  **Guide:** [/guide/output-parsers](../guide/output-parsers.md)
 
 ## What it is
 `personaforge/parsers` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -30,17 +30,19 @@ import { StringOutputParser, JsonOutputParser, CsvListParser } from 'personaforg
 - **Interfaces** — `OutputParser`, `JsonOutputParserOptions`
 
 ## Minimal use
-```ts
-import { StringOutputParser, JsonOutputParser, CsvListParser } from 'personaforge/parsers';
+Real example from the output-parsers guide:
 
-// `StringOutputParser` is the primary entry for this feature.
-// See the guide/type signature for full options.
-const instance = new StringOutputParser(/* opts */);
+```ts
+import {
+  StringOutputParser, JsonOutputParser, CsvListParser, RegexParser,
+  OutputFixingParser, RetryWithErrorParser, ParseError,
+} from 'personaforge/parsers';
 ```
 
 ## Verify it works
 - Type-check: `npx tsc --noEmit` resolves `personaforge/parsers` with no missing-module error.
 - Runtime: `node -e "import('personaforge/parsers').then(m => console.log(Object.keys(m)))"` lists the exports above.
+- Behavior: follow the runnable example in [/guide/output-parsers](../guide/output-parsers.md).
 
 ## Common failures
 - `Cannot find module 'personaforge/parsers'` — package not installed or stale build; run `npm i personaforge` and rebuild.
@@ -53,3 +55,4 @@ const instance = new StringOutputParser(/* opts */);
 
 ## Related
 - Full index: [/runbooks/](./index.md) · [llms.txt](../llms.txt)
+- Concept guide: [/guide/output-parsers](../guide/output-parsers.md)
