@@ -415,6 +415,7 @@
     "example:meridian": "bun examples/meridian-platform.ts",
     "example:graph": "bun examples/graph-workflow.ts",
     "example:multi-agent": "bun examples/multi-agent-orchestration.ts",
+    "example:durability": "bun examples/multi-agent-durability.ts",
     "example:reasoning": "bun examples/reasoning-agent.ts",
     "example:scheduled": "bun examples/scheduled-agent.ts",
     "example:code-review": "bun examples/code-review-pipeline.ts",

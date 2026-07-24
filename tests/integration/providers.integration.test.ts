@@ -45,6 +45,9 @@ describe.runIf(!!process.env.OPENAI_API_KEY)('OpenAIProvider (live)', () => {
         const provider = new OpenAIProvider({
             apiKey: process.env.OPENAI_API_KEY!,
             model: process.env.PF_IT_OPENAI_MODEL ?? 'gpt-4o-mini',
+            ...(process.env.PF_IT_OPENAI_BASE_URL
+                ? { baseURL: process.env.PF_IT_OPENAI_BASE_URL }
+                : {}),
         });
         await assertWellFormed(provider);
     });

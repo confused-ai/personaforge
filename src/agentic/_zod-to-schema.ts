@@ -77,7 +77,18 @@ export function zodToJsonSchema(zodSchema: ZodType): Record<string, unknown> {
             const properties: Record<string, unknown> = {};
             const required: string[] = [];
 
-            for (const [key, shape] of Object.entries(def.shape ?? {})) {
+            // Zod v3 exposes shape as a getter that may hold either the shape
+            // object directly OR a lazy function returning it. Older versions
+            // of this converter only handled the object form, which silently
+            // produced empty `properties` for tools defined with `z.object({...})`
+            // via the `tool()` helper (the shape is a function there) — the LLM
+            // then never received parameter descriptors and passed `undefined`
+            // for every required argument. Resolve either form.
+            const rawShape = def.shape;
+            const shapeObj: Record<string, unknown> =
+                typeof rawShape === 'function' ? (rawShape as () => Record<string, unknown>)() : (rawShape ?? {});
+
+            for (const [key, shape] of Object.entries(shapeObj)) {
                 const schema = shape as ZodType;
                 properties[key] = zodToJsonSchema(schema);
 

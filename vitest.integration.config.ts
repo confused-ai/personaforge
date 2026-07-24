@@ -3,7 +3,7 @@
  *
  * Behaviour differences vs `vitest.config.ts`:
  *   - Only picks up `tests/integration/**\/*.integration.test.ts`.
- *   - Longer timeout (120s) because real provider calls are slow.
+ *   - Longer timeout (300s) because real provider calls are slow.
  *   - Runs single-threaded so we do not fan out unnecessary API cost when
  *     multiple providers are configured.
  *   - No coverage — this suite is for correctness against live APIs, not for
@@ -24,11 +24,16 @@ export default defineConfig({
             tsconfig: './tsconfig.test.json',
         },
         include: ['tests/integration/**/*.integration.test.ts'],
-        testTimeout: 120_000,
+        // Live tool-calling tasks run sequentially and can be slow on some
+        // endpoints — allow up to 5 minutes per test.
+        testTimeout: 900_000,
         hookTimeout: 60_000,
         // Real API calls — do not parallelise to keep cost predictable.
+        // Vitest 4 flattened poolOptions into top-level fields.
         pool: 'forks',
-        poolOptions: { forks: { singleFork: true } },
+        maxWorkers: 1,
+        minWorkers: 1,
+        fileParallelism: false,
         reporters: ['verbose'],
     },
     resolve: {

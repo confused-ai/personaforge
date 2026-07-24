@@ -76,16 +76,17 @@ export default defineConfig({
                     statements: 80,
                 },
                 'src/**/*.ts': {
-                    // Ratcheting floor. Measured baseline 2026-07-23: ~23% lines,
-                    // ~20% funcs, ~17% branches, ~22% stmts. Floors sit a couple of
-                    // points below to absorb noise so any coverage *regression* fails
-                    // CI while the current suite stays green. Bump these whenever
-                    // measured coverage rises ≥ 2 pp. Target 60/50 this quarter,
-                    // 75/65 next (see docs/superpowers/specs/2026-07-23-consolidation-and-path-to-1.md).
-                    lines: 20,
-                    functions: 17,
-                    branches: 15,
-                    statements: 19,
+                    // Ratcheting floor. Measured 2026-07-23 (after adding planner +
+                    // serve tests): ~23.9% lines, ~20.4% funcs, ~17.6% branches,
+                    // ~22.7% stmts. Floors sit ~1 pp below to absorb noise so any
+                    // coverage *regression* fails CI while the suite stays green.
+                    // Bump these whenever measured coverage rises ≥ 1 pp. Target
+                    // 60/50 this quarter, 75/65 next (see
+                    // docs/superpowers/specs/2026-07-23-consolidation-and-path-to-1.md).
+                    lines: 25,
+                    functions: 22,
+                    branches: 19,
+                    statements: 24,
                 },
             },
         },

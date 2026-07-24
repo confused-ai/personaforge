@@ -41,6 +41,40 @@ Use `personaforge` when you want to build one of these shapes from the same publ
 
 The design goal is not to force every feature on day one. The design goal is to let the first useful version stay small while keeping a direct path to a larger system.
 
+## Why personaforge for multi-agent
+
+Every TypeScript agent framework can spin up an agent. The bar for **#1 in
+multi-agent** is different — you need coordination, reproducibility, and
+proof. These are the four claims we can back with CI-enforced tests and
+published numbers today; each links to the code that guards it:
+
+- **One canonical `LLMProvider` type across every provider** — no two
+  shapes, no boundary casts. Enforced by `tests/models-providers-parity.test.ts`
+  and `tests/finish-reason-normalize.test.ts`.
+- **Deterministic replay of every agent run** — byte-identical `text`,
+  `messages`, `steps`, `usage`, and event ordering, with zero real LLM or
+  tool calls. Enforced by `tests/determinism-gate.test.ts` on every PR.
+- **Real OS-thread parallelism** for CPU-bound work via `ThreadPool`
+  (`node:worker_threads`). Published: **3.53× faster than main-thread**
+  serial on a 4-thread pool (`benchmarks/tau-bench/README.md` and
+  `docs/superpowers/specs/2026-07-23-thread-pool-benchmark.md`).
+- **τ-bench-style tool-agent benchmark inside the repo** — a reusable
+  harness across three domains (retail / data / coding, 13 tasks) that runs
+  hermetically in CI (scripted oracle, 8/8 pass) and produces publishable
+  pass-rates against real providers via `bun run test:integration`. Latest
+  measured run on `gpt-4o-mini`: **12/13 (92.3%)** — retail 4/5, data 5/5,
+  coding 3/3 (`benchmarks/tau-bench/`).
+- **Cross-framework comparison, no fabricated numbers** — the same harness
+  scores `langgraph`, `agno`, `crewai`, `mastra`, or any framework that speaks
+  the one-endpoint protocol in `benchmarks/tau-bench/PROTOCOL.md`. Reference
+  servers ship in `benchmarks/tau-bench/servers/`; run
+  `bun benchmarks/tau-bench/compare.ts` to print a sorted matrix. Every number
+  is one you can reproduce yourself.
+
+See `examples/multi-agent-durability.ts` for the flagship demo: a
+multi-step tool-using agent whose event log replays deterministically
+with zero external calls. Run it with `bun run example:durability`.
+
 ## Three primitives
 
 | Primitive | Use it when |
@@ -141,6 +175,14 @@ For regulated or high-assurance deployments, the graph engine is event-sourced e
 | Secret management | pluggable backends with versioning and live secret watching | `docs/guide/secret-manager.md` |
 
 Guardrails, HITL approvals, and budget controls (see above) round out the runtime policy layer.
+
+## Adopters
+
+Using `personaforge` in production? Add yourself to [`ADOPTERS.md`](./ADOPTERS.md)
+— one line is enough. Longer case studies go in `docs/case-studies/` using
+[the template](./docs/case-studies/case-study-template.md). Concrete adopter
+signals steer the roadmap and help newcomers find peers running similar
+shapes (RAG, tool-use, teams, workflows).
 
 ## Recommended reading order
 
