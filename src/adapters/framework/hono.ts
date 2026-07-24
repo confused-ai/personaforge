@@ -21,7 +21,7 @@ export interface PersonaForgeRouteOptions {
 }
 
 export function personaforgeRoute(opts: PersonaForgeRouteOptions): unknown {
-  const { Hono } = _require('hono') as typeof import('hono');
+  const { Hono } = _require('hono') as { Hono: new () => any };
   const app = new Hono();
 
   // Auth middleware

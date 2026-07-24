@@ -267,7 +267,7 @@ export class GraphBuilder {
     const fromId = this._resolveNodeId(fromName);
     for (const [value, toName] of Object.entries(conditional.map)) {
       const toId = this._resolveNodeId(toName);
-      const id = `edge-${fromId}-${value}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const id = edgeId();
       this._edges.set(id, {
         id,
         from: fromId,
@@ -285,7 +285,7 @@ export class GraphBuilder {
         e => e.from === fromId && e.to === defaultId && e.label === '__default__'
       );
       if (!existing) {
-        const id = `edge-${fromId}-default-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const id = edgeId();
         this._edges.set(id, {
           id,
           from: fromId,

@@ -613,7 +613,8 @@ export type Reducer<T = unknown> = (current: T, update: T) => T;
  * Typed state machine definition with Zod schema and channels.
  */
 export interface StateMachineDef {
-  schema: z.ZodTypeAny;
+  /** Zod schema or JSON schema object */
+  schema?: unknown;
   channels: Record<ChannelId, Channel>;
   producers?: ChannelId[];
   consumers?: ChannelId[];
