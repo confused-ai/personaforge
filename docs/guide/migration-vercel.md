@@ -197,6 +197,7 @@ const parsed = JSON.parse(result.text);
 
 ## Where to go next
 
+- [Framework Comparisons](./comparisons) — full capability matrix vs all frameworks.
 - [Agents](./agents) — full `createAgent` API.
 - [Tools](./tools) — `tool()` authoring.
 - [Websocket & streaming](./websocket) — SSE and resumable stream endpoints.

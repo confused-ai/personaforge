@@ -2,7 +2,6 @@
  * Base tool implementation
  */
 
-import { z } from 'zod';
 import {
     Tool,
     ToolParameters,
@@ -16,6 +15,8 @@ import {
 import type { EntityId } from '../../core/index.js';
 import { DebugLogger, createDebugLogger } from '../../shared/index.js';
 import { newId } from '../../contracts/index.js';
+import { safeValidate } from '../../validation/index.js';
+import type { InferOutput, AnySchema } from '../../validation/index.js';
 
 /**
  * Configuration for creating a base tool
@@ -39,7 +40,7 @@ export interface BaseToolConfig<TParams extends ToolParameters> {
  *
  * @deprecated Prefer the `tool()` helper from `@personaforge/tools` for new
  * tool definitions. `BaseTool` requires a class and `EntityId` boilerplate;
- * `tool()` is a plain function with the same Zod validation and auto-execution.
+ * `tool()` is a plain function with the same schema validation and auto-execution.
  *
  * Migration:
  * ```ts
@@ -88,7 +89,7 @@ export abstract class BaseTool<TParams extends ToolParameters = ToolParameters, 
     /**
      * Execute the tool with the given parameters
      */
-    async execute(params: z.infer<TParams>, context: ToolContext): Promise<ToolResult<TOutput>> {
+    async execute(params: InferOutput<TParams & AnySchema>, context: ToolContext): Promise<ToolResult<TOutput>> {
         const startTime = new Date();
         const retries = 0;
 
@@ -100,7 +101,7 @@ export abstract class BaseTool<TParams extends ToolParameters = ToolParameters, 
         try {
             // Validate parameters
             this.logger.debug('Validating parameters');
-            const validation = this.parameters.safeParse(params);
+            const validation = safeValidate(this.parameters, params);
             if (!validation.success) {
                 this.logger.error('Parameter validation failed', undefined, {
                     error: validation.error.message,
@@ -155,15 +156,15 @@ export abstract class BaseTool<TParams extends ToolParameters = ToolParameters, 
     /**
      * Validate parameters without executing
      */
-    validate(params: unknown): params is z.infer<TParams> {
-        return this.parameters.safeParse(params).success;
+    validate(params: unknown): params is InferOutput<TParams & AnySchema> {
+        return safeValidate(this.parameters, params).success;
     }
 
     /**
      * Execute the tool's core logic - must be implemented by subclasses
      */
     protected abstract performExecute(
-        params: z.infer<TParams>,
+        params: InferOutput<TParams & AnySchema>,
         context: ToolContext
     ): Promise<TOutput>;
 
@@ -171,7 +172,7 @@ export abstract class BaseTool<TParams extends ToolParameters = ToolParameters, 
      * Execute with timeout support
      */
     private async executeWithTimeout(
-        params: z.infer<TParams>,
+        params: InferOutput<TParams & AnySchema>,
         context: ToolContext,
         timeoutMs: number
     ): Promise<TOutput> {

@@ -7,9 +7,11 @@ import CodeDemo from './components/CodeDemo.vue';
 import BatteriesIncluded from './components/BatteriesIncluded.vue';
 import ProvidersGrid from './components/ProvidersGrid.vue';
 import ComparisonSection from './components/ComparisonSection.vue';
+import ComparisonMatrix from './components/ComparisonMatrix.vue';
 import EnterpriseSection from './components/EnterpriseSection.vue';
 import DelightfulDX from './components/DelightfulDX.vue';
 import CtaBanner from './components/CtaBanner.vue';
+import TrustSignals from './components/TrustSignals.vue';
 import HonoCards from './components/HonoCards.vue';
 
 export default {
@@ -21,9 +23,11 @@ export default {
     app.component('BatteriesIncluded', BatteriesIncluded);
     app.component('ProvidersGrid', ProvidersGrid);
     app.component('ComparisonSection', ComparisonSection);
+    app.component('ComparisonMatrix', ComparisonMatrix);
     app.component('EnterpriseSection', EnterpriseSection);
     app.component('DelightfulDX', DelightfulDX);
     app.component('CtaBanner', CtaBanner);
+    app.component('TrustSignals', TrustSignals);
     app.component('HonoCards', HonoCards);
   },
 };

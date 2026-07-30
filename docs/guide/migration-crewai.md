@@ -150,6 +150,7 @@ const getStockPrice = tool({
 
 ## Where to go next
 
+- [Framework Comparisons](./comparisons) — full capability matrix vs all frameworks.
 - [Agents](./agents) — `createAgent` in full.
 - [Orchestration](./orchestration) — `createSupervisor`, handoffs, consensus.
 - [Compose](./compose) — `compose()` and `pipe()` sequential pipelines.

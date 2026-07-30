@@ -39,11 +39,13 @@ export function registerEvalCommand(program: Command): void {
             } catch {
                 console.error(`Cannot read dataset: ${resolved}`);
                 process.exit(1);
+                return;
             }
 
             if (!Array.isArray(dataset) || dataset.length === 0) {
                 console.error('Dataset must be a non-empty JSON array.');
                 process.exit(1);
+                return;
             }
 
             const samples = dataset.slice(0, maxSamples);
@@ -58,6 +60,7 @@ export function registerEvalCommand(program: Command): void {
             if (!agent || typeof agent.run !== 'function') {
                 console.error(`No agent export found in ${agentFile}. Export \`agent\` or default.`);
                 process.exit(1);
+                return;
             }
 
             console.log(`\nRunning eval: ${samples.length} samples from ${path.basename(resolved)}`);
@@ -120,6 +123,7 @@ export function registerEvalCommand(program: Command): void {
             if (score < threshold) {
                 console.error(`\n❌  Eval failed: score ${(score * 100).toFixed(1)}% < threshold ${(threshold * 100).toFixed(0)}%`);
                 process.exit(1);
+                return;
             } else {
                 console.log(`\n✅  Eval passed (${(score * 100).toFixed(1)}% ≥ ${(threshold * 100).toFixed(0)}%)`);
             }

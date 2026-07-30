@@ -1,10 +1,11 @@
 /**
  * Tool infrastructure types inlined to avoid cross-domain dependency on src/tools/core
  */
-import { z } from 'zod';
 import type { EntityId } from '../core/index.js';
+import type { AnySchema, InferOutput, SchemaInput } from '../validation/index.js';
+import { safeValidate } from '../validation/index.js';
 
-export type ToolParameters = z.ZodObject<Record<string, z.ZodType>>;
+export type ToolParameters = SchemaInput;
 
 export interface ToolPermissions {
     readonly allowNetwork: boolean;
@@ -66,8 +67,8 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
     readonly author?: string;
     readonly tags?: string[];
 
-    execute(params: z.infer<TParams>, context: ToolContext): Promise<ToolResult<TOutput>>;
-    validate(params: unknown): params is z.infer<TParams>;
+    execute(params: InferOutput<TParams & AnySchema>, context: ToolContext): Promise<ToolResult<TOutput>>;
+    validate(params: unknown): params is InferOutput<TParams & AnySchema>;
 }
 
 export interface ToolRegistry {
@@ -164,7 +165,7 @@ function adaptTool(raw: Partial<Tool> & { name: string; description: string; par
         category:    raw.category    ?? ToolCategory.CUSTOM,
         version:     raw.version     ?? '1.0.0',
         execute:     raw.execute,
-        validate:    raw.validate     ?? ((p: unknown): p is z.infer<typeof raw.parameters> => raw.parameters.safeParse(p).success),
+        validate:    raw.validate     ?? ((p: unknown): p is InferOutput<(typeof raw.parameters) & AnySchema> => safeValidate(raw.parameters, p).success),
         ...(raw.author && { author: raw.author }),
         ...(raw.tags   && { tags:   raw.tags }),
     };

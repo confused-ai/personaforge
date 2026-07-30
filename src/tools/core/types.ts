@@ -3,12 +3,12 @@
  */
 
 import type { EntityId } from '../../core/index.js';
-import { z } from 'zod';
+import type { AnySchema, InferOutput, SchemaInput } from '../../validation/index.js';
 
 /**
- * Tool parameter schema using Zod
+ * Tool parameter schema — Standard Schema (Zod, Valibot, ArkType, …) or legacy safeParse.
  */
-export type ToolParameters = z.ZodObject<Record<string, z.ZodType>>;
+export type ToolParameters = SchemaInput;
 
 /**
  * Tool execution context
@@ -75,16 +75,22 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
     readonly version: string;
     readonly author?: string;
     readonly tags?: string[];
+    /**
+     * Optional schema for validating tool output (Standard Schema or legacy safeParse).
+     * When provided, tool results are validated against this schema before
+     * being returned to the caller or fed back to the LLM.
+     */
+    readonly outputSchema?: SchemaInput<unknown, TOutput>;
 
     /**
      * Execute the tool with validated parameters
      */
-    execute(params: z.infer<TParams>, context: ToolContext): Promise<ToolResult<TOutput>>;
+    execute(params: InferOutput<TParams & AnySchema>, context: ToolContext): Promise<ToolResult<TOutput>>;
 
     /**
      * Validate parameters without executing
      */
-    validate(params: unknown): params is z.infer<TParams>;
+    validate(params: unknown): params is InferOutput<TParams & AnySchema>;
 }
 
 /**
@@ -98,6 +104,8 @@ export enum ToolCategory {
     UTILITY = 'utility',
     AI = 'ai',
     CUSTOM = 'custom',
+    AGENT = 'agent',
+    WORKFLOW = 'workflow',
 }
 
 /**

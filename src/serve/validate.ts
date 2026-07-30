@@ -1,13 +1,14 @@
 /**
- * Framework-agnostic Zod validation helpers for HTTP request bodies.
+ * Framework-agnostic request-body validation helpers (Standard Schema).
  *
+ * Accepts Zod, Valibot, ArkType, or any Standard Schema / safeParse schema.
  * The package does not take a hard dependency on Express — instead we expose
  * a small `validateBody` function plus thin Express/Fastify-style adapters.
- * This keeps `@personaforge/serve` usable from any HTTP runtime.
  *
  * @module
  */
-import type { ZodTypeAny, infer as zInfer } from 'zod';
+import type { InferSchemaOutput, SchemaInput } from '../validation/index.js';
+import { safeValidate } from '../validation/index.js';
 import { ValidationError } from '../contracts/index.js';
 
 export interface ValidationFailure {
@@ -23,17 +24,19 @@ export interface ValidationSuccess<T> {
 
 export type ValidationOutcome<T> = ValidationSuccess<T> | ValidationFailure;
 
-export function validateBody<S extends ZodTypeAny>(
+export function validateBody<S extends SchemaInput>(
   schema: S,
   body: unknown,
-): ValidationOutcome<zInfer<S>> {
-  const parsed = schema.safeParse(body);
-  if (parsed.success) return { ok: true, data: parsed.data as zInfer<S> };
-  const flattened = parsed.error.flatten();
+): ValidationOutcome<InferSchemaOutput<S>> {
+  const parsed = safeValidate(schema, body);
+  if (parsed.success) return { ok: true, data: parsed.data };
   return {
     ok: false,
-    error: new ValidationError('request body failed schema validation', { issues: flattened }),
-    issues: flattened,
+    error: new ValidationError('request body failed schema validation', {
+      message: parsed.error.message,
+      issues: parsed.issues,
+    }),
+    issues: parsed.issues,
   };
 }
 
@@ -52,7 +55,7 @@ export type ExpressMiddleware = (req: ExpressLikeReq, res: ExpressLikeRes, next:
  * Returns an Express-compatible middleware that validates `req.body`,
  * replacing it with the parsed/typed value or responding with 400.
  */
-export function validate(schema: ZodTypeAny): ExpressMiddleware {
+export function validate(schema: SchemaInput): ExpressMiddleware {
   return (req, res, next) => {
     const result = validateBody(schema, req.body);
     if (result.ok) {

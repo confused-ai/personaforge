@@ -2,7 +2,7 @@
  * Workflow — Step-based workflow creation with step chaining.
  *
  * Provides a fluent, type-safe API for creating multi-step workflows
- * with Zod-validated inputs/outputs, conditional branching, and suspend/resume.
+ * with schema-validated inputs/outputs (Standard Schema), conditional branching, and suspend/resume.
  *
  * @example
  * ```ts
@@ -42,7 +42,9 @@
  * ```
  */
 
-import { z, type ZodType } from 'zod';
+import { z } from 'zod';
+import type { AnySchema, InferOutput, SchemaInput } from '../validation/index.js';
+import { safeValidate } from '../validation/index.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,19 +67,19 @@ export interface StepExecutionContext<TInput = unknown> {
 
 /** Configuration for a single workflow step. */
 export interface StepConfig<
-    TInput extends ZodType = ZodType,
-    TOutput extends ZodType = ZodType,
+    TInput extends SchemaInput = SchemaInput,
+    TOutput extends SchemaInput = SchemaInput,
 > {
     /** Unique step identifier. */
     readonly id: string;
     /** Human-readable description. */
     readonly description?: string;
-    /** Zod schema for step input. */
+    /** Input schema (Zod, Valibot, ArkType, …). */
     readonly inputSchema: TInput;
-    /** Zod schema for step output. */
+    /** Output schema (Zod, Valibot, ArkType, …). */
     readonly outputSchema: TOutput;
     /** The step's logic. */
-    readonly execute: (ctx: StepExecutionContext<z.infer<TInput>>) => Promise<z.infer<TOutput>> | z.infer<TOutput>;
+    readonly execute: (ctx: StepExecutionContext<InferOutput<TInput & AnySchema>>) => Promise<InferOutput<TOutput & AnySchema>> | InferOutput<TOutput & AnySchema>;
     /** Condition: skip this step if returns false. */
     readonly when?: (ctx: { state: Record<string, unknown>; getStepResult: <T = unknown>(id: string) => T | undefined }) => boolean | Promise<boolean>;
     /** Retry policy for this step. */
@@ -88,8 +90,8 @@ export interface StepConfig<
 export interface WorkflowStep<TInput = unknown, TOutput = unknown> {
     readonly id: string;
     readonly description?: string;
-    readonly inputSchema: ZodType<TInput>;
-    readonly outputSchema: ZodType<TOutput>;
+    readonly inputSchema: SchemaInput<unknown, TInput>;
+    readonly outputSchema: SchemaInput<unknown, TOutput>;
     readonly execute: (ctx: StepExecutionContext<TInput>) => Promise<TOutput>;
     readonly when?: (ctx: { state: Record<string, unknown>; getStepResult: <T = unknown>(id: string) => T | undefined }) => boolean | Promise<boolean>;
     readonly retry?: { maxRetries: number; backoffMs: number };
@@ -133,7 +135,7 @@ export interface WorkflowExecutionResult<T = unknown> {
 }
 
 /** Configuration for creating a workflow. */
-export interface WorkflowConfig<TInput extends ZodType = ZodType> {
+export interface WorkflowConfig<TInput extends SchemaInput = SchemaInput> {
     readonly id: string;
     readonly description?: string;
     readonly inputSchema: TInput;
@@ -148,20 +150,20 @@ export interface WorkflowConfig<TInput extends ZodType = ZodType> {
 // ── Step Factory ───────────────────────────────────────────────────────────
 
 /**
- * Create a workflow step with Zod-validated input/output.
+ * Create a workflow step with schema-validated input/output (Standard Schema).
  */
-export function createStep<TInput extends ZodType, TOutput extends ZodType>(
+export function createStep<TInput extends SchemaInput, TOutput extends SchemaInput>(
     config: StepConfig<TInput, TOutput>,
-): WorkflowStep<z.infer<TInput>, z.infer<TOutput>> {
+): WorkflowStep<InferOutput<TInput & AnySchema>, InferOutput<TOutput & AnySchema>> {
     return {
         id: config.id,
         description: config.description,
-        inputSchema: config.inputSchema as ZodType<z.infer<TInput>>,
-        outputSchema: config.outputSchema as ZodType<z.infer<TOutput>>,
+        inputSchema: config.inputSchema as SchemaInput<unknown, InferOutput<TInput & AnySchema>>,
+        outputSchema: config.outputSchema as SchemaInput<unknown, InferOutput<TOutput & AnySchema>>,
         execute: async (ctx) => {
             const result = await config.execute(ctx);
             // Validate output
-            const parsed = config.outputSchema.safeParse(result);
+            const parsed = safeValidate(config.outputSchema, result);
             if (!parsed.success) {
                 throw new Error(`Step '${config.id}' output validation failed: ${parsed.error.message}`);
             }
@@ -189,7 +191,7 @@ class WorkflowSuspendError extends Error {
 export class WorkflowBuilder<TInput = unknown> {
     readonly id: string;
     readonly description?: string;
-    readonly inputSchema: ZodType<TInput>;
+    readonly inputSchema: SchemaInput<unknown, TInput>;
     readonly timeoutMs: number;
 
     private steps: Array<WorkflowStep | ParallelStepGroup> = [];
@@ -198,7 +200,7 @@ export class WorkflowBuilder<TInput = unknown> {
         onError?: (error: Error, stepId: string) => void;
     } = {};
 
-    constructor(config: WorkflowConfig<ZodType<TInput>>) {
+    constructor(config: WorkflowConfig<SchemaInput<unknown, TInput>>) {
         this.id = config.id;
         this.description = config.description;
         this.inputSchema = config.inputSchema;
@@ -292,7 +294,7 @@ export class WorkflowBuilder<TInput = unknown> {
 export class Workflow<TInput = unknown> {
     readonly id: string;
     readonly description?: string;
-    readonly inputSchema: ZodType<TInput>;
+    readonly inputSchema: SchemaInput<unknown, TInput>;
     private readonly steps: Array<WorkflowStep | ParallelStepGroup>;
     private readonly timeoutMs: number;
     private readonly hooks: {
@@ -311,7 +313,7 @@ export class Workflow<TInput = unknown> {
     constructor(config: {
         id: string;
         description?: string;
-        inputSchema: ZodType<TInput>;
+        inputSchema: SchemaInput<unknown, TInput>;
         steps: Array<WorkflowStep | ParallelStepGroup>;
         timeoutMs: number;
         hooks: typeof Workflow.prototype.hooks;
@@ -331,7 +333,7 @@ export class Workflow<TInput = unknown> {
         const state: Record<string, unknown> = {};
 
         // Validate input
-        const inputParse = this.inputSchema.safeParse(input);
+        const inputParse = safeValidate(this.inputSchema, input);
         if (!inputParse.success) {
             return {
                 status: 'failed',
@@ -341,7 +343,7 @@ export class Workflow<TInput = unknown> {
             };
         }
 
-        return this.runSteps(inputParse.data, 0, stepResults, state, start, abortSignal);
+        return this.runSteps(inputParse.data as TInput, 0, stepResults, state, start, abortSignal);
     }
 
     /** Resume a suspended workflow. */
@@ -603,7 +605,7 @@ export class Workflow<TInput = unknown> {
  * ```
  */
 export function createWorkflow<TInput>(
-    config: WorkflowConfig<ZodType<TInput>>,
+    config: WorkflowConfig<SchemaInput<unknown, TInput>>,
 ): WorkflowBuilder<TInput> {
     return new WorkflowBuilder<TInput>(config);
 }

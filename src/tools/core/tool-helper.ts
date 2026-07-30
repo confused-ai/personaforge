@@ -1,8 +1,8 @@
 /**
  * `tool()` helper — one-line tool definition.
  *
- * Provides a fluent, minimal API for defining tools with Zod schemas,
- * automatic validation, and type-safe execution.
+ * Provides a fluent, minimal API for defining tools with Standard Schema
+ * (Zod, Valibot, ArkType, …), automatic validation, and type-safe execution.
  *
  * @example
  * ```ts
@@ -35,51 +35,45 @@
 
 import type { ToolResult, ToolPermissions } from './types.js';
 import { ToolCategory } from './types.js';
+import type {
+    AnySchema,
+    SafeParseSchemaLike,
+    SchemaInput,
+} from '../../validation/index.js';
+import { safeValidate, schemaToJsonSchema } from '../../validation/index.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type SafeParseResult<TData> =
-    | { success: true; data: TData }
-    | { success: false; error: { message: string } };
+/**
+ * @deprecated Prefer `SchemaInput` / `AnySchema` from `personaforge` validation.
+ * Kept for backward compatibility with duck-typed safeParse schemas.
+ */
+export type ToolSchemaLike<TData = unknown> = SchemaInput<unknown, TData>;
 
-interface SchemaDefLike {
-    typeName?: string;
-    type?: unknown;
-    innerType?: unknown;
-    values?: unknown;
-    defaultValue?: unknown;
-}
-
-export interface ToolSchemaLike<TData = unknown> {
-    readonly description?: string;
-    readonly shape?: Record<string, ToolSchemaLike<unknown>>;
-    readonly _def?: SchemaDefLike;
-    safeParse(input: unknown): SafeParseResult<TData>;
-    strict?(): ToolObjectSchemaLike<Record<string, unknown>>;
-    isOptional?(): boolean;
-    isNullable?(): boolean;
-}
-
-export interface ToolObjectSchemaLike<TData extends Record<string, unknown> = Record<string, unknown>>
-    extends ToolSchemaLike<TData> {
-    readonly shape?: Record<string, ToolSchemaLike<unknown>>;
-}
+/**
+ * Object-shaped parameter schema (Standard Schema or legacy safeParse).
+ * @deprecated Prefer `SchemaInput`.
+ */
+export type ToolObjectSchemaLike<TData extends Record<string, unknown> = Record<string, unknown>> =
+    SchemaInput<TData, TData>;
 
 type InferToolSchema<TSchema> =
-    TSchema extends { _output: infer TOutput } ? TOutput :
-        TSchema extends { _type: infer TType } ? TType :
-            TSchema extends ToolSchemaLike<infer TData> ? TData : never;
+    TSchema extends AnySchema<infer _I, infer O> ? O :
+        TSchema extends SafeParseSchemaLike<infer TData> ? TData :
+            TSchema extends { _output: infer TOutput } ? TOutput :
+                TSchema extends { _type: infer TType } ? TType :
+                    unknown;
 
 /** Options for the `tool()` helper. */
-export interface ToolHelperConfig<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput = unknown> {
+export interface ToolHelperConfig<TSchema extends SchemaInput = SchemaInput, TOutput = unknown> {
     /** Unique tool name (used as ID). */
     readonly name: string;
     /** Human-readable description for the LLM. */
     readonly description: string;
-    /** Zod schema for parameters. */
+    /** Parameter schema (Zod, Valibot, ArkType, or any Standard Schema). */
     readonly parameters: TSchema;
-    /** Optional Zod schema for output validation. */
-    readonly outputSchema?: ToolSchemaLike<TOutput>;
+    /** Optional output validation schema. */
+    readonly outputSchema?: SchemaInput<unknown, TOutput>;
     /** Execute function. */
     readonly execute: (params: InferToolSchema<TSchema>, context: SimpleToolContext) => Promise<TOutput> | TOutput;
     /** Require human approval before execution. Default: false. */
@@ -100,6 +94,12 @@ export interface ToolHelperConfig<TSchema extends ToolObjectSchemaLike<Record<st
     readonly onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
     /** Transform tool output before returning to model. */
     readonly toModelOutput?: (output: TOutput) => unknown;
+    /** Run before the tool executes. Return false to cancel. */
+    readonly beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
+    /** Run after the tool executes. */
+    readonly afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
+    /** Handle errors thrown during execution. Return a fallback value, or re-throw. */
+    readonly onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
 }
 
 /** Simplified context available to tool execute functions. */
@@ -111,13 +111,13 @@ export interface SimpleToolContext {
 
 /** A lightweight tool created by the `tool()` helper. */
 export interface LightweightTool<
-    TSchema extends ToolObjectSchemaLike<Record<string, unknown>> = ToolObjectSchemaLike<Record<string, unknown>>,
+    TSchema extends SchemaInput = SchemaInput,
     TOutput = unknown,
 > {
     readonly name: string;
     readonly description: string;
     readonly parameters: TSchema;
-    readonly outputSchema?: ToolSchemaLike<TOutput>;
+    readonly outputSchema?: SchemaInput<unknown, TOutput>;
     readonly category: ToolCategory;
     readonly tags: string[];
     readonly needsApproval: boolean | ((params: InferToolSchema<TSchema>) => boolean | Promise<boolean>);
@@ -130,11 +130,14 @@ export interface LightweightTool<
     toFrameworkTool(): import('../../core/index.js').Tool;
     /** Get JSON Schema representation for LLM function calling. */
     toJSONSchema(): Record<string, unknown>;
-    /** Streaming hooks (if configured). */
+    /** Lifecycle hooks. */
     readonly hooks: {
         readonly onInputStart?: (toolName: string) => void;
         readonly onInputDelta?: (toolName: string, delta: string) => void;
         readonly onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
+        readonly beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
+        readonly afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
+        readonly onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
     };
     /** Transform output for model. */
     readonly toModelOutput?: (output: TOutput) => unknown;
@@ -145,9 +148,9 @@ export interface LightweightTool<
 /**
  * Create a tool with a fluent DX.
  *
- * One function, Zod parameters, auto-validation, type-safe execute.
+ * One function, Standard Schema parameters, auto-validation, type-safe execute.
  */
-export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput = unknown>(
+export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknown>(
     config: ToolHelperConfig<TSchema, TOutput>,
 ): LightweightTool<TSchema, TOutput> {
     const {
@@ -165,6 +168,9 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
         onInputDelta,
         onInputAvailable,
         toModelOutput,
+        beforeExecute,
+        afterExecute,
+        onError,
     } = config;
 
     const lightweight: LightweightTool<TSchema, TOutput> = {
@@ -186,8 +192,8 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                 ...(context?.abortSignal !== undefined ? { abortSignal: context.abortSignal } : {}),
             };
 
-            // Validate input
-            const parseResult = parameters.safeParse(params);
+            // Validate input (Standard Schema or legacy safeParse)
+            const parseResult = safeValidate(parameters, params);
 
             if (!parseResult.success) {
                 const executionTimeMs = performance.now() - t0;
@@ -200,14 +206,30 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                 };
             }
 
-            // Notify hooks
-            onInputAvailable?.(name, parseResult.data as InferToolSchema<TSchema>);
+            const validatedParams = parseResult.data as InferToolSchema<TSchema>;
+
+            // beforeExecute hook
+            if (beforeExecute) {
+                const cancel = await beforeExecute(validatedParams, ctx);
+                if (cancel === false) {
+                    const executionTimeMs = performance.now() - t0;
+                    return {
+                        success: false,
+                        error: { code: 'CANCELLED', message: `Tool "${name}" execution cancelled by beforeExecute hook` },
+                        executionTimeMs,
+                        metadata: { startTime, endTime: new Date(), retries: 0 },
+                    };
+                }
+            }
+
+            // Notify streaming hooks
+            onInputAvailable?.(name, validatedParams);
 
             try {
                 // Execute with timeout — timer is always cleared to prevent GC leak
                 let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
                 const result = await Promise.race([
-                    execute(parseResult.data as InferToolSchema<TSchema>, ctx),
+                    execute(validatedParams, ctx),
                     new Promise<never>((_, reject) => {
                         timeoutHandle = setTimeout(
                             () => { reject(new Error(`Tool '${name}' timed out after ${String(timeoutMs)}ms`)); },
@@ -217,31 +239,58 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                 ]).finally(() => { clearTimeout(timeoutHandle); });
 
                 // Validate output if schema provided
+                let validatedOutput = result as TOutput;
                 if (outputSchema) {
-                    const outputResult = outputSchema.safeParse(result);
+                    const outputResult = safeValidate(outputSchema, result);
                     if (!outputResult.success) {
                         const executionTimeMs = performance.now() - t0;
                         const endTime = new Date();
                         return {
                             success: false,
-                            error: { code: 'OUTPUT_VALIDATION_ERROR', message: outputResult.error.message },
+                            error: {
+                                code: 'OUTPUT_VALIDATION_ERROR',
+                                message: `output validation failed: ${outputResult.error.message}`,
+                            },
                             executionTimeMs,
                             metadata: { startTime, endTime, retries: 0 },
                         };
                     }
+                    validatedOutput = outputResult.data as TOutput;
                 }
 
                 const executionTimeMs = performance.now() - t0;
                 const endTime = new Date();
+                const finalResult = (toModelOutput ? await toModelOutput(validatedOutput) : validatedOutput) as TOutput;
+
+                // afterExecute hook
+                if (afterExecute) {
+                    await afterExecute(finalResult, validatedParams, ctx);
+                }
+
                 return {
                     success: true,
-                    data: (toModelOutput ? await toModelOutput(result) : result) as TOutput,
+                    data: finalResult,
                     executionTimeMs,
                     metadata: { startTime, endTime, retries: 0 },
                 };
             } catch (error) {
                 const executionTimeMs = performance.now() - t0;
                 const endTime = new Date();
+
+                if (onError) {
+                    const fallback = await onError(
+                        error instanceof Error ? error : new Error(String(error)),
+                        validatedParams,
+                        ctx,
+                    );
+                    return {
+                        success: true,
+                        data: fallback,
+                        executionTimeMs,
+                        metadata: { startTime, endTime, retries: 0 },
+                    };
+                }
+
                 return {
                     success: false,
                     error: {
@@ -255,12 +304,11 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
         },
 
         validate(params) {
-            const schema = strict && typeof parameters.strict === 'function'
-                ? (parameters.strict() as TSchema)
+            const maybeStrict = parameters as SchemaInput & { strict?: () => SchemaInput };
+            const schema = strict && typeof maybeStrict.strict === 'function'
+                ? maybeStrict.strict()
                 : parameters;
-            const result = strict
-                ? schema.safeParse(params)
-                : parameters.safeParse(params);
+            const result = safeValidate(schema, params);
 
             if (result.success) {
                 return { success: true, data: result.data as InferToolSchema<TSchema> };
@@ -291,111 +339,40 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                     });
                 },
                 validate: (params: unknown): params is InferToolSchema<TSchema> => {
-                    return parameters.safeParse(params).success;
+                    return safeValidate(parameters, params).success;
                 },
             };
         },
 
         toJSONSchema() {
-            return zodToJSONSchema(parameters, { name, description, strict });
+            const parametersJson = schemaToJsonSchema(parameters);
+            return {
+                type: 'function',
+                function: {
+                    name,
+                    description,
+                    strict,
+                    parameters: {
+                        ...parametersJson,
+                        type: (parametersJson['type'] as string | undefined) ?? 'object',
+                        additionalProperties: parametersJson['additionalProperties'] ?? !strict,
+                    },
+                },
+            };
         },
 
         hooks: {
             ...(onInputStart !== undefined ? { onInputStart } : {}),
             ...(onInputDelta !== undefined ? { onInputDelta } : {}),
             ...(onInputAvailable !== undefined ? { onInputAvailable } : {}),
+            ...(beforeExecute !== undefined ? { beforeExecute } : {}),
+            ...(afterExecute !== undefined ? { afterExecute } : {}),
+            ...(onError !== undefined ? { onError } : {}),
         },
         ...(toModelOutput !== undefined ? { toModelOutput } : {}),
     };
 
     return lightweight;
-}
-
-// ── Utility: Zod → JSON Schema (minimal for tool calling) ──────────────────
-
-function zodToJSONSchema(
-    schema: ToolObjectSchemaLike<Record<string, unknown>>,
-    opts: { name: string; description: string; strict: boolean },
-): Record<string, unknown> {
-    const shape = schema.shape ?? {};
-    const properties: Record<string, unknown> = {};
-    const required: string[] = [];
-
-    for (const [key, value] of Object.entries(shape)) {
-        const zodType = value as ToolSchemaLike<unknown>;
-        properties[key] = zodTypeToJSON(zodType);
-
-        // Check if required (not optional, not with default)
-        if (!zodType.isOptional?.() && !zodType.isNullable?.()) {
-            required.push(key);
-        }
-    }
-
-    return {
-        type: 'function',
-        function: {
-            name: opts.name,
-            description: opts.description,
-            strict: opts.strict,
-            parameters: {
-                type: 'object',
-                properties,
-                required,
-                additionalProperties: !opts.strict,
-            },
-        },
-    };
-}
-
-function fallbackSchema(): ToolSchemaLike<unknown> {
-    return {
-        safeParse: (input) => ({ success: true, data: input }),
-    };
-}
-
-function zodTypeToJSON(zodType: ToolSchemaLike<unknown>): Record<string, unknown> {
-    const desc = zodType.description;
-    const base: Record<string, unknown> = {};
-    if (desc) base['description'] = desc;
-
-    const def = zodType._def;
-    if (!def) return { ...base, type: 'string' };
-
-    const typeName = def.typeName;
-
-    switch (typeName) {
-        case 'ZodString':
-            return { ...base, type: 'string' };
-        case 'ZodNumber':
-            return { ...base, type: 'number' };
-        case 'ZodBoolean':
-            return { ...base, type: 'boolean' };
-        case 'ZodArray':
-            return {
-                ...base,
-                type: 'array',
-                items: zodTypeToJSON((def.type as ToolSchemaLike<unknown> | undefined) ?? fallbackSchema()),
-            };
-        case 'ZodEnum':
-            return { ...base, type: 'string', enum: def.values };
-        case 'ZodOptional':
-            return zodTypeToJSON((def.innerType as ToolSchemaLike<unknown> | undefined) ?? fallbackSchema());
-        case 'ZodDefault':
-            return {
-                ...zodTypeToJSON((def.innerType as ToolSchemaLike<unknown> | undefined) ?? fallbackSchema()),
-                default: typeof def.defaultValue === 'function' ? def.defaultValue() : def.defaultValue,
-            };
-        case 'ZodObject': {
-            const shape = zodType.shape ?? {};
-            const props: Record<string, unknown> = {};
-            for (const [k, v] of Object.entries(shape)) {
-                props[k] = zodTypeToJSON(v as ToolSchemaLike<unknown>);
-            }
-            return { ...base, type: 'object', properties: props };
-        }
-        default:
-            return { ...base, type: 'string' };
-    }
 }
 
 // ── Batch tool creation ────────────────────────────────────────────────────
@@ -415,13 +392,13 @@ function zodTypeToJSON(zodType: ToolSchemaLike<unknown>): Record<string, unknown
  * ```
  */
 export function createTools<
-    T extends Record<string, Omit<ToolHelperConfig<ToolObjectSchemaLike<Record<string, unknown>>>, 'name'>>,
+    T extends Record<string, Omit<ToolHelperConfig<SchemaInput>, 'name'>>,
 >(
     defs: T,
 ): { [K in keyof T]: LightweightTool } {
     const result: Record<string, LightweightTool> = {};
     for (const [name, config] of Object.entries(defs)) {
-        result[name] = tool({ ...config, name } as ToolHelperConfig<ToolObjectSchemaLike<Record<string, unknown>>>);
+        result[name] = tool({ ...config, name } as ToolHelperConfig<SchemaInput>);
     }
     return result as { [K in keyof T]: LightweightTool };
 }
@@ -461,11 +438,11 @@ export function isLightweightTool(value: unknown): value is LightweightTool {
 
 // ── Fluent ToolBuilder ─────────────────────────────────────────────────────
 
-interface ToolBuilderState<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput> {
+interface ToolBuilderState<TSchema extends SchemaInput, TOutput> {
     name?: string;
     description?: string;
     parameters?: TSchema;
-    outputSchema?: ToolSchemaLike<TOutput>;
+    outputSchema?: SchemaInput<unknown, TOutput>;
     execute?: (params: InferToolSchema<TSchema>, context: SimpleToolContext) => Promise<TOutput> | TOutput;
     needsApproval?: boolean | ((params: InferToolSchema<TSchema>) => boolean | Promise<boolean>);
     category?: ToolCategory;
@@ -476,6 +453,9 @@ interface ToolBuilderState<TSchema extends ToolObjectSchemaLike<Record<string, u
     onInputDelta?: (toolName: string, delta: string) => void;
     onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
     toModelOutput?: (output: TOutput) => unknown;
+    beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
+    afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
+    onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
 }
 
 /**
@@ -509,7 +489,7 @@ interface ToolBuilderState<TSchema extends ToolObjectSchemaLike<Record<string, u
  * ```
  */
 export class ToolBuilder<
-    TSchema extends ToolObjectSchemaLike<Record<string, unknown>> = ToolObjectSchemaLike<Record<string, unknown>>,
+    TSchema extends SchemaInput = SchemaInput,
     TOutput = unknown,
 > {
     private state: ToolBuilderState<TSchema, TOutput> = {};
@@ -527,13 +507,13 @@ export class ToolBuilder<
     }
 
     /** Set Zod parameter schema — defines what the LLM passes to the tool */
-    parameters<S extends ToolObjectSchemaLike<Record<string, unknown>>>(schema: S): ToolBuilder<S, TOutput> {
+    parameters<S extends SchemaInput>(schema: S): ToolBuilder<S, TOutput> {
         (this as unknown as ToolBuilder<S, TOutput>).state.parameters = schema;
         return this as unknown as ToolBuilder<S, TOutput>;
     }
 
     /** Set optional Zod output validation schema */
-    output<O>(schema: ToolSchemaLike<O>): ToolBuilder<TSchema, O> {
+    output<O>(schema: SchemaInput<unknown, O>): ToolBuilder<TSchema, O> {
         (this as unknown as ToolBuilder<TSchema, O>).state.outputSchema = schema;
         return this as unknown as ToolBuilder<TSchema, O>;
     }
@@ -604,6 +584,24 @@ export class ToolBuilder<
         return this;
     }
 
+    /** Hook: run before the tool executes. Return false to cancel. */
+    before(fn: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined): this {
+        this.state.beforeExecute = fn;
+        return this;
+    }
+
+    /** Hook: run after the tool executes. */
+    after(fn: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void): this {
+        this.state.afterExecute = fn;
+        return this;
+    }
+
+    /** Hook: handle execution errors. Return a fallback value or re-throw. */
+    onError(fn: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>): this {
+        this.state.onError = fn;
+        return this;
+    }
+
     /** Build and return a LightweightTool */
     build(): LightweightTool<TSchema, TOutput> {
         if (!this.state.name) throw new Error('defineTool().name("...") is required before .build()');
@@ -626,6 +624,9 @@ export class ToolBuilder<
             onInputDelta: this.state.onInputDelta,
             onInputAvailable: this.state.onInputAvailable,
             toModelOutput: this.state.toModelOutput,
+            beforeExecute: this.state.beforeExecute,
+            afterExecute: this.state.afterExecute,
+            onError: this.state.onError,
         } as ToolHelperConfig<TSchema, TOutput>);
     }
 }
@@ -690,7 +691,7 @@ export type ToolWrapMiddleware<TIn = unknown, TOut = unknown> = (
 /**
  * Options for `extendTool()`.
  */
-export interface ExtendToolOptions<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput> {
+export interface ExtendToolOptions<TSchema extends SchemaInput, TOutput> {
     /** Override or append to the tool description. */
     description?: string;
     /** Override tool name. */
@@ -751,7 +752,7 @@ export interface ExtendToolOptions<TSchema extends ToolObjectSchemaLike<Record<s
  * });
  * ```
  */
-export function extendTool<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput>(
+export function extendTool<TSchema extends SchemaInput, TOutput>(
     base: LightweightTool<TSchema, TOutput>,
     options: ExtendToolOptions<TSchema, TOutput>
 ): LightweightTool<TSchema, TOutput> {
@@ -806,6 +807,7 @@ export function extendTool<TSchema extends ToolObjectSchemaLike<Record<string, u
         category: options.category,
         tags: [...base.tags, ...(options.tags ?? [])],
         timeoutMs: options.timeoutMs,
+        ...(base.outputSchema !== undefined ? { outputSchema: base.outputSchema } : {}),
     } as ToolHelperConfig<TSchema, TOutput>);
 }
 
@@ -834,7 +836,7 @@ export function extendTool<TSchema extends ToolObjectSchemaLike<Record<string, u
  * ]);
  * ```
  */
-export function wrapTool<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput>(
+export function wrapTool<TSchema extends SchemaInput, TOutput>(
     base: LightweightTool<TSchema, TOutput>,
     middlewares: ToolWrapMiddleware<InferToolSchema<TSchema>, TOutput>[],
     overrides: { name?: string; description?: string; tags?: string[] } = {}
@@ -858,6 +860,7 @@ export function wrapTool<TSchema extends ToolObjectSchemaLike<Record<string, unk
         parameters: base.parameters,
         execute: chain,
         tags: [...base.tags, ...(overrides.tags ?? [])],
+        ...(base.outputSchema !== undefined ? { outputSchema: base.outputSchema } : {}),
     });
 }
 
@@ -876,12 +879,12 @@ export function wrapTool<TSchema extends ToolObjectSchemaLike<Record<string, unk
  * ```
  */
 export function pipeTools<
-    TSchema extends ToolObjectSchemaLike<Record<string, unknown>>,
+    TSchema extends SchemaInput,
     TMid,
     TOutput,
 >(
     first: LightweightTool<TSchema, TMid>,
-    second: LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput>,
+    second: LightweightTool<SchemaInput, TOutput>,
     options: {
         name: string;
         description: string;
@@ -894,6 +897,7 @@ export function pipeTools<
         description: options.description,
         parameters: first.parameters,
         tags: options.tags,
+        ...(second.outputSchema !== undefined ? { outputSchema: second.outputSchema } : {}),
         execute: async (params, ctx) => {
             const firstResult = await first.execute(params, ctx);
             if (!firstResult.success) throw new Error(firstResult.error?.message ?? 'First tool failed');
@@ -915,7 +919,7 @@ export function pipeTools<
  * });
  * ```
  */
-export function versionTool<TSchema extends ToolObjectSchemaLike<Record<string, unknown>>, TOutput>(
+export function versionTool<TSchema extends SchemaInput, TOutput>(
     base: LightweightTool<TSchema, TOutput>,
     version: string,
     options: { changelog?: string; deprecated?: boolean; replacedBy?: string } = {}

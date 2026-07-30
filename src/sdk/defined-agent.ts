@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { parse } from '../validation/index.js';
+import type { SchemaInput } from '../validation/index.js';
 import { MemoryStore, InMemoryStore } from '../memory/index.js';
 import { ToolRegistry, ToolRegistryImpl, Tool } from '../tools/index.js';
 import { ClassicalPlanner, PlanningAlgorithm } from '../planner/index.js';
@@ -259,9 +261,9 @@ interface AgentBuilderConfig<TIn, TOut> {
     /** Provider-qualified model reference, e.g. `"openai:gpt-4o"`. */
     modelRef: string;
     /** Zod schema used to validate and infer the input type `TIn`. */
-    inputSchema: z.ZodType<TIn>;
+    inputSchema: SchemaInput<unknown, TIn>;
     /** Zod schema used to validate and infer the output type `TOut`. */
-    outputSchema: z.ZodType<TOut>;
+    outputSchema: SchemaInput<unknown, TOut>;
     /** Tools registered in the tool registry at construction time. */
     tools: Tool[];
     /** Skills whose instructions are prepended and whose tools are registered. */
@@ -352,7 +354,7 @@ export class AgentBuilder<TIn, TOut> {
      *   .input(z.object({ question: z.string(), language: z.string().optional() }))
      * ```
      */
-    input<T>(schema: z.ZodType<T>): AgentBuilder<T, TOut> {
+    input<T>(schema: SchemaInput<unknown, T>): AgentBuilder<T, TOut> {
         return new AgentBuilder<T, TOut>({ ...(this.cfg as unknown as AgentBuilderConfig<T, TOut>), inputSchema: schema });
     }
 
@@ -372,7 +374,7 @@ export class AgentBuilder<TIn, TOut> {
      *   .output(z.object({ answer: z.string(), confidence: z.number().min(0).max(1) }))
      * ```
      */
-    output<T>(schema: z.ZodType<T>): AgentBuilder<TIn, T> {
+    output<T>(schema: SchemaInput<unknown, T>): AgentBuilder<TIn, T> {
         return new AgentBuilder<TIn, T>({ ...(this.cfg as unknown as AgentBuilderConfig<TIn, T>), outputSchema: schema });
     }
 
@@ -648,7 +650,7 @@ class TypedAgentImpl<TIn, TOut> implements TypedAgent<TIn, TOut> {
         const sessionId = opts?.sessionId ?? generateEntityId();
         const runId = generateEntityId();
 
-        const validatedInput = this.cfg.inputSchema.parse(input);
+        const validatedInput = parse(this.cfg.inputSchema, input, 'agent input validation failed') as TIn;
 
         // Build effective instructions (base + skill fragments)
         const skillInstructions = this.cfg.skills
@@ -676,10 +678,10 @@ class TypedAgentImpl<TIn, TOut> implements TypedAgent<TIn, TOut> {
             output = await this.cfg.handler(validatedInput, context);
         } else {
             // No handler: return the validated input cast to TOut (schema must be compatible)
-            output = this.cfg.outputSchema.parse(validatedInput as unknown);
+            output = parse(this.cfg.outputSchema, validatedInput as unknown, 'agent output validation failed') as TOut;
         }
 
-        const validated = this.cfg.outputSchema.parse(output);
+        const validated = parse(this.cfg.outputSchema, output, 'agent output validation failed') as TOut;
         return Object.assign(
             typeof validated === 'object' && validated !== null ? { ...validated as object } : ({ __value: validated } as object),
             { sessionId, runId },
@@ -933,7 +935,7 @@ export class DefinedAgent<TInput, TOutput> {
     }
 
     async run(config: AgentRunConfig<TInput>): Promise<TOutput> {
-        const validatedInput = this.config.inputSchema.parse(config.input);
+        const validatedInput = parse(this.config.inputSchema, config.input, 'agent input validation failed') as TInput;
         const handlerContext = {
             ...(config.context ?? {}),
             __memoryStore: this.memoryStore,
@@ -943,10 +945,10 @@ export class DefinedAgent<TInput, TOutput> {
 
         if (this.config.handler) {
             const handled = await this.config.handler(validatedInput, handlerContext);
-            return this.config.outputSchema.parse(handled);
+            return parse(this.config.outputSchema, handled, 'agent output validation failed') as TOutput;
         }
 
-        return this.config.outputSchema.parse(validatedInput as unknown);
+        return parse(this.config.outputSchema, validatedInput as unknown, 'agent output validation failed') as TOutput;
     }
 
     async plan(goal: string): Promise<import('../planner/index.js').Plan> {

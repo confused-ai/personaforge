@@ -22,7 +22,7 @@ import type { LearningMode } from '../learning/index.js';
 import type { MemoryStore } from '../memory/index.js';
 import type { RAGEngine } from '../knowledge/index.js';
 import type { Storage } from '../storage/index.js';
-import type { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 import type { AgenticRunResult, AgenticLifecycleHooks } from '../agentic/index.js';
 import type { Logger } from '../observability/types.js';
 import type { MastermindConfig } from '../compression/mastermind/index.js';
@@ -80,6 +80,8 @@ export interface AgentContextOptions {
 
 export interface CreateAgentOptions extends AgentContextOptions {
     name: string;
+    /** Capability description for supervisors / tool catalogs (Mastra/Agno parity). */
+    description?: string;
     instructions: string;
     llm?: LLMProvider;
     /**
@@ -124,8 +126,8 @@ export interface CreateAgentOptions extends AgentContextOptions {
     knowledgebase?: RAGEngine;
     /** Generic storage for persisted run metadata, usage, and follow-up suggestions. */
     storage?: Storage;
-    inputSchema?: z.ZodType;
-    outputSchema?: z.ZodType;
+    inputSchema?: SchemaInput;
+    outputSchema?: SchemaInput;
     dev?: boolean;
     /**
      * Adapter registry or explicit per-module bindings.
@@ -386,6 +388,24 @@ export interface CreateAgentResult {
         stream(prompt: string | MultiModalInput, options?: Omit<AgentRunOptions, 'sessionId' | 'onChunk'>): AsyncIterable<string>;
         streamEvents(prompt: string | MultiModalInput, options?: Omit<AgentRunOptions, 'sessionId' | 'onChunk'>): AsyncIterable<StreamChunk>;
     };
+    /**
+     * Expose this agent as a tool so another agent can invoke it via tool calling.
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<
+            import('../tools/core/agent-as-tool.js').AgentAsToolOptions<unknown, TOutput>,
+            'agent'
+        >,
+    ): import('../tools/core/tool-helper.js').LightweightTool<
+        import('../tools/core/tool-helper.js').ToolObjectSchemaLike<Record<string, unknown>>,
+        TOutput
+    >;
+    /**
+     * Alias of {@link CreateAgentResult.run} — Mastra/Agno-style naming.
+     */
+    generate(prompt: string | MultiModalInput, options?: AgentRunOptions): Promise<AgentRunResult>;
+    /** Optional capability description (used by supervisors). */
+    readonly description?: string;
     /** All resolved adapter bindings (merged from `adapters` + convenience fields). */
     readonly adapters?: AdapterBindings;
 }

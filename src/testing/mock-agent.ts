@@ -25,6 +25,7 @@
 
 import type { AgenticRunResult } from '../agentic/index.js';
 import type { CreateAgentResult } from '../create-agent/types.js';
+import { agentAsTool } from '../tools/core/agent-as-tool.js';
 
 /** Options for creating a mock agent. */
 export interface MockAgentOptions {
@@ -152,6 +153,17 @@ export function createMockAgent(options: MockAgentOptions): MockAgentHandle {
                     yield* agent.streamEvents(prompt, { ...opts, sessionId });
                 },
             };
+        },
+
+        asTool(options) {
+            return agentAsTool({
+                ...options,
+                agent: agent as unknown as import('../tools/core/agent-as-tool.js').RunnableAgent,
+            });
+        },
+
+        generate(prompt, options) {
+            return agent.run(prompt, options);
         },
 
         get callHistory() {

@@ -2,6 +2,7 @@ import type { Message } from '../providers/types.js';
 import type { AgenticStreamHooks } from '../agentic/index.js';
 import { withSpan, genAiAttributes } from '../observe/index.js';
 import type { Tool, ToolProvider, ToolResult } from '../tools/core/index.js';
+import { agentAsTool } from '../tools/core/agent-as-tool.js';
 import { createAgenticAgent } from '../agentic/index.js';
 import { HttpClientTool } from '../tools/utils/http.js';
 import { BrowserTool } from '../tools/utils/browser.js';
@@ -18,6 +19,7 @@ import { BudgetEnforcer } from '../production/budget.js';
 import { Mastermind } from '../compression/mastermind/index.js';
 import type { MastermindConfig } from '../compression/mastermind/index.js';
 import { z } from 'zod';
+import { safeValidate, parse as parseSchema } from '../validation/index.js';
 import type { CreateAgentOptions, CreateAgentResult, AgentRunOptions, AgentRunResult, StreamChunk } from './types.js';
 import type { AdapterRegistry, AdapterBindings } from '../adapters/index.js';
 import type { AppConfig } from '../config/index.js';
@@ -206,7 +208,7 @@ function createFrameworkMemoryTools(memoryStore: MemoryStore): AgentTool[] {
         category: ToolCategory.UTILITY,
         version: '1.0.0',
         validate(params: unknown): params is never {
-            return memoryTool.parameters.safeParse(params).success;
+            return safeValidate(memoryTool.parameters, params).success;
         },
         async execute(params: never): Promise<ToolResult> {
             const startedAt = new Date();
@@ -277,13 +279,13 @@ function createCCRRetrieveTool(getMastermind: () => Mastermind | undefined): Age
         category: ToolCategory.UTILITY,
         version: '1.0.0',
         validate(params: unknown): params is Record<string, unknown> {
-            return schema.safeParse(params).success;
+            return safeValidate(schema, params).success;
         },
         async execute(params: Record<string, unknown>): Promise<ToolResult> {
             const startedAt = new Date();
             const startMs = Date.now();
             try {
-                const parsed = schema.parse(params);
+                const parsed = parseSchema(schema, params);
                 const mastermind = getMastermind();
                 if (!mastermind) {
                     return {
@@ -531,6 +533,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
 
     return {
         name,
+        ...(options.description !== undefined ? { description: options.description } : {}),
         instructions,
         adapters: adapterBindings,
         async run(prompt: string | import('../providers/vision.js').MultiModalInput, runOptions?: AgentRunOptions) {
@@ -805,6 +808,17 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 throw new ConfigError('getSessionMessages: sessionStore is disabled.', {});
             }
             return sessionStore.getMessages(sessionId);
+        },
+        asTool(options) {
+            const self = this as import('./types.js').CreateAgentResult;
+            return agentAsTool({
+                ...options,
+                agent: self as unknown as import('../tools/core/agent-as-tool.js').RunnableAgent,
+            });
+        },
+        generate(prompt, options) {
+            const self = this as import('./types.js').CreateAgentResult;
+            return self.run(prompt, options);
         },
         resume(sessionId: string) {
             const self = this as import('./types.js').CreateAgentResult;

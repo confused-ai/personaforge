@@ -18,7 +18,7 @@ import type { SessionStore } from '../session/index.js';
 import type { GuardrailEngine } from '../guardrails/index.js';
 import type { ToolMiddleware } from '../tools/core/index.js';
 import type { AgenticLifecycleHooks } from '../agentic/index.js';
-import type { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 import { createAgent } from '../create-agent.js';
 import { InMemorySessionStore } from '../session/index.js';
 
@@ -150,12 +150,12 @@ class AgentBuilder {
     }
 
     /** Type-safe input schema (Zod) */
-    inputSchema<T>(schema: z.ZodType<T>): AgentBuilder {
+    inputSchema<T>(schema: SchemaInput<unknown, T>): AgentBuilder {
         return new AgentBuilder({ ...this.options, inputSchema: schema });
     }
 
     /** Type-safe output schema (Zod) */
-    outputSchema<T>(schema: z.ZodType<T>): AgentBuilder {
+    outputSchema<T>(schema: SchemaInput<unknown, T>): AgentBuilder {
         return new AgentBuilder({ ...this.options, outputSchema: schema });
     }
 

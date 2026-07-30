@@ -1,12 +1,12 @@
 import { defineConfig } from 'vitepress';
 
 const base = process.env.BASE ?? '/';
-const SITE_URL = process.env.SITE_URL ?? 'https://confused-ai.github.io/confused-ai';
+const SITE_URL = process.env.SITE_URL ?? 'https://confused-ai.github.io/personaforge';
 
 export default defineConfig({
     base,
-    title: 'Confused-AI',
-    titleTemplate: ':title — Confused-AI | TypeScript AI Agent Framework',
+    title: 'personaforge',
+    titleTemplate: ':title — personaforge | TypeScript AI Agent Framework',
     description: 'Build production-grade AI agents in TypeScript. 40+ LLM providers, 100+ built-in tools, multi-agent orchestration, RAG, guardrails, circuit breakers, HITL, budget enforcement, OTLP tracing. Open source. CrewAI / LangChain alternative.',
 
     lang: 'en-US',
@@ -26,6 +26,7 @@ export default defineConfig({
         'GLOSSARY.md',
         'TECHNICAL-AUDIT-2026-05-08.md',
         'src/content/docs/**',
+        'case-studies/case-study-template.md',
     ],
 
     sitemap: {
@@ -40,7 +41,7 @@ export default defineConfig({
 
         // Open Graph
         ['meta', { property: 'og:type', content: 'website' }],
-        ['meta', { property: 'og:site_name', content: 'Confused-AI' }],
+        ['meta', { property: 'og:site_name', content: 'personaforge' }],
         ['meta', { property: 'og:title', content: 'Confused-AI — TypeScript AI Agent Framework | Build Production AI Agents' }],
         ['meta', { property: 'og:description', content: 'Open-source TypeScript framework for production AI agents. 40+ LLM providers, 100+ tools, multi-agent teams, RAG, guardrails, circuit breakers, budget enforcement, OTLP tracing. CrewAI / LangChain alternative.' }],
         ['meta', { property: 'og:locale', content: 'en_US' }],
@@ -70,8 +71,8 @@ export default defineConfig({
             JSON.stringify({
                 '@context': 'https://schema.org',
                 '@type': 'SoftwareApplication',
-                name: 'Confused-AI',
-                alternateName: 'confused-ai TypeScript AI agent framework',
+                name: 'personaforge',
+                alternateName: 'personaforge TypeScript AI agent framework',
                 applicationCategory: 'DeveloperApplication',
                 operatingSystem: 'Cross-platform (Node.js, Bun)',
                 programmingLanguage: 'TypeScript',
@@ -80,7 +81,7 @@ export default defineConfig({
                     '30+ LLM providers, 100+ tools, RAG, guardrails, circuit breakers, rate limiting, budget enforcement, and OTLP tracing. ' +
                     'A CrewAI, LangChain, LangGraph, and Vercel AI SDK alternative.',
                 url: SITE_URL,
-                downloadUrl: 'https://www.npmjs.com/package/confused-ai',
+                downloadUrl: 'https://www.npmjs.com/package/personaforge',
                 license: 'https://opensource.org/licenses/MIT',
                 keywords:
                     'TypeScript AI agent framework, LLM agents, multi-agent orchestration, agentic AI, RAG, ' +
@@ -94,8 +95,8 @@ export default defineConfig({
     ],
 
     themeConfig: {
-        logo: { src: '/logo.svg', alt: 'Confused-AI' },
-        siteTitle: 'Confused-AI',
+        logo: { src: '/logo.svg', alt: 'personaforge' },
+        siteTitle: 'personaforge',
 
         nav: [
             { text: 'Guide', link: '/guide/introduction', activeMatch: '/guide/' },
@@ -120,10 +121,11 @@ export default defineConfig({
                 text: 'v2.4.2',
                 items: [
                     { text: '📋 Changelog', link: '/changelog' },
-                    { text: '📦 npm package', link: 'https://www.npmjs.com/package/confused-ai' },
-                    { text: '🏷️ Releases', link: 'https://github.com/confused-ai/confused-ai/releases' },
-                    { text: '🤝 Contributing', link: 'https://github.com/confused-ai/confused-ai/blob/main/CONTRIBUTING.md' },
-                    { text: '🔒 Security', link: 'https://github.com/confused-ai/confused-ai/blob/main/SECURITY.md' },
+                    { text: '📦 npm package', link: 'https://www.npmjs.com/package/personaforge' },
+                    { text: '🏷️ Releases', link: 'https://github.com/confused-ai/personaforge/releases' },
+                    { text: '🤝 Contributing', link: 'https://github.com/confused-ai/personaforge/blob/main/CONTRIBUTING.md' },
+                    { text: '🛡️ Trust & Reliability', link: '/guide/trust' },
+                    { text: '🔒 Security', link: 'https://github.com/confused-ai/personaforge/blob/main/SECURITY.md' },
                 ],
             },
         ],
@@ -140,6 +142,20 @@ export default defineConfig({
                         { text: 'Packages & Imports', link: '/guide/packages' },
                         { text: 'All Modules Reference', link: '/guide/all-modules' },
                         { text: 'Adapters System', link: '/guide/adapters' },
+                    ],
+                },
+                {
+                    text: 'Migrate From',
+                    collapsed: false,
+                    items: [
+                        { text: 'Framework Comparisons', link: '/guide/comparisons' },
+                        { text: 'Trust & Reliability', link: '/guide/trust' },
+                        { text: 'LangChain', link: '/guide/migration-langchain' },
+                        { text: 'Vercel AI SDK', link: '/guide/migration-vercel' },
+                        { text: 'CrewAI', link: '/guide/migration-crewai' },
+                        { text: 'LangGraph', link: '/guide/migration-langgraph' },
+                        { text: 'Mastra', link: '/guide/migration-mastra' },
+                        { text: 'Agno', link: '/guide/migration-agno' },
                     ],
                 },
                 {
@@ -234,6 +250,7 @@ export default defineConfig({
                     text: 'Enterprise Production',
                     collapsed: false,
                     items: [
+                        { text: 'Trust & Reliability', link: '/guide/trust' },
                         { text: 'Resilience & Circuit Breakers', link: '/guide/production' },
                         { text: 'Observability & OTLP', link: '/guide/observability' },
                         { text: 'Budget Enforcement', link: '/guide/production#budget-enforcement' },
@@ -320,12 +337,12 @@ export default defineConfig({
         },
 
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/confused-ai/confused-ai' },
-            { icon: 'npm', link: 'https://www.npmjs.com/package/confused-ai' },
+            { icon: 'github', link: 'https://github.com/confused-ai/personaforge' },
+            { icon: 'npm', link: 'https://www.npmjs.com/package/personaforge' },
         ],
 
         footer: {
-            message: 'Released under the <a href="https://github.com/confused-ai/confused-ai/blob/main/LICENSE">MIT License</a>.',
+            message: 'Released under the <a href="https://github.com/confused-ai/personaforge/blob/main/LICENSE">MIT License</a>.',
             copyright: 'Copyright © 2024-present Raja Shekar Reddy Vuyyuru',
         },
 
@@ -337,7 +354,7 @@ export default defineConfig({
         },
 
         editLink: {
-            pattern: 'https://github.com/confused-ai/confused-ai/edit/main/docs/:path',
+            pattern: 'https://github.com/confused-ai/personaforge/edit/main/docs/:path',
             text: 'Edit this page on GitHub',
         },
 

@@ -5,7 +5,7 @@
 import type { Message, LLMToolDefinition, LLMProvider } from '../core/index.js';
 import type { EntityId } from '../core/index.js';
 import type { ToolRegistry, ToolMiddleware } from './_tool-types.js';
-import type { ZodType } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 
 /** Observability: optional tracer and metrics for production monitoring */
 export interface RunObservability {
@@ -37,8 +37,8 @@ export interface AgenticRunConfig {
     readonly userId?: string;
     /** AbortSignal to cancel the run */
     readonly signal?: AbortSignal;
-    /** Optional Zod schema to validate and structure the final response */
-    readonly responseModel?: ZodType;
+    /** Optional schema to validate and structure the final response (Standard Schema) */
+    readonly responseModel?: SchemaInput;
     /** Optional RAG context string for knowledge retrieval */
     readonly ragContext?: string;
     /**

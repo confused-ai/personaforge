@@ -1,12 +1,12 @@
 /**
  * Structured Output Support (vendored from src/providers/structured-output.ts)
  */
-import type { ZodType } from 'zod';
-import { zodToJsonSchema } from './_zod-to-schema.js';
+import type { SchemaInput } from '../validation/index.js';
+import { safeValidate, schemaToJsonSchema } from '../validation/index.js';
 import type { StreamDelta } from '../core/index.js';
 
 export interface StructuredOutputConfig<T = unknown> {
-    schema: ZodType<T>;
+    schema: SchemaInput<unknown, T>;
     description?: string;
     strict?: boolean;
     maxRetries?: number;
@@ -57,20 +57,26 @@ export function validateStructuredOutput<T>(
 
     try {
         const json = extractJson(text);
-        const result = config.schema.safeParse(json);
+        const result = safeValidate(config.schema, json);
 
         if (result.success) {
             return {
-                data: result.data,
+                data: result.data as T,
                 rawText: text,
                 validated: true,
                 errors: [],
             };
         } else {
             errors.push(
-                ...result.error.issues.map((err: unknown) => {
-                    const issue = err as { path: (string | number)[]; message: string };
-                    return `${issue.path.join('.')}: ${issue.message}`;
+                ...result.issues.map((issue) => {
+                    const path = issue.path
+                        ?.map((segment) =>
+                            typeof segment === 'object' && segment !== null && 'key' in segment
+                                ? String(segment.key)
+                                : String(segment),
+                        )
+                        .join('.');
+                    return path ? `${path}: ${issue.message}` : issue.message;
                 }),
             );
 
@@ -95,7 +101,7 @@ export function validateStructuredOutput<T>(
 }
 
 export function buildStructuredOutputPrompt(config: StructuredOutputConfig): string {
-    const schema = zodToJsonSchema(config.schema as ZodType);
+    const schema = schemaToJsonSchema(config.schema);
     const description = config.description || 'Provide your response in the following JSON format';
 
     return `${description}:

@@ -19,12 +19,13 @@
  */
 
 import { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 
 // ── Minimal tool shim (mirrors agent-memory-tools.ts; avoids a circular dep) ──
 interface Tool<TInput, TOutput> {
   readonly name: string;
   readonly description: string;
-  readonly parameters: z.ZodType<TInput>;
+  readonly parameters: SchemaInput<unknown, TInput>;
   execute(input: TInput): Promise<TOutput>;
 }
 function makeTool<TInput, TOutput>(def: Tool<TInput, TOutput>): Tool<TInput, TOutput> {

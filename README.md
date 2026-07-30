@@ -30,6 +30,8 @@ Every agent framework can spin up an agent. personaforge is the **only TypeScrip
 | **LangChain** | Single package (not 200+). Built-in checkpoint/replay. MCP + A2A protocols. SSRF-protected tools. τ-bench cross-framework benchmarks. |
 | **Vercel AI SDK** | Full agent runtime (not just streaming primitives). Sessions, memory, knowledge, teams, durability, guardrails, eval, control plane. |
 | **CrewAI** | TypeScript-native. 6 team modes vs 2. Event-sourced durability. Built-in eval. 120+ tools. Graph DAG engine. |
+| **LangGraph** | Same graph semantics in TypeScript — plus budget enforcement, guardrails, OTLP tracing, eval, and control plane in one install. |
+| **Mastra** | Durable DAG engine, circuit breakers, USD budget caps, multi-tenancy, 100+ tools, and enterprise audit logging. |
 | **AutoGen / Agno** | TypeScript-native. Durable interrupts + resume. Built-in guardrails + budget enforcement. OTLP tracing. Control plane dashboard. |
 
 ## One quick example
@@ -196,6 +198,11 @@ Each layer is optional. Most projects only need a subset.
 | **LangChain** | [`docs/guide/migration-langchain.md`](docs/guide/migration-langchain.md) |
 | **Vercel AI SDK** | [`docs/guide/migration-vercel.md`](docs/guide/migration-vercel.md) |
 | **CrewAI** | [`docs/guide/migration-crewai.md`](docs/guide/migration-crewai.md) |
+| **LangGraph** | [`docs/guide/migration-langgraph.md`](docs/guide/migration-langgraph.md) |
+| **Mastra** | [`docs/guide/migration-mastra.md`](docs/guide/migration-mastra.md) |
+| **Agno** | [`docs/guide/migration-agno.md`](docs/guide/migration-agno.md) |
+| **All frameworks** | [`docs/guide/comparisons.md`](docs/guide/comparisons.md) |
+| **Trust & reliability** | [`docs/guide/trust.md`](docs/guide/trust.md) |
 
 ---
 

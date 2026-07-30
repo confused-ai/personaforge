@@ -54,6 +54,33 @@ export type { CreateAgentOptions, AgentRunOptions, AgentRunResult, CreateAgentRe
 // ── Core framework ─────────────────────────────────────────────────────────────
 export * from './core/index.js';
 
+// ── Validation (Standard Schema V1 — Zod, Valibot, ArkType, …) ────────────────
+export {
+    fromSafeParseSchema,
+    isSafeParseSchema,
+    isStandardSchema,
+    normalizeSchema,
+    parse,
+    parseAsync,
+    safeValidate,
+    safeValidateAsync,
+    schemaToJsonSchema,
+    validate,
+} from './validation/index.js';
+export type {
+    AnySchema,
+    InferInput,
+    InferOutput,
+    InferSchemaOutput,
+    SafeParseSchemaLike,
+    SafeValidateFailure,
+    SafeValidateResult,
+    SafeValidateSuccess,
+    SchemaInput,
+    SchemaIssue,
+    StandardSchemaV1,
+} from './validation/index.js';
+
 // ── Prompt management & versioning ─────────────────────────────────────────────
 export { PromptRegistry, renderTemplate } from './prompts/index.js';
 export type { PromptVersion, RegisterOptions, VersionSelector } from './prompts/index.js';
@@ -82,6 +109,46 @@ export * from './tools/utils/http.js';
 export * from './tools/utils/file.js';
 export * from './tools/utils/browser.js';
 export * from './tools/utils/calculator.js';
+
+// ── Agent / workflow / pipeline as tools + harness ───────────────────────────
+export {
+    agentAsTool, multiAgentTool, toRunnableAgent, getAgentToolDepth,
+    workflowAsTool, pipelineAsTool,
+} from './tools/index.js';
+export type {
+    AgentAsToolOptions, RunnableAgent, MultiAgentToolOptions,
+    WorkflowAsToolOptions, RunnableWorkflow, WorkflowToolResult,
+    PipelineAsToolOptions, RunnablePipeline,
+} from './tools/index.js';
+export { createHarness, createOrchestrator } from './harness/index.js';
+export type {
+    AgentHarness, HarnessConfig, HarnessAsToolOptions,
+    Orchestrator, OrchestratorConfig, OrchestratorSpecialist,
+} from './harness/index.js';
+export {
+    createLifecycleHooks, mergeHooks, createHookChain, toAgenticHooks, fromAgenticHooks,
+} from './hooks/index.js';
+
+// ── Production system registry (Mastra/Agno AgentOS edge) ────────────────────
+export { createSystem, System } from './system/index.js';
+export type {
+    PersonaForgeSystem, SystemConfig, SystemAgentRegistration,
+    SystemWorkflowRegistration, SystemPipelineRegistration, SupervisorOptions, SupervisorHandle,
+    SystemServeOptions, SystemStreamOptions,
+} from './system/index.js';
+export {
+    streamAgentEvents, streamAgentText, bridgeChunkToBus, DEFAULT_SYSTEM_STREAM_MODES,
+} from './system/index.js';
+export {
+    fromOpenAITool, fromOpenAITools, jsonSchemaToZodObject,
+    fromHttpTool, fromForeignTool, fromForeignTools,
+} from './adapters/universal/index.js';
+export type {
+    OpenAIFunctionTool, OpenAIToolAdapterOptions, HttpToolOptions, ForeignTool,
+} from './adapters/universal/index.js';
+export type {
+    UnifiedLifecycleHooks, HookContext, ToolHookContext, WorkflowHookContext, RunHookContext, HookChain,
+} from './hooks/index.js';
 
 // ── Planner ───────────────────────────────────────────────────────────────────
 // Note: RetryPolicy already exported from ./core/index.js

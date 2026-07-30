@@ -25,8 +25,8 @@
  *   });
  */
 
-import { z } from 'zod';
-import type { Tool, ToolResult, ToolContext, ToolPermissions } from '../agentic/index.js';
+import type { AnySchema, InferOutput } from '../validation/index.js';
+import type { Tool, ToolResult, ToolContext, ToolPermissions, ToolParameters } from '../agentic/index.js';
 import { ToolCategory } from '../agentic/index.js';
 
 // ── Internal factory helpers ──────────────────────────────────────────────────
@@ -75,12 +75,12 @@ export interface ComposeToolOptions {
  * `second` is called with `{ input: <first output> }`.
  */
 export function composeTool<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     A,
     B,
 >(
     first:   Tool<P, A>,
-    second:  Tool<z.ZodObject<{ input: z.ZodType }>, B>,
+    second:  Tool<ToolParameters, B>,
     options: ComposeToolOptions,
 ): Tool<P, B> {
     const mergedPerms: ToolPermissions = {
@@ -98,8 +98,7 @@ export function composeTool<
         permissions: mergedPerms,
         category:    options.category ?? ToolCategory.CUSTOM,
         version:     '1.0.0',
-
-        validate: (p): p is z.infer<P> => first.validate(p),
+        validate: (p): p is InferOutput<P & AnySchema> => first.validate(p),
 
         async execute(params, ctx): Promise<ToolResult<B>> {
             const t0 = _now();
@@ -130,7 +129,7 @@ export interface ParallelToolsOptions {
  * Returns a combined result whose `data` is an array of each tool's output.
  */
 export function parallelTools<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     T,
 >(
     tools:   Tool<P, T>[],
@@ -157,7 +156,7 @@ export function parallelTools<
         version:     '1.0.0',
 
 
-        validate: (p): p is z.infer<P> => tools[0]!.validate(p),
+        validate: (p): p is InferOutput<P & AnySchema> => tools[0]!.validate(p),
 
         async execute(params, ctx): Promise<ToolResult<T[]>> {
             const t0 = _now();
@@ -190,7 +189,7 @@ export interface FallbackToolOptions {
  * Try `primary`; if it fails (or `shouldFallback` returns true), run `secondary`.
  */
 export function fallbackTool<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     T,
 >(
     primary:   Tool<P, T>,
@@ -217,7 +216,7 @@ export function fallbackTool<
         category:    options.category ?? ToolCategory.CUSTOM,
         version:     '1.0.0',
 
-        validate: (p): p is z.infer<P> => primary.validate(p),
+        validate: (p): p is InferOutput<P & AnySchema> => primary.validate(p),
 
         async execute(params, ctx): Promise<ToolResult<T>> {
             const r1 = await primary.execute(params, ctx);
@@ -242,7 +241,7 @@ export interface RetryToolOptions {
  * Wrap a tool with automatic retries and exponential back-off.
  */
 export function retryTool<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     T,
 >(
     tool:    Tool<P, T>,
@@ -279,7 +278,7 @@ export function retryTool<
  * Rejects with a structured error if the tool exceeds the limit.
  */
 export function timeoutTool<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     T,
 >(
     tool:      Tool<P, T>,
@@ -315,7 +314,7 @@ export function timeoutTool<
  * Transform a tool's successful output without changing its interface.
  */
 export function mapTool<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     TIn,
     TOut,
 >(
@@ -327,7 +326,6 @@ export function mapTool<
         ...tool,
         id:          options.id          ?? `${tool.id}:mapped`,
         description: options.description ?? tool.description,
-
         async execute(params, ctx): Promise<ToolResult<TOut>> {
             const result = await tool.execute(params, ctx);
             if (!result.success) return result as unknown as ToolResult<TOut>;
@@ -348,11 +346,11 @@ export function mapTool<
  * When the predicate returns false, returns an empty successful result (null data).
  */
 export function filterTool<
-    P extends z.ZodObject<Record<string, z.ZodType>>,
+    P extends ToolParameters,
     T,
 >(
     tool:      Tool<P, T>,
-    predicate: (params: z.infer<P>, ctx: ToolContext) => boolean | Promise<boolean>,
+    predicate: (params: InferOutput<P & AnySchema>, ctx: ToolContext) => boolean | Promise<boolean>,
 ): Tool<P, T | null> {
     return {
         ...tool,

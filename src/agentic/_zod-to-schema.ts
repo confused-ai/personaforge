@@ -4,6 +4,7 @@
 import type { ZodType } from 'zod';
 import type { LLMToolDefinition } from '../core/index.js';
 import type { Tool, ToolParameters } from './_tool-types.js';
+import { schemaToJsonSchema } from '../validation/index.js';
 
 type ZodWithJsonSchema = ZodType & {
     toJSONSchema?: () => Record<string, unknown>;
@@ -167,7 +168,7 @@ export function zodToJsonSchema(zodSchema: ZodType): Record<string, unknown> {
 }
 
 export function toolToLLMDef(tool: Tool<ToolParameters, unknown>): LLMToolDefinition {
-    const jsonSchema = zodToJsonSchema(tool.parameters as ZodType);
+    const jsonSchema = schemaToJsonSchema(tool.parameters);
     return {
         name: tool.name,
         description: tool.description,

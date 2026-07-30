@@ -405,6 +405,21 @@
       "types": "./dist/control-plane.d.ts",
       "import": "./dist/control-plane.js",
       "require": "./dist/control-plane.cjs"
+    },
+    "./harness": {
+      "types": "./dist/harness.d.ts",
+      "import": "./dist/harness.js",
+      "require": "./dist/harness.cjs"
+    },
+    "./hooks": {
+      "types": "./dist/hooks.d.ts",
+      "import": "./dist/hooks.js",
+      "require": "./dist/hooks.cjs"
+    },
+    "./system": {
+      "types": "./dist/system.d.ts",
+      "import": "./dist/system.js",
+      "require": "./dist/system.cjs"
     }
   },
   "scripts": {
@@ -566,11 +581,13 @@
     "tsup": "^8.4.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.1",
+    "valibot": "^1.4.2",
     "vitepress": "^1.6.4",
     "vitest": "^4.0.18"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
+    "@standard-schema/spec": "^1.1.0",
     "commander": "^14.0.3",
     "dotenv": "^17.3.1",
     "uuid": "^13.0.0",

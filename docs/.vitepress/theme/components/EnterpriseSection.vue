@@ -69,7 +69,7 @@ const pillars = [
       <div class="ca-section-label">ENTERPRISE CHECKLIST</div>
       <h2 class="ca-section-title">Everything you need to go to production</h2>
       <p class="ca-section-sub">
-        No switching frameworks at scale. Every capability ships with <code>confused-ai</code>.
+        No switching frameworks at scale. Every capability ships with <code>personaforge</code>.
       </p>
 
       <div class="ca-ent-grid">

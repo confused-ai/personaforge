@@ -9,6 +9,12 @@ export {
 export type {
     ToolHelperConfig, LightweightTool, SimpleToolContext, ExtendToolOptions, ToolWrapMiddleware,
 } from './tool-helper.js';
+export { agentAsTool, multiAgentTool, toRunnableAgent, getAgentToolDepth } from './agent-as-tool.js';
+export type { AgentAsToolOptions, RunnableAgent, MultiAgentToolOptions } from './agent-as-tool.js';
+export { workflowAsTool } from './workflow-as-tool.js';
+export type { WorkflowAsToolOptions, RunnableWorkflow, WorkflowToolResult } from './workflow-as-tool.js';
+export { pipelineAsTool } from './pipeline-as-tool.js';
+export type { PipelineAsToolOptions, RunnablePipeline } from './pipeline-as-tool.js';
 export { handleToolGatewayRequest } from './tool-gateway-http.js';
 export type { ToolGatewayResponse } from './tool-gateway-http.js';
 export { ToolCache } from './tool-cache.js';

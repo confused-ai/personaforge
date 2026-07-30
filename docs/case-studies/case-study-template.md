@@ -1,12 +1,12 @@
 ---
-title: <Company or project name>
-adopter: <Company or project name>
-url: <https://link>
-date: <YYYY-MM-DD>
+title: {Company or project name}
+adopter: {Company or project name}
+url: {https://link}
+date: {YYYY-MM-DD}
 modules: [agent, tools, serve, observe]
 ---
 
-# <Company or project name>
+# {Company or project name}
 
 _One-sentence description of what personaforge powers here._
 
