@@ -2,7 +2,7 @@
  * Structured-output agent wrapper
  * =================================
  * `createStructuredAgent<T>` wraps any `AgenticRunner`-compatible run function
- * and guarantees that the response is parsed and validated against a Zod schema.
+ * and guarantees that the response is parsed and validated against a Standard Schema (Zod, Valibot, …).
  *
  * Retry policy:
  *   On parse/validation failure the model receives its own bad output back plus
@@ -26,12 +26,12 @@
  *   console.log(data.sentiment, data.score);
  */
 
-import type { ZodType } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 import { AgenticRunner }                from './runner.js';
 import type { AgenticRunnerConfig }     from './types.js';
 import type { AgenticRunConfig }        from './types.js';
 import { validateStructuredOutput }     from './_structured-output.js';
-import { zodToJsonSchema }              from './_zod-to-schema.js';
+import { schemaToJsonSchema }           from '../validation/index.js';
 
 // ── Result type ───────────────────────────────────────────────────────────────
 
@@ -69,17 +69,17 @@ export interface StructuredAgentConfig extends AgenticRunnerConfig {
  * @param config - Standard AgenticRunnerConfig (llm, tools, instructions, …)
  */
 export function createStructuredAgent<T>(
-    schema: ZodType<T>,
+    schema: SchemaInput<unknown, T>,
     config: StructuredAgentConfig,
 ): {
     run(runConfig: AgenticRunConfig): Promise<StructuredAgentResult<T>>;
-    schema: ZodType<T>;
+    schema: SchemaInput<unknown, T>;
 } {
     const maxRetries   = config.maxRetries        ?? 3;
     const injectSchema = config.injectSchemaPrompt ?? true;
 
     // Build the schema description once
-    const jsonSchema   = zodToJsonSchema(schema);
+    const jsonSchema   = schemaToJsonSchema(schema);
     const schemaBlock  = `\n\n---\nRespond ONLY with a valid JSON object matching this exact schema (no markdown fences, no prose):\n${JSON.stringify(jsonSchema, null, 2)}\n---`;
 
     const runner = new AgenticRunner(config);

@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
+import { parse } from '../../validation/index.js';
 
 export function registerValidateCommand(program: Command): void {
     program
@@ -19,7 +20,7 @@ export function registerValidateCommand(program: Command): void {
                 maxSteps: z.number().int().positive().optional(),
                 timeoutMs: z.number().int().positive().optional(),
             });
-            ConfigSchema.parse(json);
+            parse(ConfigSchema, json, 'invalid agent configuration');
             console.log(`Valid config: ${resolved}`);
         });
 }

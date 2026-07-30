@@ -14,6 +14,8 @@
  */
 
 import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../contracts/interfaces.js';
+import type { SchemaInput } from '../validation/index.js';
+import { isStandardSchema, isSafeParseSchema, parse as parseSchema, schemaToJsonSchema } from '../validation/index.js';
 
 // ── JSON Schema types ─────────────────────────────────────────────────────────
 
@@ -28,7 +30,7 @@ export interface JsonSchema {
   [key: string]: unknown;
 }
 
-/** A schema for structured output — can be a JsonSchema or a Zod-like object. */
+/** A schema for structured output — JSON Schema, Standard Schema, or Zod-like object. */
 export interface StructuredSchema<T = unknown> {
   /** JSON Schema representation (if provided, used directly). */
   jsonSchema?: JsonSchema;
@@ -38,6 +40,30 @@ export interface StructuredSchema<T = unknown> {
   name?: string;
   /** Description hint. */
   description?: string;
+}
+
+/** Accept StructuredSchema wrapper OR any Standard Schema / safeParse schema. */
+export type AnyStructuredSchema<T = unknown> = StructuredSchema<T> | SchemaInput<unknown, T>;
+
+function asStructuredSchema<T>(schema: AnyStructuredSchema<T>): StructuredSchema<T> {
+  if (schema && typeof schema === 'object' && ('jsonSchema' in schema || 'parse' in schema || 'name' in schema)) {
+    const s = schema as StructuredSchema<T>;
+    if (s.jsonSchema !== undefined || typeof s.parse === 'function') return s;
+  }
+  if (isStandardSchema(schema) || isSafeParseSchema(schema)) {
+    let jsonSchema: JsonSchema;
+    try {
+      jsonSchema = schemaToJsonSchema(schema) as JsonSchema;
+    } catch {
+      // Valibot/ArkType without a JSON Schema adapter — validation still works via ~standard.
+      jsonSchema = { type: 'object', additionalProperties: true };
+    }
+    return {
+      jsonSchema,
+      parse: (data: unknown) => parseSchema(schema, data) as T,
+    };
+  }
+  return schema as StructuredSchema<T>;
 }
 
 export interface StructuredOutputOptions {
@@ -73,25 +99,26 @@ export function detectProviderKind(provider: LLMProvider): ProviderKind {
 export async function generateStructured<T>(
   provider: LLMProvider,
   messages: Message[],
-  schema: StructuredSchema<T>,
+  schema: AnyStructuredSchema<T>,
   opts?: StructuredOutputOptions & GenerateOptions,
 ): Promise<StructuredOutputResult<T>> {
+  const resolved = asStructuredSchema(schema);
   const maxRetries = opts?.maxRetries ?? 3;
-  const jsonSchema = schema.jsonSchema ?? inferJsonSchema(schema);
+  const jsonSchema = resolved.jsonSchema ?? inferJsonSchema(resolved);
   const kind = detectProviderKind(provider);
 
   // Attempt native structured output first (OpenAI / Gemini).
   if (kind === 'openai' || kind === 'gemini') {
-    return nativeStructured(provider, messages, schema, jsonSchema, opts, maxRetries);
+    return nativeStructured(provider, messages, resolved, jsonSchema, opts, maxRetries);
   }
 
   // Anthropic: force a tool call that returns the schema.
   if (kind === 'anthropic') {
-    return anthropicToolForce(provider, messages, schema, jsonSchema, opts, maxRetries);
+    return anthropicToolForce(provider, messages, resolved, jsonSchema, opts, maxRetries);
   }
 
   // Fallback: prompt injection + parse.
-  return promptFallback(provider, messages, schema, jsonSchema, opts, maxRetries);
+  return promptFallback(provider, messages, resolved, jsonSchema, opts, maxRetries);
 }
 
 // ── Native path (OpenAI response_format / Gemini responseSchema) ──────────────

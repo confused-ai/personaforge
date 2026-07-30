@@ -19,6 +19,7 @@ import { BudgetEnforcer } from '../production/budget.js';
 import { Mastermind } from '../compression/mastermind/index.js';
 import type { MastermindConfig } from '../compression/mastermind/index.js';
 import { z } from 'zod';
+import { safeValidate, parse as parseSchema } from '../validation/index.js';
 import type { CreateAgentOptions, CreateAgentResult, AgentRunOptions, AgentRunResult, StreamChunk } from './types.js';
 import type { AdapterRegistry, AdapterBindings } from '../adapters/index.js';
 import type { AppConfig } from '../config/index.js';
@@ -207,7 +208,7 @@ function createFrameworkMemoryTools(memoryStore: MemoryStore): AgentTool[] {
         category: ToolCategory.UTILITY,
         version: '1.0.0',
         validate(params: unknown): params is never {
-            return memoryTool.parameters.safeParse(params).success;
+            return safeValidate(memoryTool.parameters, params).success;
         },
         async execute(params: never): Promise<ToolResult> {
             const startedAt = new Date();
@@ -278,13 +279,13 @@ function createCCRRetrieveTool(getMastermind: () => Mastermind | undefined): Age
         category: ToolCategory.UTILITY,
         version: '1.0.0',
         validate(params: unknown): params is Record<string, unknown> {
-            return schema.safeParse(params).success;
+            return safeValidate(schema, params).success;
         },
         async execute(params: Record<string, unknown>): Promise<ToolResult> {
             const startedAt = new Date();
             const startMs = Date.now();
             try {
-                const parsed = schema.parse(params);
+                const parsed = parseSchema(schema, params);
                 const mastermind = getMastermind();
                 if (!mastermind) {
                     return {

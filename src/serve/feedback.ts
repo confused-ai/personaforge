@@ -20,6 +20,7 @@
  */
 
 import { FeedbackEntrySchema } from '../production/index.js';
+import { safeValidate } from '../validation/index.js';
 import type { FeedbackStore } from '../production/index.js';
 
 export interface FeedbackRouteResult {
@@ -40,14 +41,14 @@ export async function handleFeedback(
   rawBody: unknown,
   store: FeedbackStore,
 ): Promise<FeedbackRouteResult> {
-  const parsed = FeedbackEntrySchema.safeParse(rawBody);
+  const parsed = safeValidate(FeedbackEntrySchema, rawBody);
   if (!parsed.success) {
     return {
       status: 422,
       body: {
         error:   'ValidationError',
         message: 'Invalid feedback payload',
-        issues:  parsed.error.issues,
+        issues:  parsed.issues,
       },
     };
   }

@@ -42,6 +42,7 @@ import { ToolCategory } from './types.js';
 import type { ToolObjectSchemaLike, SimpleToolContext, LightweightTool, ToolSchemaLike } from './tool-helper.js';
 import { tool } from './tool-helper.js';
 import { z } from 'zod';
+import { safeValidate } from '../../validation/index.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -151,7 +152,7 @@ export function workflowAsTool<TInput = unknown, TOutput = unknown>(
         ) as TOutput;
 
         if (outputSchema) {
-            const outputResult = outputSchema.safeParse(finalOutput);
+            const outputResult = safeValidate(outputSchema, finalOutput);
             if (!outputResult.success) {
                 throw new Error(
                     `Workflow tool "${name}" output validation failed: ${outputResult.error.message}`,

@@ -28,8 +28,29 @@ import http from 'node:http';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface SystemSnapshot {
+  name: string;
+  description?: string;
+  agents: string[];
+  workflows: string[];
+  pipelines: string[];
+  tools: string[];
+}
+
+export interface ControlPlaneAgent {
+  name: string;
+  run: (prompt: string) => Promise<{ text: string }>;
+  /** Optional LangGraph-style stream for /api/chat/stream. */
+  streamEvents?: (
+    prompt: string,
+    opts?: { streamMode?: Array<'values' | 'updates' | 'messages' | 'debug' | 'custom'> },
+  ) => AsyncIterable<unknown>;
+}
+
 export interface ControlPlaneConfig {
-  agents?: Array<{ name: string; run: (prompt: string) => Promise<{ text: string }> }>;
+  agents?: ControlPlaneAgent[];
+  /** Snapshot from createSystem().toJSON() — exposed at /api/system. */
+  system?: SystemSnapshot;
   sessionStore?: SessionLike;
   evalStore?: EvalStoreLike;
   traceStore?: TraceStoreLike;
@@ -132,6 +153,11 @@ export function createControlPlane(config: ControlPlaneConfig = {}): ControlPlan
         return;
       }
 
+      if (path === '/api/system') {
+        jsonReply(res, { system: config.system ?? null });
+        return;
+      }
+
       if (path === '/api/chat' && req.method === 'POST') {
         const body = await readBody(req);
         const { agent: agentName, prompt } = JSON.parse(body) as { agent?: string; prompt?: string };
@@ -139,6 +165,47 @@ export function createControlPlane(config: ControlPlaneConfig = {}): ControlPlan
         if (!a || !prompt) { jsonReply(res, { error: 'agent or prompt missing' }, 400); return; }
         const result = await a.run(prompt);
         jsonReply(res, { text: result.text });
+        return;
+      }
+
+      if (path === '/api/chat/stream' && req.method === 'POST') {
+        const body = await readBody(req);
+        const parsed = JSON.parse(body) as {
+          agent?: string;
+          prompt?: string;
+          streamMode?: Array<'values' | 'updates' | 'messages' | 'debug' | 'custom'>;
+        };
+        const a = config.agents?.find((x) => x.name === parsed.agent) ?? config.agents?.[0];
+        if (!a || !parsed.prompt) { jsonReply(res, { error: 'agent or prompt missing' }, 400); return; }
+
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+        });
+
+        const writeEvent = (payload: unknown): void => {
+          res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        };
+
+        try {
+          if (a.streamEvents) {
+            for await (const event of a.streamEvents(parsed.prompt, {
+              streamMode: parsed.streamMode ?? ['updates', 'messages'],
+            })) {
+              writeEvent(event);
+            }
+          } else {
+            const result = await a.run(parsed.prompt);
+            writeEvent({ type: 'token', data: result.text, timestamp: Date.now() });
+            writeEvent({ type: 'value', data: { text: result.text }, node: a.name, timestamp: Date.now() });
+          }
+          writeEvent({ type: 'done' });
+        } catch (err) {
+          writeEvent({ type: 'error', error: String(err) });
+        }
+        res.end();
         return;
       }
 
@@ -208,6 +275,7 @@ button.action{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font
 <body>
 <nav>
 <div style="padding:12px 20px 24px;color:#fff;font-weight:700;font-size:16px">personaforge</div>
+<button onclick="show('system')" id="tab-system">System</button>
 <button onclick="show('sessions')" id="tab-sessions">Sessions</button>
 <button onclick="show('memory')" id="tab-memory">Memory</button>
 <button onclick="show('evals')" id="tab-evals">Evals</button>
@@ -217,6 +285,7 @@ button.action{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font
 <button onclick="show('chat')" id="tab-chat">Chat</button>
 </nav>
 <main>
+<div class="panel" id="p-system"><h2>System</h2><pre id="systemInfo" class="card empty">Loading...</pre></div>
 <div class="panel" id="p-sessions"><h2>Sessions</h2><div id="sessionList" class="empty">Loading...</div></div>
 <div class="panel" id="p-memory"><h2>Memory Inspector</h2><div class="card empty">Connect a memory store to inspect agent memories.</div></div>
 <div class="panel" id="p-evals"><h2>Eval Runs</h2><div id="evalList" class="empty">Loading...</div></div>
@@ -246,6 +315,7 @@ function tableFrom(data,cols){
   return h+'</table>';
 }
 async function load(id){
+  if(id==='system'){const d=await api('system');document.getElementById('systemInfo').textContent=d.system?JSON.stringify(d.system,null,2):'No system bound';}
   if(id==='sessions'){const d=await api('sessions');document.getElementById('sessionList').innerHTML=tableFrom(d.sessions,['id','createdAt']);}
   if(id==='evals'){const d=await api('evals');document.getElementById('evalList').innerHTML=tableFrom(d.evals,['id']);}
   if(id==='traces'){const d=await api('traces');document.getElementById('traceList').innerHTML=tableFrom(d.traces,['id','name','startTime','endTime']);}

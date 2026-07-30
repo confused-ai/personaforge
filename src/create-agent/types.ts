@@ -22,7 +22,7 @@ import type { LearningMode } from '../learning/index.js';
 import type { MemoryStore } from '../memory/index.js';
 import type { RAGEngine } from '../knowledge/index.js';
 import type { Storage } from '../storage/index.js';
-import type { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 import type { AgenticRunResult, AgenticLifecycleHooks } from '../agentic/index.js';
 import type { Logger } from '../observability/types.js';
 import type { MastermindConfig } from '../compression/mastermind/index.js';
@@ -126,8 +126,8 @@ export interface CreateAgentOptions extends AgentContextOptions {
     knowledgebase?: RAGEngine;
     /** Generic storage for persisted run metadata, usage, and follow-up suggestions. */
     storage?: Storage;
-    inputSchema?: z.ZodType;
-    outputSchema?: z.ZodType;
+    inputSchema?: SchemaInput;
+    outputSchema?: SchemaInput;
     dev?: boolean;
     /**
      * Adapter registry or explicit per-module bindings.

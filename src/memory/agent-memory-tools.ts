@@ -26,6 +26,7 @@
  */
 
 import { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 import type { MemoryStore } from './types.js';
 import { MemoryType }       from './types.js';
 
@@ -36,14 +37,14 @@ import { MemoryType }       from './types.js';
 interface Tool<TInput, TOutput> {
   readonly name: string;
   readonly description: string;
-  readonly parameters: z.ZodType<TInput>;
+  readonly parameters: SchemaInput<unknown, TInput>;
   execute(input: TInput): Promise<TOutput>;
 }
 
 function makeTool<TInput, TOutput>(def: {
   name: string;
   description: string;
-  parameters: z.ZodType<TInput>;
+  parameters: SchemaInput<unknown, TInput>;
   execute(input: TInput): Promise<TOutput>;
 }): Tool<TInput, TOutput> {
   return def;

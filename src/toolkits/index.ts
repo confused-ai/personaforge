@@ -15,13 +15,14 @@
  */
 
 import { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface Tool<TInput = unknown, TOutput = unknown> {
   readonly name: string;
   readonly description: string;
-  readonly parameters: z.ZodType<TInput>;
+  readonly parameters: SchemaInput<unknown, TInput>;
   execute(input: TInput): Promise<TOutput>;
 }
 

@@ -4,7 +4,7 @@
  * Provides output validation, allowlists, and safety controls for agent outputs.
  */
 
-import type { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 
 /**
  * Guardrail check result
@@ -49,11 +49,11 @@ export interface GuardrailRule {
 }
 
 /**
- * Output validation rule using Zod schema
+ * Output validation rule using Standard Schema
  */
 export interface SchemaValidationRule<T = unknown> {
     readonly name: string;
-    readonly schema: z.ZodType<T>;
+    readonly schema: SchemaInput<unknown, T>;
     readonly description?: string;
 }
 

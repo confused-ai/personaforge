@@ -26,11 +26,25 @@
  *   instructions: 'Coordinate research then writing.',
  * });
  * const result = await boss.generate('Write a brief on TypeScript 5.5');
+ *
+ * // LangGraph-style streaming
+ * for await (const ev of system.streamEvents('...', { streamMode: ['messages', 'updates'] })) {
+ *   if (ev.type === 'token') process.stdout.write(ev.data);
+ * }
+ *
+ * // Control plane dashboard
+ * await system.serve(4100);
  * ```
  */
 
 import type { CreateAgentResult } from '../create-agent/types.js';
 import type { LightweightTool } from '../tools/core/tool-helper.js';
+import type { StreamEvent } from '../streaming/index.js';
+import {
+    createControlPlane,
+    type ControlPlaneConfig,
+    type ControlPlaneServer,
+} from '../control-plane/index.js';
 import { buildSupervisor, type SupervisorHandle } from './supervisor.js';
 import {
     normalizeAgent,
@@ -38,12 +52,18 @@ import {
     normalizePipeline,
     normalizeTools,
 } from './normalize.js';
+import {
+    streamAgentEvents,
+    streamAgentText,
+    type SystemStreamOptions,
+} from './stream.js';
 import type {
     SystemConfig,
     SystemAgentRegistration,
     SystemWorkflowRegistration,
     SystemPipelineRegistration,
     SupervisorOptions,
+    SystemServeOptions,
 } from './types.js';
 
 export interface PersonaForgeSystem {
@@ -69,6 +89,17 @@ export interface PersonaForgeSystem {
     supervisor(options?: SupervisorOptions): SupervisorHandle;
     /** Treat the default supervisor as a single callable tool (for nesting systems). */
     asTool(options?: { name?: string; description?: string; supervisor?: SupervisorOptions }): LightweightTool;
+    /** Token stream via the default supervisor. */
+    stream(prompt: string, options?: Omit<SystemStreamOptions, 'streamMode'> & { supervisor?: SupervisorOptions }): AsyncIterable<string>;
+    /**
+     * LangGraph-style event stream via the default supervisor.
+     * Modes: `values` | `updates` | `messages` | `debug` | `custom`.
+     */
+    streamEvents(prompt: string, options?: SystemStreamOptions & { supervisor?: SupervisorOptions }): AsyncIterable<StreamEvent>;
+    /** Build a control-plane server bound to this system's agents + snapshot. */
+    controlPlane(options?: SystemServeOptions): ControlPlaneServer;
+    /** Start the control-plane dashboard (default port 4100). */
+    serve(portOrOptions?: number | SystemServeOptions): Promise<ControlPlaneServer>;
     /** Snapshot of registrations (for control plane / OpenAPI). */
     toJSON(): {
         name: string;
@@ -78,6 +109,41 @@ export interface PersonaForgeSystem {
         pipelines: string[];
         tools: string[];
     };
+}
+
+function buildControlPlaneAgents(
+    system: PersonaForgeSystem,
+    supervisorOpts?: SupervisorOptions,
+): ControlPlaneConfig['agents'] {
+    const agents: NonNullable<ControlPlaneConfig['agents']> = [];
+
+    const boss = system.supervisor(supervisorOpts);
+    agents.push({
+        name: boss.agent.name,
+        run: async (prompt) => {
+            const result = await boss.run(prompt) as { text?: string };
+            return { text: result?.text ?? String(result ?? '') };
+        },
+        streamEvents: (prompt, opts) => boss.streamEvents(prompt, opts),
+    });
+
+    for (const key of system.listAgents()) {
+        const a = system.getAgent(key);
+        agents.push({
+            name: key,
+            run: async (prompt) => {
+                const result = await a.run(prompt);
+                return { text: result.text };
+            },
+            streamEvents: (prompt, opts) =>
+                streamAgentEvents(a, prompt, {
+                    streamMode: opts?.streamMode,
+                    node: key,
+                }),
+        });
+    }
+
+    return agents;
 }
 
 export function createSystem(config: SystemConfig): PersonaForgeSystem {
@@ -95,7 +161,7 @@ export function createSystem(config: SystemConfig): PersonaForgeSystem {
         pipelines[key] = normalizePipeline(key, value);
     }
 
-    let sharedTools = normalizeTools(config.tools);
+    const sharedTools = normalizeTools(config.tools);
 
     const system: PersonaForgeSystem = {
         name: config.name,
@@ -147,6 +213,45 @@ export function createSystem(config: SystemConfig): PersonaForgeSystem {
                     config.description ??
                     `Full "${config.name}" multi-agent system`,
             });
+        },
+
+        stream(prompt, options = {}) {
+            const { supervisor: supervisorOpts, ...streamOpts } = options;
+            const handle = system.supervisor(supervisorOpts);
+            return streamAgentText(handle.agent, prompt, streamOpts);
+        },
+
+        streamEvents(prompt, options = {}) {
+            const { supervisor: supervisorOpts, ...streamOpts } = options;
+            const handle = system.supervisor(supervisorOpts);
+            return streamAgentEvents(handle.agent, prompt, {
+                ...streamOpts,
+                node: streamOpts.node ?? handle.agent.name,
+            });
+        },
+
+        controlPlane(options = {}) {
+            const stores = options.stores ?? {};
+            return createControlPlane({
+                agents: buildControlPlaneAgents(system, options.supervisor),
+                system: system.toJSON(),
+                ...(stores.sessionStore !== undefined ? { sessionStore: stores.sessionStore } : {}),
+                ...(stores.evalStore !== undefined ? { evalStore: stores.evalStore } : {}),
+                ...(stores.traceStore !== undefined ? { traceStore: stores.traceStore } : {}),
+                ...(stores.approvalStore !== undefined ? { approvalStore: stores.approvalStore } : {}),
+                ...(stores.knowledgeStore !== undefined ? { knowledgeStore: stores.knowledgeStore } : {}),
+            });
+        },
+
+        async serve(portOrOptions) {
+            const options: SystemServeOptions =
+                typeof portOrOptions === 'number'
+                    ? { port: portOrOptions }
+                    : (portOrOptions ?? {});
+            const port = options.port ?? 4100;
+            const cp = system.controlPlane(options);
+            await cp.start(port);
+            return cp;
         },
 
         toJSON() {

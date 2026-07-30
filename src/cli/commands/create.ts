@@ -140,6 +140,7 @@ export function registerCreateCommand(program: Command): void {
             if (!template) {
                 console.error(`Unknown template: ${options.template as string}. Available: ${Object.keys(TEMPLATES).join(', ')}`);
                 process.exit(1);
+                return;
             }
 
             const projectDir = path.resolve(options.directory ?? name);

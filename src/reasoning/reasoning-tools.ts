@@ -14,6 +14,7 @@
  */
 
 import { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 
 // ── Scratchpad ────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ export class ReasoningScratchpad {
 interface Tool<TInput, TOutput> {
   readonly name: string;
   readonly description: string;
-  readonly parameters: z.ZodType<TInput>;
+  readonly parameters: SchemaInput<unknown, TInput>;
   execute(input: TInput): Promise<TOutput>;
 }
 

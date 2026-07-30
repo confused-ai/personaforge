@@ -121,8 +121,17 @@ async function main() {
     console.log('System:', JSON.stringify(system.toJSON(), null, 2));
     console.log('Supervisor tools:', supervisor.tools.map((t) => t.name).join(', '));
 
-    const result = await supervisor.generate('Write a 3-sentence brief on TypeScript 5.5 features.');
-    console.log('\nSupervisor result:\n', (result as { text?: string }).text ?? result);
+    console.log('\nStreaming (messages+updates):');
+    for await (const ev of supervisor.streamEvents(
+        'Write a 3-sentence brief on TypeScript 5.5 features.',
+        { streamMode: ['messages', 'updates'] },
+    )) {
+        if (ev.type === 'token') process.stdout.write(ev.data);
+        else if (ev.type === 'update') console.log('\n[update]', ev.node, ev.data);
+    }
+    console.log('\n');
+
+    // Control plane: await system.serve(4100);
 }
 
 main().catch((err) => {

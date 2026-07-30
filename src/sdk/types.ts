@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type { SchemaInput } from '../validation/index.js';
 import type { MemoryStore } from '../memory/index.js';
 import type { Tool } from '../tools/index.js';
 import type { Planner } from '../planner/index.js';
@@ -9,8 +9,8 @@ import type { Planner } from '../planner/index.js';
 export interface AgentDefinitionConfig<TInput, TOutput> {
     name: string;
     description?: string;
-    inputSchema: z.ZodType<TInput>;
-    outputSchema: z.ZodType<TOutput>;
+    inputSchema: SchemaInput<unknown, TInput>;
+    outputSchema: SchemaInput<unknown, TOutput>;
     /**
      * Production handler. If omitted, `run()` validates and returns the input as the output (schema permitting).
      */

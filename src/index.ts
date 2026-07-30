@@ -54,6 +54,33 @@ export type { CreateAgentOptions, AgentRunOptions, AgentRunResult, CreateAgentRe
 // ── Core framework ─────────────────────────────────────────────────────────────
 export * from './core/index.js';
 
+// ── Validation (Standard Schema V1 — Zod, Valibot, ArkType, …) ────────────────
+export {
+    fromSafeParseSchema,
+    isSafeParseSchema,
+    isStandardSchema,
+    normalizeSchema,
+    parse,
+    parseAsync,
+    safeValidate,
+    safeValidateAsync,
+    schemaToJsonSchema,
+    validate,
+} from './validation/index.js';
+export type {
+    AnySchema,
+    InferInput,
+    InferOutput,
+    InferSchemaOutput,
+    SafeParseSchemaLike,
+    SafeValidateFailure,
+    SafeValidateResult,
+    SafeValidateSuccess,
+    SchemaInput,
+    SchemaIssue,
+    StandardSchemaV1,
+} from './validation/index.js';
+
 // ── Prompt management & versioning ─────────────────────────────────────────────
 export { PromptRegistry, renderTemplate } from './prompts/index.js';
 export type { PromptVersion, RegisterOptions, VersionSelector } from './prompts/index.js';
@@ -107,6 +134,10 @@ export { createSystem, System } from './system/index.js';
 export type {
     PersonaForgeSystem, SystemConfig, SystemAgentRegistration,
     SystemWorkflowRegistration, SystemPipelineRegistration, SupervisorOptions, SupervisorHandle,
+    SystemServeOptions, SystemStreamOptions,
+} from './system/index.js';
+export {
+    streamAgentEvents, streamAgentText, bridgeChunkToBus, DEFAULT_SYSTEM_STREAM_MODES,
 } from './system/index.js';
 export {
     fromOpenAITool, fromOpenAITools, jsonSchemaToZodObject,

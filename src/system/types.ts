@@ -80,3 +80,19 @@ export interface SupervisorOptions {
     /** Override harness options for this supervisor. */
     readonly harness?: Omit<HarnessConfig, 'agent'>;
 }
+
+/** Options for `system.serve()` / `system.controlPlane()`. */
+export interface SystemServeOptions {
+    /** Port for `serve()`. Default: 4100. */
+    readonly port?: number;
+    /** Supervisor options used for the default "supervisor" chat agent. */
+    readonly supervisor?: SupervisorOptions;
+    /** Extra control-plane stores (sessions, evals, traces, approvals, knowledge). */
+    readonly stores?: {
+        readonly sessionStore?: import('../control-plane/index.js').ControlPlaneConfig['sessionStore'];
+        readonly evalStore?: import('../control-plane/index.js').ControlPlaneConfig['evalStore'];
+        readonly traceStore?: import('../control-plane/index.js').ControlPlaneConfig['traceStore'];
+        readonly approvalStore?: import('../control-plane/index.js').ControlPlaneConfig['approvalStore'];
+        readonly knowledgeStore?: import('../control-plane/index.js').ControlPlaneConfig['knowledgeStore'];
+    };
+}

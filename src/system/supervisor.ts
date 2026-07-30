@@ -14,6 +14,12 @@ import { pipelineAsTool } from '../tools/core/pipeline-as-tool.js';
 import type { LightweightTool } from '../tools/core/tool-helper.js';
 import { createHarness, type AgentHarness } from '../harness/create-harness.js';
 import type { CreateAgentResult } from '../create-agent/types.js';
+import type { StreamEvent } from '../streaming/index.js';
+import {
+    streamAgentEvents,
+    streamAgentText,
+    type SystemStreamOptions,
+} from './stream.js';
 import type {
     SystemAgentRegistration,
     SystemWorkflowRegistration,
@@ -39,6 +45,13 @@ export interface SupervisorHandle {
     readonly tools: LightweightTool[];
     run(prompt: string, options?: Parameters<CreateAgentResult['run']>[1]): Promise<unknown>;
     generate(prompt: string, options?: Parameters<CreateAgentResult['run']>[1]): Promise<unknown>;
+    /** Token stream (text chunks). */
+    stream(prompt: string, options?: Omit<SystemStreamOptions, 'streamMode'>): AsyncIterable<string>;
+    /**
+     * LangGraph-style event stream.
+     * Modes: `values` | `updates` | `messages` | `debug` | `custom` (combinable).
+     */
+    streamEvents(prompt: string, options?: SystemStreamOptions): AsyncIterable<StreamEvent>;
     asTool(options: { name: string; description: string }): LightweightTool;
 }
 
@@ -167,6 +180,12 @@ export function buildSupervisor(input: BuildSupervisorInput): SupervisorHandle {
         tools,
         run: (prompt, options) => coordinator.run(prompt, options),
         generate: (prompt, options) => coordinator.run(prompt, options),
+        stream: (prompt, options) => streamAgentText(coordinator, prompt, options),
+        streamEvents: (prompt, options) =>
+            streamAgentEvents(coordinator, prompt, {
+                ...options,
+                node: options?.node ?? name,
+            }),
         asTool: (opts) =>
             harness.asTool({
                 name: opts.name,

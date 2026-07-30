@@ -2,6 +2,7 @@
  * Guardrail validator implementation
  */
 
+import { parse } from '../validation/index.js';
 import {
     GuardrailEngine,
     GuardrailRule,
@@ -90,7 +91,7 @@ export class GuardrailValidator implements GuardrailEngine {
 
         for (const validation of this.schemaValidations) {
             try {
-                validation.schema.parse(output);
+                parse(validation.schema, output, `guardrail "${validation.name}" failed`);
                 results.push({
                     passed: true,
                     rule: validation.name,

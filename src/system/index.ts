@@ -16,4 +16,12 @@ export type {
     SystemWorkflowRegistration,
     SystemPipelineRegistration,
     SupervisorOptions,
+    SystemServeOptions,
 } from './types.js';
+export {
+    streamAgentEvents,
+    streamAgentText,
+    bridgeChunkToBus,
+    DEFAULT_SYSTEM_STREAM_MODES,
+    type SystemStreamOptions,
+} from './stream.js';

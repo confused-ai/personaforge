@@ -24,6 +24,8 @@
 import type { Tool, ToolResult, ToolContext } from '../tools/index.js';
 import { ToolCategory } from '../tools/index.js';
 import { z } from 'zod';
+import { safeValidate } from '../validation/index.js';
+import type { InferSchemaOutput } from '../validation/index.js';
 
 export interface ToolCallRecord {
     readonly name: string;
@@ -92,7 +94,7 @@ export class MockToolRegistry {
                 },
                 category: ToolCategory.CUSTOM,
                 version: '1.0.0',
-                validate: (raw): raw is z.infer<typeof params> => params.safeParse(raw).success,
+                validate: (raw): raw is InferSchemaOutput<typeof params> => safeValidate(params, raw).success,
                 async execute(p: Record<string, unknown>, _ctx: ToolContext): Promise<ToolResult> {
                     const start = new Date();
                     let result: unknown;
