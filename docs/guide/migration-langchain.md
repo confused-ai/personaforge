@@ -213,6 +213,7 @@ const agent = createAgent({
 
 ## Where to go next
 
+- [Framework Comparisons](./comparisons) — full capability matrix vs all frameworks.
 - [Agents](./agents) — full `createAgent` API.
 - [Tools](./tools) — `tool()` authoring.
 - [RAG](./rag) — knowledge base and context providers.

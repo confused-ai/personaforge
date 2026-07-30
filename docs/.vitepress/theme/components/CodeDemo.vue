@@ -15,7 +15,7 @@ const tabs: Tab[] = [
     label: 'Zero to Agent',
     desc: 'One call. Smart defaults for model, session, tools, and guardrails. Override anything.',
     filename: 'hello.ts',
-    code: `import { agent } from 'confused-ai';
+    code: `import { agent } from 'personaforge';
 
 // That's it. Model, session & guardrails wired automatically.
 const ai = agent('You are a helpful assistant.');
@@ -31,7 +31,7 @@ console.log(text);`,
     label: 'Custom Tools',
     desc: 'Zod-validated, fully typed tools. Drop them into any agent with zero boilerplate.',
     filename: 'weather-agent.ts',
-    code: `import { agent, tool } from 'confused-ai';
+    code: `import { agent, tool } from 'personaforge';
 import { z } from 'zod/v3';
 
 const getWeather = tool({
@@ -53,7 +53,7 @@ const { text } = await ai.run('Is it warm in Tokyo right now?');`,
     label: 'Multi-Agent',
     desc: 'compose(), pipe(), supervisors, and swarms. Any topology — no lock-in.',
     filename: 'pipeline.ts',
-    code: `import { agent, compose } from 'confused-ai';
+    code: `import { agent, compose } from 'personaforge';
 
 const researcher = agent('Research topics thoroughly.');
 const writer     = agent('Turn research into polished prose.');
@@ -71,9 +71,9 @@ const { text } = await pipeline.run(
     label: 'Production',
     desc: 'Circuit breakers, retries, rate limits, and USD budget caps — all composable.',
     filename: 'production.ts',
-    code: `import { createAgent } from 'confused-ai';
-import { withResilience } from 'confused-ai/production';
-import { createSqliteStore } from 'confused-ai/session';
+    code: `import { createAgent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
+import { createSqliteStore } from 'personaforge/session';
 
 const base = createAgent({
   name:         'SupportBot',
@@ -100,7 +100,7 @@ export default withResilience(base, {
   createKnowledgeEngine,
   OpenAIEmbeddingProvider,
   loadUrl,
-} from 'confused-ai';
+} from 'personaforge';
 
 const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
 

@@ -12,8 +12,8 @@ hero:
       text: Get Started
       link: /guide/getting-started
     - theme: alt
-      text: Why personaforge
-      link: /guide/introduction
+      text: Trust & Reliability
+      link: /guide/trust
     - theme: alt
       text: Examples
       link: /examples/
@@ -25,14 +25,8 @@ hero:
 
 <CodeDemo />
 
-<DelightfulDX />
-
-<BatteriesIncluded />
-
-<ProvidersGrid />
-
 <ComparisonSection />
 
-<EnterpriseSection />
+<TrustSignals />
 
 <CtaBanner />

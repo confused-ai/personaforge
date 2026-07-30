@@ -132,5 +132,7 @@ Those features are valuable later. They are just not the right place to start.
 
 - Read `getting-started.md` for the first implementation path.
 - Read `concepts.md` for the layered mental model.
+- Read [Framework Comparisons](./comparisons) to see how personaforge compares to LangChain, CrewAI, LangGraph, Mastra, and Agno.
+- Read [Trust & Reliability](./trust) for security policy, test coverage, benchmarks, and governance.
 - Read `examples/index.md` for runnable patterns by difficulty.
 - Read `api/` when you want a compact map of the public surfaces.

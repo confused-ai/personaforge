@@ -4,7 +4,7 @@ import { ref } from 'vue';
 const copied = ref(false);
 
 function copy() {
-  navigator.clipboard.writeText('npm install confused-ai').then(() => {
+  navigator.clipboard.writeText('npm install personaforge').then(() => {
     copied.value = true;
     setTimeout(() => { copied.value = false; }, 2000);
   });
@@ -29,7 +29,7 @@ function copy() {
       <!-- Install command with copy button -->
       <div class="ca-cta-install">
         <span class="ca-cta-dollar" aria-hidden="true">$</span>
-        <code class="ca-cta-cmd">npm install confused-ai</code>
+        <code class="ca-cta-cmd">npm install personaforge</code>
         <button class="ca-cta-copy" :aria-label="copied ? 'Copied' : 'Copy'" @click="copy">
           <svg v-if="!copied" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -44,7 +44,7 @@ function copy() {
         <a href="/guide/getting-started" class="ca-btn-primary">
           Get Started →
         </a>
-        <a href="https://github.com/confused-ai/confused-ai" target="_blank" rel="noopener" class="ca-btn-ghost">
+        <a href="https://github.com/confused-ai/personaforge" target="_blank" rel="noopener" class="ca-btn-ghost">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38l-.01-1.49c-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
           </svg>
@@ -53,7 +53,7 @@ function copy() {
       </div>
 
       <div class="ca-cta-trust">
-        <span>MIT License</span>
+        <a href="/guide/trust" class="ca-trust-link">MIT License</a>
         <span class="ca-dot">·</span>
         <span>No telemetry by default</span>
         <span class="ca-dot">·</span>
@@ -264,5 +264,15 @@ function copy() {
 
 .ca-dot {
   opacity: 0.3;
+}
+
+.ca-trust-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.ca-trust-link:hover {
+  color: rgba(45, 212, 191, 0.8);
 }
 </style>

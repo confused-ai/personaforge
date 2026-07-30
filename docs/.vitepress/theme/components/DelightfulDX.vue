@@ -5,7 +5,7 @@ const steps = [
   {
     step: '01',
     title: 'Install one package',
-    code: `npm install confused-ai`,
+    code: `npm install personaforge`,
     note: 'No 12-step setup. No mandatory config files.',
   },
   {
@@ -17,7 +17,7 @@ const steps = [
   {
     step: '03',
     title: 'Run your first agent',
-    code: `import { agent } from 'confused-ai';
+    code: `import { agent } from 'personaforge';
 const { text } = await agent('Be helpful.').run('Hello!');`,
     note: 'Smart defaults chosen for you. Override anything.',
   },

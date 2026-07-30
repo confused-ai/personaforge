@@ -3,7 +3,7 @@ const cards = [
   {
     emoji: '🔋',
     title: 'Batteries Included',
-    desc: 'Confused-AI ships with 100+ built-in tools, multi-agent orchestration, RAG, guardrails, session stores, circuit breakers, budget enforcement, OTLP tracing, HITL, MCP, voice, and deployment templates. Everything you need — none of the glue code.',
+    desc: 'personaforge ships with 100+ built-in tools, multi-agent orchestration, RAG, guardrails, session stores, circuit breakers, budget enforcement, OTLP tracing, HITL, MCP, voice, and deployment templates. Everything you need — none of the glue code.',
     link: '/guide/tools',
     linkText: 'Browse all tools →',
   },

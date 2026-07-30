@@ -48,18 +48,18 @@ const categories = [
 ];
 
 const subpaths = [
-  { path: 'confused-ai', desc: 'Main barrel export' },
-  { path: 'confused-ai/tools', desc: '100+ built-in tools' },
-  { path: 'confused-ai/orchestration', desc: 'Multi-agent patterns' },
-  { path: 'confused-ai/knowledge', desc: 'RAG + vector store' },
-  { path: 'confused-ai/session', desc: 'Session stores' },
-  { path: 'confused-ai/guardrails', desc: 'Safety & validation' },
-  { path: 'confused-ai/production', desc: 'Circuit breakers, rate limits' },
-  { path: 'confused-ai/observability', desc: 'OTLP, logs, evals' },
-  { path: 'confused-ai/runtime', desc: 'HTTP + WebSocket server' },
-  { path: 'confused-ai/adapters', desc: '20-category adapters' },
-  { path: 'confused-ai/testing', desc: 'Mocks & fixtures' },
-  { path: 'confused-ai/contracts', desc: 'Shared types only' },
+  { path: 'personaforge', desc: 'Main barrel export' },
+  { path: 'personaforge/tools', desc: '100+ built-in tools' },
+  { path: 'personaforge/orchestration', desc: 'Multi-agent patterns' },
+  { path: 'personaforge/knowledge', desc: 'RAG + vector store' },
+  { path: 'personaforge/session', desc: 'Session stores' },
+  { path: 'personaforge/guardrails', desc: 'Safety & validation' },
+  { path: 'personaforge/production', desc: 'Circuit breakers, rate limits' },
+  { path: 'personaforge/observability', desc: 'OTLP, logs, evals' },
+  { path: 'personaforge/runtime', desc: 'HTTP + WebSocket server' },
+  { path: 'personaforge/adapters', desc: '20-category adapters' },
+  { path: 'personaforge/testing', desc: 'Mocks & fixtures' },
+  { path: 'personaforge/contracts', desc: 'Shared types only' },
 ];
 </script>
 

@@ -330,19 +330,23 @@
 /* ── Tables ─────────────────────────────────────────────── */
 .vp-doc table {
   border-radius: 8px !important;
-  overflow: hidden !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
   border: 1px solid var(--vp-c-divider) !important;
   font-size: 0.875rem !important;
   width: 100% !important;
 }
+
+.vp-doc .content-container {
+  overflow-x: auto;
+}
 .vp-doc thead tr th {
   background: var(--vp-c-bg-soft) !important;
-  font-size: 0.72rem !important;
+  font-size: 0.78rem !important;
   font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  white-space: nowrap;
   color: var(--vp-c-text-2) !important;
   padding: 10px 16px !important;
 }
@@ -440,7 +444,7 @@ a:focus-visible, button:focus-visible {
 .VPLocalSearchBox { border-radius: 10px !important; }
 
 /* ── Home layout ────────────────────────────────────────── */
-.VPHome { padding-bottom: 64px !important; }
+.VPHome { padding-bottom: 0 !important; }
 .VPHomeFeatures { padding-top: 0 !important; }
 .VPFeatures.VPHomeFeatures > .container > .items { gap: 10px !important; }
 
