@@ -145,7 +145,8 @@ function toOpenAITools(tools?: LLMToolDefinition[]): OpenAITool[] | undefined {
  * Install the openai package: npm install openai
  */
 export class OpenAIProvider implements LLMProvider {
-    private client: OpenAIClient;
+    private client: OpenAIClient | null = null;
+    private readonly clientOpts: { apiKey: string; baseURL?: string } | null = null;
     private model: string;
     private logger: DebugLogger;
 
@@ -160,16 +161,35 @@ export class OpenAIProvider implements LLMProvider {
             if (!baseURL && !apiKey) {
                 throw new Error('OpenAIProvider requires apiKey (or OPENAI_API_KEY) or baseURL (or OPENAI_BASE_URL)');
             }
-            const { OpenAI } = _require('openai') as {
-                OpenAI: new (opts: { apiKey?: string; baseURL?: string }) => OpenAIClient;
-            };
-            this.client = new OpenAI({
+            // Defer requiring the optional `openai` peer until the first API call so
+            // construction / shape checks work when the peer is not installed.
+            this.clientOpts = {
                 apiKey: apiKey ?? 'not-needed',
                 ...(baseURL && { baseURL }),
-            });
+            };
         }
         this.model = config.model ?? 'gpt-4o';
         this.logger.debug('OpenAIProvider initialized', undefined, { model: this.model });
+    }
+
+    private getClient(): OpenAIClient {
+        if (this.client) return this.client;
+        if (!this.clientOpts) {
+            throw new Error('OpenAIProvider has no client configured');
+        }
+        let OpenAI: new (opts: { apiKey?: string; baseURL?: string }) => OpenAIClient;
+        try {
+            ({ OpenAI } = _require('openai') as {
+                OpenAI: new (opts: { apiKey?: string; baseURL?: string }) => OpenAIClient;
+            });
+        } catch {
+            throw new Error(
+                'OpenAIProvider requires the openai package.\n' +
+                    '  Install: npm install openai',
+            );
+        }
+        this.client = new OpenAI(this.clientOpts);
+        return this.client;
     }
 
     async generateText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
@@ -195,10 +215,11 @@ export class OpenAIProvider implements LLMProvider {
         }
 
         // Forward the abort signal as a per-request option (OpenAI SDK 2nd arg).
+        const client = this.getClient();
         const requestOpts = options?.signal ? { signal: options.signal } : undefined;
         const response = await (requestOpts
-            ? this.client.chat.completions.create(body as unknown as OpenAICreateParams, requestOpts as never)
-            : this.client.chat.completions.create(body as unknown as OpenAICreateParams)
+            ? client.chat.completions.create(body as unknown as OpenAICreateParams, requestOpts as never)
+            : client.chat.completions.create(body as unknown as OpenAICreateParams)
         ).catch(rethrowWithStatus) as OpenAIResponse;
 
         const choice = response.choices?.[0];
@@ -262,9 +283,10 @@ export class OpenAIProvider implements LLMProvider {
         }
 
         const requestOpts = options?.signal ? { signal: options.signal } : undefined;
+        const client = this.getClient();
         const stream = await (requestOpts
-            ? this.client.chat.completions.create(body as unknown as OpenAICreateParams, requestOpts as never)
-            : this.client.chat.completions.create(body as unknown as OpenAICreateParams)
+            ? client.chat.completions.create(body as unknown as OpenAICreateParams, requestOpts as never)
+            : client.chat.completions.create(body as unknown as OpenAICreateParams)
         ).catch(rethrowWithStatus) as AsyncIterable<OpenAIStreamChunk>;
 
         let fullText = '';

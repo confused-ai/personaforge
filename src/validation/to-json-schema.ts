@@ -2,10 +2,11 @@
  * Convert any accepted schema to JSON Schema for LLM tool calling.
  *
  * Resolution order:
- * 1. Standard JSON Schema (`~standard.jsonSchema`)
- * 2. Zod 4 / duck-typed `toJSONSchema()` / `toJsonSchema()`
- * 3. Legacy Zod 3 `_def` walk via zodToJsonSchema
- * 4. Throw if conversion is impossible
+ * 1. Plain JSON Schema objects (already converted — e.g. CCR / delegation tools)
+ * 2. Standard JSON Schema (`~standard.jsonSchema`)
+ * 3. Zod 4 / duck-typed `toJSONSchema()` / `toJsonSchema()`
+ * 4. Legacy Zod 3 `_def` walk via zodToJsonSchema
+ * 5. Throw if conversion is impossible
  */
 
 import type { ZodType } from 'zod';
@@ -42,11 +43,32 @@ function resolveJsonSchemaValue(
     return typeof value === 'function' ? value() : value;
 }
 
+/** True when value is already a JSON Schema document (not a validator). */
+function isPlainJsonSchema(value: unknown): value is Record<string, unknown> {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+    if (isStandardSchema(value) || isSafeParseSchema(value)) return false;
+    const obj = value as Record<string, unknown>;
+    return (
+        typeof obj['type'] === 'string' ||
+        (obj['properties'] !== null && typeof obj['properties'] === 'object') ||
+        Array.isArray(obj['anyOf']) ||
+        Array.isArray(obj['oneOf']) ||
+        Array.isArray(obj['allOf']) ||
+        typeof obj['$ref'] === 'string' ||
+        typeof obj['$schema'] === 'string'
+    );
+}
+
 /**
  * Convert a schema to a JSON Schema object suitable for LLM function calling.
  */
 export function schemaToJsonSchema(schema: SchemaInput): Record<string, unknown> {
-    // 1. Standard JSON Schema (when implemented by the library)
+    // 1. Already a JSON Schema object (tools that pre-convert via zodToJsonSchema)
+    if (isPlainJsonSchema(schema)) {
+        return stripMeta(schema);
+    }
+
+    // 2. Standard JSON Schema (when implemented by the library)
     if (isStandardSchema(schema)) {
         const standard = (schema as StandardWithJsonSchema)['~standard'];
         const jsonSchema = standard.jsonSchema;
@@ -58,7 +80,7 @@ export function schemaToJsonSchema(schema: SchemaInput): Record<string, unknown>
         }
     }
 
-    // 2. Duck-typed toJSONSchema / toJsonSchema (Zod 4 and others)
+    // 3. Duck-typed toJSONSchema / toJsonSchema (Zod 4 and others)
     const capable = schema as JsonSchemaCapable;
     if (typeof capable.toJSONSchema === 'function') {
         return stripMeta(capable.toJSONSchema());
@@ -67,7 +89,7 @@ export function schemaToJsonSchema(schema: SchemaInput): Record<string, unknown>
         return stripMeta(capable.toJsonSchema());
     }
 
-    // 3. Legacy Zod 3 `_def` walk (also covers Zod types without toJSONSchema)
+    // 4. Legacy Zod 3 `_def` walk (also covers Zod types without toJSONSchema)
     if (isSafeParseSchema(schema) && (schema as { _def?: unknown })._def !== undefined) {
         return zodToJsonSchema(schema as unknown as ZodType);
     }
