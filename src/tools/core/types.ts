@@ -75,6 +75,12 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
     readonly version: string;
     readonly author?: string;
     readonly tags?: string[];
+    /**
+     * Optional Zod schema for validating tool output.
+     * When provided, tool results are validated against this schema before
+     * being returned to the caller or fed back to the LLM.
+     */
+    readonly outputSchema?: z.ZodType<TOutput>;
 
     /**
      * Execute the tool with validated parameters
@@ -98,6 +104,8 @@ export enum ToolCategory {
     UTILITY = 'utility',
     AI = 'ai',
     CUSTOM = 'custom',
+    AGENT = 'agent',
+    WORKFLOW = 'workflow',
 }
 
 /**

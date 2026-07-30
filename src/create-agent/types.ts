@@ -80,6 +80,8 @@ export interface AgentContextOptions {
 
 export interface CreateAgentOptions extends AgentContextOptions {
     name: string;
+    /** Capability description for supervisors / tool catalogs (Mastra/Agno parity). */
+    description?: string;
     instructions: string;
     llm?: LLMProvider;
     /**
@@ -386,6 +388,24 @@ export interface CreateAgentResult {
         stream(prompt: string | MultiModalInput, options?: Omit<AgentRunOptions, 'sessionId' | 'onChunk'>): AsyncIterable<string>;
         streamEvents(prompt: string | MultiModalInput, options?: Omit<AgentRunOptions, 'sessionId' | 'onChunk'>): AsyncIterable<StreamChunk>;
     };
+    /**
+     * Expose this agent as a tool so another agent can invoke it via tool calling.
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<
+            import('../tools/core/agent-as-tool.js').AgentAsToolOptions<unknown, TOutput>,
+            'agent'
+        >,
+    ): import('../tools/core/tool-helper.js').LightweightTool<
+        import('../tools/core/tool-helper.js').ToolObjectSchemaLike<Record<string, unknown>>,
+        TOutput
+    >;
+    /**
+     * Alias of {@link CreateAgentResult.run} — Mastra/Agno-style naming.
+     */
+    generate(prompt: string | MultiModalInput, options?: AgentRunOptions): Promise<AgentRunResult>;
+    /** Optional capability description (used by supervisors). */
+    readonly description?: string;
     /** All resolved adapter bindings (merged from `adapters` + convenience fields). */
     readonly adapters?: AdapterBindings;
 }

@@ -2,6 +2,7 @@ import type { Message } from '../providers/types.js';
 import type { AgenticStreamHooks } from '../agentic/index.js';
 import { withSpan, genAiAttributes } from '../observe/index.js';
 import type { Tool, ToolProvider, ToolResult } from '../tools/core/index.js';
+import { agentAsTool } from '../tools/core/agent-as-tool.js';
 import { createAgenticAgent } from '../agentic/index.js';
 import { HttpClientTool } from '../tools/utils/http.js';
 import { BrowserTool } from '../tools/utils/browser.js';
@@ -531,6 +532,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
 
     return {
         name,
+        ...(options.description !== undefined ? { description: options.description } : {}),
         instructions,
         adapters: adapterBindings,
         async run(prompt: string | import('../providers/vision.js').MultiModalInput, runOptions?: AgentRunOptions) {
@@ -805,6 +807,17 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 throw new ConfigError('getSessionMessages: sessionStore is disabled.', {});
             }
             return sessionStore.getMessages(sessionId);
+        },
+        asTool(options) {
+            const self = this as import('./types.js').CreateAgentResult;
+            return agentAsTool({
+                ...options,
+                agent: self as unknown as import('../tools/core/agent-as-tool.js').RunnableAgent,
+            });
+        },
+        generate(prompt, options) {
+            const self = this as import('./types.js').CreateAgentResult;
+            return self.run(prompt, options);
         },
         resume(sessionId: string) {
             const self = this as import('./types.js').CreateAgentResult;

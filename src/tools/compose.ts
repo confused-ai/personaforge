@@ -98,7 +98,6 @@ export function composeTool<
         permissions: mergedPerms,
         category:    options.category ?? ToolCategory.CUSTOM,
         version:     '1.0.0',
-
         validate: (p): p is z.infer<P> => first.validate(p),
 
         async execute(params, ctx): Promise<ToolResult<B>> {
@@ -327,7 +326,6 @@ export function mapTool<
         ...tool,
         id:          options.id          ?? `${tool.id}:mapped`,
         description: options.description ?? tool.description,
-
         async execute(params, ctx): Promise<ToolResult<TOut>> {
             const result = await tool.execute(params, ctx);
             if (!result.success) return result as unknown as ToolResult<TOut>;

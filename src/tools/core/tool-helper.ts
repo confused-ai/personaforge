@@ -100,6 +100,12 @@ export interface ToolHelperConfig<TSchema extends ToolObjectSchemaLike<Record<st
     readonly onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
     /** Transform tool output before returning to model. */
     readonly toModelOutput?: (output: TOutput) => unknown;
+    /** Run before the tool executes. Return false to cancel. */
+    readonly beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
+    /** Run after the tool executes. */
+    readonly afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
+    /** Handle errors thrown during execution. Return a fallback value, or re-throw. */
+    readonly onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
 }
 
 /** Simplified context available to tool execute functions. */
@@ -130,11 +136,14 @@ export interface LightweightTool<
     toFrameworkTool(): import('../../core/index.js').Tool;
     /** Get JSON Schema representation for LLM function calling. */
     toJSONSchema(): Record<string, unknown>;
-    /** Streaming hooks (if configured). */
+    /** Lifecycle hooks. */
     readonly hooks: {
         readonly onInputStart?: (toolName: string) => void;
         readonly onInputDelta?: (toolName: string, delta: string) => void;
         readonly onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
+        readonly beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
+        readonly afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
+        readonly onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
     };
     /** Transform output for model. */
     readonly toModelOutput?: (output: TOutput) => unknown;
@@ -165,6 +174,9 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
         onInputDelta,
         onInputAvailable,
         toModelOutput,
+        beforeExecute,
+        afterExecute,
+        onError,
     } = config;
 
     const lightweight: LightweightTool<TSchema, TOutput> = {
@@ -200,14 +212,30 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                 };
             }
 
-            // Notify hooks
-            onInputAvailable?.(name, parseResult.data as InferToolSchema<TSchema>);
+            const validatedParams = parseResult.data as InferToolSchema<TSchema>;
+
+            // beforeExecute hook
+            if (beforeExecute) {
+                const cancel = await beforeExecute(validatedParams, ctx);
+                if (cancel === false) {
+                    const executionTimeMs = performance.now() - t0;
+                    return {
+                        success: false,
+                        error: { code: 'CANCELLED', message: `Tool "${name}" execution cancelled by beforeExecute hook` },
+                        executionTimeMs,
+                        metadata: { startTime, endTime: new Date(), retries: 0 },
+                    };
+                }
+            }
+
+            // Notify streaming hooks
+            onInputAvailable?.(name, validatedParams);
 
             try {
                 // Execute with timeout — timer is always cleared to prevent GC leak
                 let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
                 const result = await Promise.race([
-                    execute(parseResult.data as InferToolSchema<TSchema>, ctx),
+                    execute(validatedParams, ctx),
                     new Promise<never>((_, reject) => {
                         timeoutHandle = setTimeout(
                             () => { reject(new Error(`Tool '${name}' timed out after ${String(timeoutMs)}ms`)); },
@@ -217,6 +245,7 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                 ]).finally(() => { clearTimeout(timeoutHandle); });
 
                 // Validate output if schema provided
+                let validatedOutput = result as TOutput;
                 if (outputSchema) {
                     const outputResult = outputSchema.safeParse(result);
                     if (!outputResult.success) {
@@ -224,24 +253,50 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
                         const endTime = new Date();
                         return {
                             success: false,
-                            error: { code: 'OUTPUT_VALIDATION_ERROR', message: outputResult.error.message },
+                            error: {
+                                code: 'OUTPUT_VALIDATION_ERROR',
+                                message: `output validation failed: ${outputResult.error.message}`,
+                            },
                             executionTimeMs,
                             metadata: { startTime, endTime, retries: 0 },
                         };
                     }
+                    validatedOutput = outputResult.data as TOutput;
                 }
 
                 const executionTimeMs = performance.now() - t0;
                 const endTime = new Date();
+                const finalResult = (toModelOutput ? await toModelOutput(validatedOutput) : validatedOutput) as TOutput;
+
+                // afterExecute hook
+                if (afterExecute) {
+                    await afterExecute(finalResult, validatedParams, ctx);
+                }
+
                 return {
                     success: true,
-                    data: (toModelOutput ? await toModelOutput(result) : result) as TOutput,
+                    data: finalResult,
                     executionTimeMs,
                     metadata: { startTime, endTime, retries: 0 },
                 };
             } catch (error) {
                 const executionTimeMs = performance.now() - t0;
                 const endTime = new Date();
+
+                if (onError) {
+                    const fallback = await onError(
+                        error instanceof Error ? error : new Error(String(error)),
+                        validatedParams,
+                        ctx,
+                    );
+                    return {
+                        success: true,
+                        data: fallback,
+                        executionTimeMs,
+                        metadata: { startTime, endTime, retries: 0 },
+                    };
+                }
+
                 return {
                     success: false,
                     error: {
@@ -304,6 +359,9 @@ export function tool<TSchema extends ToolObjectSchemaLike<Record<string, unknown
             ...(onInputStart !== undefined ? { onInputStart } : {}),
             ...(onInputDelta !== undefined ? { onInputDelta } : {}),
             ...(onInputAvailable !== undefined ? { onInputAvailable } : {}),
+            ...(beforeExecute !== undefined ? { beforeExecute } : {}),
+            ...(afterExecute !== undefined ? { afterExecute } : {}),
+            ...(onError !== undefined ? { onError } : {}),
         },
         ...(toModelOutput !== undefined ? { toModelOutput } : {}),
     };
@@ -476,6 +534,9 @@ interface ToolBuilderState<TSchema extends ToolObjectSchemaLike<Record<string, u
     onInputDelta?: (toolName: string, delta: string) => void;
     onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
     toModelOutput?: (output: TOutput) => unknown;
+    beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
+    afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
+    onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
 }
 
 /**
@@ -604,6 +665,24 @@ export class ToolBuilder<
         return this;
     }
 
+    /** Hook: run before the tool executes. Return false to cancel. */
+    before(fn: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined): this {
+        this.state.beforeExecute = fn;
+        return this;
+    }
+
+    /** Hook: run after the tool executes. */
+    after(fn: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void): this {
+        this.state.afterExecute = fn;
+        return this;
+    }
+
+    /** Hook: handle execution errors. Return a fallback value or re-throw. */
+    onError(fn: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>): this {
+        this.state.onError = fn;
+        return this;
+    }
+
     /** Build and return a LightweightTool */
     build(): LightweightTool<TSchema, TOutput> {
         if (!this.state.name) throw new Error('defineTool().name("...") is required before .build()');
@@ -626,6 +705,9 @@ export class ToolBuilder<
             onInputDelta: this.state.onInputDelta,
             onInputAvailable: this.state.onInputAvailable,
             toModelOutput: this.state.toModelOutput,
+            beforeExecute: this.state.beforeExecute,
+            afterExecute: this.state.afterExecute,
+            onError: this.state.onError,
         } as ToolHelperConfig<TSchema, TOutput>);
     }
 }
@@ -806,6 +888,7 @@ export function extendTool<TSchema extends ToolObjectSchemaLike<Record<string, u
         category: options.category,
         tags: [...base.tags, ...(options.tags ?? [])],
         timeoutMs: options.timeoutMs,
+        ...(base.outputSchema !== undefined ? { outputSchema: base.outputSchema } : {}),
     } as ToolHelperConfig<TSchema, TOutput>);
 }
 
@@ -858,6 +941,7 @@ export function wrapTool<TSchema extends ToolObjectSchemaLike<Record<string, unk
         parameters: base.parameters,
         execute: chain,
         tags: [...base.tags, ...(overrides.tags ?? [])],
+        ...(base.outputSchema !== undefined ? { outputSchema: base.outputSchema } : {}),
     });
 }
 
@@ -894,6 +978,7 @@ export function pipeTools<
         description: options.description,
         parameters: first.parameters,
         tags: options.tags,
+        ...(second.outputSchema !== undefined ? { outputSchema: second.outputSchema } : {}),
         execute: async (params, ctx) => {
             const firstResult = await first.execute(params, ctx);
             if (!firstResult.success) throw new Error(firstResult.error?.message ?? 'First tool failed');

@@ -176,3 +176,20 @@ export {
 // ── Production preset ──────────────────────────────────────────────────────
 export { createProductionSetup } from './production.js';
 export type { ProductionSetupOptions, ProductionSetup } from './production.js';
+
+// ── Universal foreign-system tool adapters ───────────────────────────────────
+export {
+    fromOpenAITool,
+    fromOpenAITools,
+    jsonSchemaToZodObject,
+    fromHttpTool,
+    fromForeignTool,
+    fromForeignTools,
+} from './universal/index.js';
+export type {
+    OpenAIFunctionTool,
+    OpenAIToolAdapterOptions,
+    HttpToolOptions,
+    ForeignTool,
+} from './universal/index.js';
+

@@ -92,10 +92,16 @@ export interface LLMProvider {
  * A tool that an agent can execute.
  */
 export interface Tool {
-  name: string;
-  description: string;
-  parameters: Record<string, unknown>;
-  execute(input: Record<string, unknown>, ctx?: Record<string, unknown>): Promise<unknown>;
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+    /**
+     * Optional Zod schema for validating tool output.
+     * When provided, tool results are validated against this schema before
+     * being returned to the caller or fed back to the LLM.
+     */
+    outputSchema?: Record<string, unknown>;
+    execute(input: Record<string, unknown>, ctx?: Record<string, unknown>): Promise<unknown>;
 }
 
 /**

@@ -47,3 +47,11 @@ export * from './utils/calculator.js';
 // ── Tool composition helpers ──────────────────────────────────────────────
 export { composeTool, parallelTools, fallbackTool, retryTool, timeoutTool, mapTool, filterTool } from './compose.js';
 export type { ComposeToolOptions, ParallelToolsOptions, FallbackToolOptions, RetryToolOptions } from './compose.js';
+
+// ── Agent / workflow / pipeline as tools ──────────────────────────────────
+export { agentAsTool, multiAgentTool, toRunnableAgent, getAgentToolDepth } from './core/agent-as-tool.js';
+export type { AgentAsToolOptions, RunnableAgent, MultiAgentToolOptions } from './core/agent-as-tool.js';
+export { workflowAsTool } from './core/workflow-as-tool.js';
+export type { WorkflowAsToolOptions, RunnableWorkflow, WorkflowToolResult } from './core/workflow-as-tool.js';
+export { pipelineAsTool } from './core/pipeline-as-tool.js';
+export type { PipelineAsToolOptions, RunnablePipeline } from './core/pipeline-as-tool.js';

@@ -38,6 +38,16 @@
 
 import type { CreateAgentResult } from '../create-agent/types.js';
 import type { AgenticRunResult } from '../agentic/index.js';
+import { pipelineAsTool } from '../tools/core/pipeline-as-tool.js';
+import type { PipelineAsToolOptions } from '../tools/core/pipeline-as-tool.js';
+
+export interface WorkflowHooks {
+    beforeWorkflow?: (prompt: string) => Promise<string | void> | string | void;
+    afterWorkflow?: (result: AgenticRunResult) => Promise<AgenticRunResult | void> | AgenticRunResult | void;
+    beforeStage?: (stageIndex: number, agentName: string, prompt: string) => Promise<string | void> | string | void;
+    afterStage?: (stageIndex: number, agentName: string, result: AgenticRunResult) => Promise<void> | void;
+    onError?: (error: Error, stageIndex: number, agentName: string) => Promise<void> | void;
+}
 
 export interface ComposeOptions {
     /**
@@ -55,6 +65,9 @@ export interface ComposeOptions {
 
     /** Session ID to use for all agents in the pipeline */
     sessionId?: string;
+
+    /** Lifecycle hooks for the workflow pipeline */
+    hooks?: WorkflowHooks;
 }
 
 export interface ComposedAgent {
@@ -63,6 +76,13 @@ export interface ComposedAgent {
         prompt: string,
         options?: { onChunk?: (text: string) => void; sessionId?: string },
     ): Promise<AgenticRunResult>;
+    /** Expose this pipeline as a tool for a parent agent. */
+    asTool<TOutput = unknown>(
+        options: Omit<PipelineAsToolOptions<unknown, TOutput>, 'pipeline'>,
+    ): import('../tools/core/tool-helper.js').LightweightTool<
+        import('../tools/core/tool-helper.js').ToolObjectSchemaLike<Record<string, unknown>>,
+        TOutput
+    >;
 }
 
 /** Type guard: is this value a CreateAgentResult from createAgent() / agent() / defineAgent()? */
@@ -99,43 +119,84 @@ export function compose(...args: unknown[]): ComposedAgent {
         throw new Error('compose() requires at least 2 agents.');
     }
 
-    return {
+    const composed: ComposedAgent = {
+        asTool(options) {
+            return pipelineAsTool({
+                ...options,
+                pipeline: composed,
+            });
+        },
         async run(
             initialPrompt: string,
             runOptions?: { onChunk?: (text: string) => void; sessionId?: string },
         ): Promise<AgenticRunResult> {
             let currentPrompt = initialPrompt;
             let currentResult: AgenticRunResult | null = null;
+            const hooks = opts.hooks;
 
-            for (let i = 0; i < agents.length; i++) {
-                const agent = agents[i]!;
-
-                // Check when predicate (skip for first agent)
-                if (i > 0 && opts.when && currentResult) {
-                    const proceed = await opts.when(currentResult, i - 1);
-                    if (!proceed) {
-                        return currentResult;
-                    }
-                }
-
-                currentResult = await agent.run(currentPrompt, {
-                    sessionId: runOptions?.sessionId ?? opts.sessionId,
-                    onChunk: i === agents.length - 1 ? runOptions?.onChunk : undefined,
-                });
-
-                // Transform output for next agent
-                if (i < agents.length - 1 && currentResult) {
-                    if (opts.transform) {
-                        currentPrompt = await opts.transform(currentResult, i);
-                    } else {
-                        currentPrompt = currentResult.text ?? '';
-                    }
-                }
+            if (hooks?.beforeWorkflow) {
+                const transformed = await hooks.beforeWorkflow(currentPrompt);
+                if (typeof transformed === 'string') currentPrompt = transformed;
             }
 
-            return currentResult!;
+            try {
+                for (let i = 0; i < agents.length; i++) {
+                    const agent = agents[i]!;
+                    const agentName = agent.name ?? `stage-${String(i)}`;
+
+                    if (i > 0 && opts.when && currentResult) {
+                        const proceed = await opts.when(currentResult, i - 1);
+                        if (!proceed) {
+                            if (hooks?.afterWorkflow) {
+                                const transformed = await hooks.afterWorkflow(currentResult);
+                                return (transformed as AgenticRunResult) ?? currentResult;
+                            }
+                            return currentResult;
+                        }
+                    }
+
+                    if (hooks?.beforeStage) {
+                        const transformed = await hooks.beforeStage(i, agentName, currentPrompt);
+                        if (typeof transformed === 'string') currentPrompt = transformed;
+                    }
+
+                    currentResult = await agent.run(currentPrompt, {
+                        sessionId: runOptions?.sessionId ?? opts.sessionId,
+                        onChunk: i === agents.length - 1 ? runOptions?.onChunk : undefined,
+                    });
+
+                    if (hooks?.afterStage) {
+                        await hooks.afterStage(i, agentName, currentResult);
+                    }
+
+                    if (i < agents.length - 1 && currentResult) {
+                        if (opts.transform) {
+                            currentPrompt = await opts.transform(currentResult, i);
+                        } else {
+                            currentPrompt = currentResult.text ?? '';
+                        }
+                    }
+                }
+
+                if (hooks?.afterWorkflow && currentResult) {
+                    const transformed = await hooks.afterWorkflow(currentResult);
+                    return (transformed as AgenticRunResult) ?? currentResult;
+                }
+
+                return currentResult!;
+            } catch (error) {
+                if (hooks?.onError) {
+                    await hooks.onError(
+                        error instanceof Error ? error : new Error(String(error)),
+                        agents.indexOf(agents.find((_, idx) => idx === agents.length - 1)!),
+                        'unknown',
+                    );
+                }
+                throw error;
+            }
         },
     };
+    return composed;
 }
 
 /**
@@ -159,6 +220,7 @@ export function pipe(first: CreateAgentResult): PipelineBuilder {
 class PipelineBuilder {
     private agents: CreateAgentResult[];
     private steps: ComposeOptions[] = [];
+    private workflowHooks?: WorkflowHooks;
 
     constructor(agents: CreateAgentResult[]) {
         this.agents = [...agents];
@@ -170,7 +232,30 @@ class PipelineBuilder {
     then(agent: CreateAgentResult, options?: ComposeOptions): PipelineBuilder {
         const next = new PipelineBuilder([...this.agents, agent]);
         next.steps = [...this.steps, options ?? {}];
+        next.workflowHooks = this.workflowHooks;
         return next;
+    }
+
+    /**
+     * Attach lifecycle hooks to the pipeline.
+     */
+    hooks(hooks: WorkflowHooks): PipelineBuilder {
+        const next = new PipelineBuilder([...this.agents]);
+        next.steps = [...this.steps];
+        next.workflowHooks = hooks;
+        return next;
+    }
+
+    /**
+     * Expose this pipeline as a tool for a parent agent.
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<PipelineAsToolOptions<unknown, TOutput>, 'pipeline'>,
+    ) {
+        return pipelineAsTool({
+            ...options,
+            pipeline: this,
+        });
     }
 
     /**
@@ -182,30 +267,67 @@ class PipelineBuilder {
     ): Promise<AgenticRunResult> {
         let currentPrompt = prompt;
         let currentResult: AgenticRunResult | null = null;
+        const hooks = this.workflowHooks;
 
-        for (let i = 0; i < this.agents.length; i++) {
-            const agent = this.agents[i]!;
-            const stepOpts = this.steps[i - 1] ?? {};
-
-            // Check step-level when predicate
-            if (i > 0 && stepOpts.when && currentResult) {
-                const proceed = await stepOpts.when(currentResult, i - 1);
-                if (!proceed) return currentResult!;
-            }
-
-            currentResult = await agent.run(currentPrompt, {
-                sessionId: options?.sessionId ?? stepOpts.sessionId,
-                onChunk: i === this.agents.length - 1 ? options?.onChunk : undefined,
-            });
-
-            if (i < this.agents.length - 1 && currentResult) {
-                const transform = stepOpts.transform;
-                currentPrompt = transform
-                    ? await transform(currentResult, i)
-                    : (currentResult.text ?? '');
-            }
+        if (hooks?.beforeWorkflow) {
+            const transformed = await hooks.beforeWorkflow(currentPrompt);
+            if (typeof transformed === 'string') currentPrompt = transformed;
         }
 
-        return currentResult!;
+        try {
+            for (let i = 0; i < this.agents.length; i++) {
+                const agent = this.agents[i]!;
+                const stepOpts = this.steps[i - 1] ?? {};
+                const agentName = agent.name ?? `stage-${String(i)}`;
+
+                if (i > 0 && stepOpts.when && currentResult) {
+                    const proceed = await stepOpts.when(currentResult, i - 1);
+                    if (!proceed) {
+                        if (hooks?.afterWorkflow) {
+                            const transformed = await hooks.afterWorkflow(currentResult);
+                            return (transformed as AgenticRunResult) ?? currentResult;
+                        }
+                        return currentResult!;
+                    }
+                }
+
+                if (hooks?.beforeStage) {
+                    const transformed = await hooks.beforeStage(i, agentName, currentPrompt);
+                    if (typeof transformed === 'string') currentPrompt = transformed;
+                }
+
+                currentResult = await agent.run(currentPrompt, {
+                    sessionId: options?.sessionId ?? stepOpts.sessionId,
+                    onChunk: i === this.agents.length - 1 ? options?.onChunk : undefined,
+                });
+
+                if (hooks?.afterStage) {
+                    await hooks.afterStage(i, agentName, currentResult);
+                }
+
+                if (i < this.agents.length - 1 && currentResult) {
+                    const transform = stepOpts.transform;
+                    currentPrompt = transform
+                        ? await transform(currentResult, i)
+                        : (currentResult.text ?? '');
+                }
+            }
+
+            if (hooks?.afterWorkflow && currentResult) {
+                const transformed = await hooks.afterWorkflow(currentResult);
+                return (transformed as AgenticRunResult) ?? currentResult;
+            }
+
+            return currentResult!;
+        } catch (error) {
+            if (hooks?.onError) {
+                await hooks.onError(
+                    error instanceof Error ? error : new Error(String(error)),
+                    this.agents.length - 1,
+                    'unknown',
+                );
+            }
+            throw error;
+        }
     }
 }

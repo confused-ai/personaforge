@@ -83,6 +83,42 @@ export * from './tools/utils/file.js';
 export * from './tools/utils/browser.js';
 export * from './tools/utils/calculator.js';
 
+// ── Agent / workflow / pipeline as tools + harness ───────────────────────────
+export {
+    agentAsTool, multiAgentTool, toRunnableAgent, getAgentToolDepth,
+    workflowAsTool, pipelineAsTool,
+} from './tools/index.js';
+export type {
+    AgentAsToolOptions, RunnableAgent, MultiAgentToolOptions,
+    WorkflowAsToolOptions, RunnableWorkflow, WorkflowToolResult,
+    PipelineAsToolOptions, RunnablePipeline,
+} from './tools/index.js';
+export { createHarness, createOrchestrator } from './harness/index.js';
+export type {
+    AgentHarness, HarnessConfig, HarnessAsToolOptions,
+    Orchestrator, OrchestratorConfig, OrchestratorSpecialist,
+} from './harness/index.js';
+export {
+    createLifecycleHooks, mergeHooks, createHookChain, toAgenticHooks, fromAgenticHooks,
+} from './hooks/index.js';
+
+// ── Production system registry (Mastra/Agno AgentOS edge) ────────────────────
+export { createSystem, System } from './system/index.js';
+export type {
+    PersonaForgeSystem, SystemConfig, SystemAgentRegistration,
+    SystemWorkflowRegistration, SystemPipelineRegistration, SupervisorOptions, SupervisorHandle,
+} from './system/index.js';
+export {
+    fromOpenAITool, fromOpenAITools, jsonSchemaToZodObject,
+    fromHttpTool, fromForeignTool, fromForeignTools,
+} from './adapters/universal/index.js';
+export type {
+    OpenAIFunctionTool, OpenAIToolAdapterOptions, HttpToolOptions, ForeignTool,
+} from './adapters/universal/index.js';
+export type {
+    UnifiedLifecycleHooks, HookContext, ToolHookContext, WorkflowHookContext, RunHookContext, HookChain,
+} from './hooks/index.js';
+
 // ── Planner ───────────────────────────────────────────────────────────────────
 // Note: RetryPolicy already exported from ./core/index.js
 export { LLMPlanner, ClassicalPlanner, PlanValidator, PlanningAlgorithm } from './planner/index.js';
