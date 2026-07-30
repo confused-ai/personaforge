@@ -348,7 +348,8 @@ class StreamableMcpBridgeTool extends BaseTool<ToolParameters, string> {
     }
 
     protected async performExecute(params: McpOpenArgs): Promise<string> {
-        const out = await this.client.callTool(this.mcpName, params);
+        const args = params as Record<string, unknown>;
+        const out = await this.client.callTool(this.mcpName, args);
         return (out.content ?? [])
             .map(c => c.type === 'text' && c.text ? c.text : JSON.stringify(c))
             .join('\n');

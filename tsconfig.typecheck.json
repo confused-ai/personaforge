@@ -6,6 +6,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*", "packages/*/src/**/*", "packages/*/*/src/**/*"],
+  "include": ["src/**/*", "packages/*/src/**/*", "packages/*/*/src/**/*", "types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
