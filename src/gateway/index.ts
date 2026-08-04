@@ -44,7 +44,6 @@ import type {
     ComplianceReport,
     EnterpriseGateway,
     EnterpriseGatewayConfig,
-    GatewayTenant,
 } from './types.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -111,7 +110,6 @@ export function createEnterpriseGateway(config: EnterpriseGatewayConfig): Enterp
     const cors = config.cors;
     const trustProxy = policy.trustProxy ?? false;
     const maxBodyBytes = policy.maxBodyBytes ?? 1_048_576;
-    const requestTimeoutMs = policy.requestTimeoutMs ?? 0;
     const exposeErrors = policy.exposeErrors ?? false;
     const frameworks = config.complianceFrameworks ?? ['SOC2', 'HIPAA'];
 

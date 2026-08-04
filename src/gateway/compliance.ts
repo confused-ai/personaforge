@@ -8,7 +8,6 @@
  */
 
 import type {
-    ComplianceControl,
     ComplianceFramework,
     ComplianceReport,
     EnterpriseGatewayConfig,
