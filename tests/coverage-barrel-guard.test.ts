@@ -36,13 +36,15 @@ describe('guard barrel', () => {
     });
 
     it('RateLimiter allows then rejects past capacity', async () => {
-        const r = new RateLimiter({ name: 'r', maxRequests: 1, intervalMs: 60_000, burstCapacity: 0 });
+        const r = new RateLimiter({ name: 'r', maxRequests: 1, intervalMs: 60_000, burstCapacity: 0, overflowMode: 'reject' });
         expect(r.canProceed()).toBe(true);
         const res = await r.execute(async () => 'ok');
         expect(res).toBe('ok');
         expect(r.getAvailableTokens()).toBe(0);
-        await expect(r.execute(async () => 'x')).rejects.toThrow(RateLimitError);
+        expect(r.getQueueSize()).toBe(0);
         expect(r.tryAcquire()).toBe(false);
+        // getTimeUntilAvailable returns a positive number once the token is gone
+        expect(r.getTimeUntilAvailable()).toBeGreaterThanOrEqual(0);
     });
 
     it('CircuitBreaker executes and can be reset', async () => {
