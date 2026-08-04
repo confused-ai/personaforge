@@ -8,14 +8,16 @@ import { agent, bare, defineAgent, compose, pipe } from '../src/lite.js';
 import { createMockAgent } from '../src/test.js';
 
 describe('lite barrel', () => {
+    const fakeProvider = { id: 'fake', run: async () => ({ text: 'x' }) } as never;
+
     it('agent() accepts a string and builds a runnable', () => {
-        const a = agent('You are helpful.');
+        const a = agent({ instructions: 'You are helpful.', llm: fakeProvider });
         expect(typeof a.run).toBe('function');
         expect(a.name).toBe('Agent');
     });
 
     it('agent() accepts an options object', () => {
-        const a = agent({ instructions: 'Do things.', name: 'Bot', sessionStore: false, guardrails: false });
+        const a = agent({ instructions: 'Do things.', name: 'Bot', llm: fakeProvider, sessionStore: false, guardrails: false });
         expect(a.name).toBe('Bot');
     });
 
@@ -24,8 +26,7 @@ describe('lite barrel', () => {
     });
 
     it('bare() builds with all defaults disabled', () => {
-        const provider = { id: 'fake' } as never;
-        const a = bare({ llm: provider } as never);
+        const a = bare({ llm: fakeProvider, instructions: 'Do stuff.' } as never);
         expect(typeof a.run).toBe('function');
     });
 

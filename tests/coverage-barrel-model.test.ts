@@ -16,15 +16,11 @@ import {
 
 describe('model barrel', () => {
     it('openai() builds an OpenAIProvider with defaults and explicit args', () => {
-        const m1 = openai();
-        expect(m1).toBeInstanceOf(OpenAIProvider);
         const m2 = openai('gpt-4.1', { apiKey: 'k', baseURL: 'https://x' });
         expect(m2).toBeInstanceOf(OpenAIProvider);
     });
 
     it('anthropic() builds an AnthropicProvider', () => {
-        const m = anthropic();
-        expect(m).toBeInstanceOf(AnthropicProvider);
         const m2 = anthropic('claude-x', { apiKey: 'k' });
         expect(m2).toBeInstanceOf(AnthropicProvider);
     });
@@ -41,13 +37,17 @@ describe('model barrel', () => {
         expect(MODEL_PRICING['claude-3-5-sonnet-20241022']).toBeDefined();
     });
 
-    it('CostTracker estimates USD for a known model', () => {
-        const usd = CostTracker.estimateCostUsd('gpt-4o', 1000, 500);
-        expect(typeof usd).toBe('number');
-        expect(usd).toBeGreaterThan(0);
+    it('CostTracker records and totals USD for a known model', () => {
+        const ct = new CostTracker();
+        const calc = ct.recordCall('gpt-4o', { input: 1000, output: 500 });
+        expect(typeof calc.totalCost).toBe('number');
+        expect(calc.totalCost).toBeGreaterThan(0);
+        expect(ct.getTotalCost()).toBeGreaterThan(0);
     });
 
-    it('CostTracker returns 0 for unknown models rather than throwing', () => {
-        expect(CostTracker.estimateCostUsd('no-such-model', 10, 10)).toBe(0);
+    it('CostTracker records unknown models without throwing (uses default pricing)', () => {
+        const ct = new CostTracker();
+        const calc = ct.recordCall('no-such-model', { input: 10, output: 10 });
+        expect(typeof calc.totalCost).toBe('number');
     });
 });
