@@ -157,6 +157,9 @@ export interface Mem0MemoryConfig {
     rankWithLlm?: boolean;
 }
 
+/** Conversation-message shape accepted by extraction (superset of `Message`). */
+export type Mem0MessageInput = { role: string; content: unknown } | Message;
+
 const DEFAULT_SEARCH_PROMPT =
     'You are a memory search ranker. Given a query and candidate memories, return the indices of the ' +
     'most relevant candidates, most relevant first, as a JSON array of integers. Keep at most {limit}. ' +
@@ -311,7 +314,7 @@ export class Mem0Memory {
     // ── Extraction ──────────────────────────────────────────────────────────
 
     /** Use the LLM to extract memory operations from a conversation. */
-    async extract(messages: Array<{ role: string; content: unknown }>, options: Mem0ExtractOptions = {}): Promise<ExtractedMemory[]> {
+    async extract(messages: Mem0MessageInput[], options: Mem0ExtractOptions = {}): Promise<ExtractedMemory[]> {
         if (!this.llm) throw new Error('Mem0Memory.extract requires an `llm` (constructor option).');
         const transcript = messages
             .map((m) => {
@@ -360,7 +363,7 @@ export class Mem0Memory {
      * mem0's main pipeline: extract memory operations from a conversation and
      * apply them to the store. Returns the extracted operations.
      */
-    async processMessages(messages: Array<{ role: string; content: unknown }>, options: Mem0ExtractOptions & Mem0WriteOptions = {}): Promise<ExtractedMemory[]> {
+    async processMessages(messages: Mem0MessageInput[], options: Mem0ExtractOptions & Mem0WriteOptions = {}): Promise<ExtractedMemory[]> {
         const extracted = await this.extract(messages, options);
         await this.applyOperations(extracted, options);
         return extracted;

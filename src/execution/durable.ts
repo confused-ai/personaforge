@@ -112,6 +112,7 @@ export class SqliteEventStore implements EventStore {
         const fullEvent: WorkflowEvent = {
             ...event,
             id: generateEntityId(),
+            workflowId,
             timestamp: Date.now(),
         };
         this.db.prepare(
@@ -194,6 +195,7 @@ export class LibSqlEventStore implements EventStore {
         const fullEvent: WorkflowEvent = {
             ...event,
             id: generateEntityId(),
+            workflowId,
             timestamp: Date.now(),
         };
         await this.client.execute({
@@ -233,6 +235,7 @@ interface RedisClientLike {
     lrange(key: string, start: number, stop: number): Promise<string[]>;
     del(key: string): Promise<number>;
     keys(pattern: string): Promise<string[]>;
+    expire(key: string, seconds: number): Promise<number>;
     quit(): Promise<string>;
 }
 
@@ -248,11 +251,14 @@ export class RedisEventStore implements EventStore {
         if (typeof clientOrUrl === 'object') {
             this.client = clientOrUrl;
         } else {
-            let Redis: any;
+            let Redis: RedisCtor;
             try {
-                Redis = _require('ioredis');
-                if (typeof Redis !== 'function' && 'default' in Redis) Redis = Redis.default;
-                if (typeof Redis !== 'function' && 'Redis' in Redis) Redis = Redis.Redis;
+                const loaded: unknown = _require('ioredis');
+                const ctor = typeof loaded === 'function'
+                    ? loaded
+                    : (loaded as { default?: unknown; Redis?: unknown }).default ?? (loaded as { Redis?: unknown }).Redis;
+                if (typeof ctor !== 'function') throw new Error('ioredis default export is not a constructor');
+                Redis = ctor as RedisCtor;
             } catch {
                 throw new Error(MISSING_REDIS);
             }
@@ -276,6 +282,8 @@ export class RedisEventStore implements EventStore {
         };
         const key = this._key(workflowId);
         await this.client.rpush(key, JSON.stringify(fullEvent));
+        // Rolling TTL — keeps dormant workflow histories from accumulating forever.
+        await this.client.expire(key, REDIS_TTL_SECONDS).catch(() => undefined);
         return fullEvent;
     }
 
@@ -357,6 +365,7 @@ export class PgEventStore implements EventStore {
         const fullEvent: WorkflowEvent = {
             ...event,
             id: generateEntityId(),
+            workflowId,
             timestamp: Date.now(),
         };
         await this.pool.query(

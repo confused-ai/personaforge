@@ -236,6 +236,11 @@ export class Memory {
         return this.mem0Engine;
     }
 
+    /** The mem0 configuration this Memory was built with (`false` when disabled). */
+    get mem0Options(): Mem0MemoryOption | false {
+        return this.mem0Option;
+    }
+
     /** Whether working memory is enabled. */
     get workingMemoryEnabled(): boolean {
         return this.workingMemoryCfg.kind !== 'none';
@@ -325,6 +330,12 @@ export class Memory {
 
     async getThreadById(threadId: string): Promise<Thread | null> {
         return this.store.getThread(threadId);
+    }
+
+    /** The state blob a thread carries (e.g. the observational-memory cursor). */
+    async getThreadState(threadId: string): Promise<ThreadState | undefined> {
+        const thread = await this.store.getThread(threadId).catch(() => null);
+        return thread?.state;
     }
 
     async getThreadByResourceId(resourceId: string): Promise<Thread[]> {

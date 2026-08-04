@@ -30,6 +30,7 @@ import type {
     StructuredOutputConfig,
     GoalRunConfig,
 } from './types.js';
+
 import type { HumanInTheLoopHooks, GuardrailContext } from './_guardrail-types.js';
 import type { GuardrailEngine } from './_guardrail-types.js';
 import type { Span } from '@opentelemetry/api';
@@ -1394,7 +1395,7 @@ export class AgenticRunner {
         text: string,
         procRun: ProcRun,
     ): Promise<{ object?: unknown; legacy?: unknown }> {
-        const config = runConfig.structuredOutput;
+        const config: StructuredOutputConfig | undefined = runConfig.structuredOutput;
         void procRun;
         if (!config) return {};
         const schema = config.schema;
@@ -1466,6 +1467,17 @@ export class AgenticRunner {
             { temperature: 0, maxTokens: 2048, toolChoice: 'none' },
         );
         const out = validateStructuredOutput(result.text ?? '', { schema, strict: true });
+        // Fall back to a raw JSON extraction when the provider wrapped the JSON
+        // in prose or a code fence that the strict validator could not parse.
+        if (!out.validated && out.rawText) {
+            try {
+                const json = extractJson(out.rawText);
+                const retry = validateStructuredOutput(JSON.stringify(json), { schema, strict: true });
+                if (retry.validated) return { data: retry.data, rawText: retry.rawText, validated: true, errors: [] };
+            } catch {
+                // keep the original error list — extraction failure is already recorded
+            }
+        }
         return { data: out.data, rawText: out.rawText, validated: out.validated, errors: out.errors };
     }
 

@@ -21,7 +21,7 @@
 import { z } from 'zod';
 import { tool, type LightweightTool } from '../tools/core/tool-helper.js';
 import type { Tool } from '../tools/core/types.js';
-import { LocalSandbox, VMSandbox, type Sandbox } from './sandbox.js';
+import { LocalSandbox, type Sandbox } from './sandbox.js';
 import { safeValidate } from '../validation/index.js';
 
 export type { Sandbox, SandboxRunResult, ExternalCall } from './sandbox.js';

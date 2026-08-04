@@ -317,7 +317,6 @@ export class ObservationalMemoryManager {
         resourceId: string;
         scope?: 'thread' | 'resource';
     }): Promise<ObservationContextResult> {
-        const scope = opts.scope ?? this.resolved.scope;
         const state = await this.loadState(opts.threadId);
         const unobserved = await this.getUnobserved(opts.threadId);
         const unobservedTokens = estimateConversationTokens(unobserved, this.estimator);

@@ -524,10 +524,10 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
     const llm = resolveLlmForCreateAgent(options, { model, apiKey, baseURL });
 
     // ── Mastra-style inspired memory bundle ──────────────────────────────────────────
-    const memory: import('../memory/index.js').Memory | undefined = options.memory;
+    const memory: Memory | undefined = options.memory;
     if (memory) {
         // Bind the agent LLM for observational memory / mem0 extraction.
-        memory.bindLlm?.(llm as import('../memory/index.js').Memory['llm'] | undefined);
+        memory.bindLlm?.(llm as Memory['llm'] | undefined);
         void memory; // processors + tools wired below
     }
     // Bind the agent LLM so OM / mem0 extraction work without extra config, then
@@ -1028,7 +1028,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     ...(runOptions?.signal  && { signal: runOptions.signal }),
                     ...(runOptions?.allowedTools && { allowedTools: runOptions.allowedTools }),
                     ...(runOptions?.processors && { processors: runOptions.processors }),
-                    ...((runOptions?.structuredOutput ?? options.structuredOutput) && { structuredOutput: runOptions?.structuredOutput ?? options.structuredOutput }),
+                    ...((runOptions?.structuredOutput ?? options.structuredOutput) && { structuredOutput: runOptions?.structuredOutput ?? options.structuredOutput as StructuredOutputConfig | undefined }),
                     ...(goalRunConfig && { goal: goalRunConfig }),
                     ...(requireToolApproval !== undefined && { requireToolApproval }),
                     ...(runOptions?.approvedToolCalls && { approvedToolCalls: runOptions.approvedToolCalls }),
