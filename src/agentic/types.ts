@@ -6,8 +6,7 @@ import type { Message, LLMToolDefinition, LLMProvider } from '../core/index.js';
 import type { EntityId } from '../core/index.js';
 import type { ToolRegistry, ToolMiddleware } from './_tool-types.js';
 import type { SchemaInput } from '../validation/index.js';
-import type { ProcessorSet, Processor } from '../processors/types.js';
-import type { ProcessorContext } from '../processors/types.js';
+import type { ProcessorSet } from '../processors/types.js';
 
 /** Observability: optional tracer and metrics for production monitoring */
 export interface RunObservability {

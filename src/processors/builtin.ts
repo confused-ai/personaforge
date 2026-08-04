@@ -153,7 +153,7 @@ export class TokenLimiter implements Processor {
         };
     }
 
-    async processInput({ messages, abort }: ProcessInputArgs): Promise<Message[]> {
+    async processInput({ messages }: ProcessInputArgs): Promise<Message[]> {
         const { preserveSystem, keepNewest } = this.opts;
         const system = preserveSystem ? messages.filter((m) => m.role === 'system') : [];
         const conv = messages.filter((m) => m.role !== 'system');
@@ -564,19 +564,24 @@ export class BatchPartsProcessor implements Processor {
     constructor(opts: BatchPartsProcessorOptions = {}) {
         this.batchSize = opts.batchSize ?? 5;
         this.maxWaitTime = opts.maxWaitTime ?? 50;
-        this.emitOnNonText = opts.emitOnNonText ?? false;
+        this.emitOnNonText = opts.emitOnNonText ?? true;
     }
 
     async processOutputStream({ part, state }: ProcessOutputStreamArgs): Promise<StreamOutputPart | null> {
-        if (part.type !== 'text-delta') return part;
-        state.parts = (state.parts ?? []) as string[];
-        (state.parts as string[]).push(part.text ?? '');
-        if ((state.parts as string[]).length < this.batchSize) {
-            return null; // hold until the batch is full
+        if (part.type !== 'text-delta') return this.emitOnNonText ? part : null;
+        const parts = (state.parts ??= []) as string[];
+        const startedAt = (state.startedAt as number | undefined) ?? Date.now();
+        parts.push(part.text ?? '');
+        state.startedAt = startedAt;
+        // Flush when the batch fills OR when the wait window elapses (so a
+        // slow trickle of chunks does not sit in the buffer forever).
+        if (parts.length >= this.batchSize || Date.now() - startedAt >= this.maxWaitTime) {
+            const text = parts.join('');
+            state.parts = [];
+            state.startedAt = undefined;
+            return { type: 'text-delta', text };
         }
-        const text = (state.parts as string[]).join('');
-        state.parts = [];
-        return { type: 'text-delta', text };
+        return null; // hold until the batch is full
     }
 }
 
@@ -607,12 +612,27 @@ export class SystemPromptScrubber implements Processor {
 
     async processOutputResult({ messages, state }: ProcessOutputResultArgs): Promise<Message[]> {
         void state;
+        // 'detect' only reports — never rewrites the output.
+        if (this.strategy === 'detect') {
+            for (const m of messages) {
+                const text = typeof m.content === 'string' ? m.content : '';
+                for (const re of this.patterns) {
+                    if (re.test(text)) emitViolation(this, `Sensitive label detected in assistant output`, { pattern: re.source });
+                }
+            }
+            return messages;
+        }
         return mapTextParts(messages, (text) => {
             let out = text;
             for (const re of this.patterns) {
-                out = out.replace(re, () =>
-                    this.method === 'remove' ? '' : this.placeholder,
-                );
+                if (re.test(out)) {
+                    if (this.strategy === 'warn' || this.strategy === 'block') {
+                        emitViolation(this, `Sensitive label scrubbed from assistant output`, { pattern: re.source });
+                    }
+                    out = out.replace(re, () =>
+                        this.method === 'remove' ? '' : this.placeholder,
+                    );
+                }
             }
             return out;
         }, ['assistant']);
@@ -676,7 +696,7 @@ export class ResponseCache implements Processor {
         ctx['response-cache'] = { ...(ctx['response-cache'] as Record<string, unknown> ?? {}), ...overrides };
     }
 
-    async processLLMRequest({ messages, model, stepNumber, context, state, abort }: ProcessLLMRequestArgs): Promise<ProcessLLMRequestResult> {
+    async processLLMRequest({ messages, model, stepNumber, context, state }: ProcessLLMRequestArgs): Promise<ProcessLLMRequestResult> {
         const requestCtx = context.requestContext?.[this.id] as { key?: string | ((i: unknown) => string); scope?: string | null; bust?: boolean } | undefined;
         const scope = requestCtx?.scope === undefined ? this.scope : requestCtx.scope;
         const key = (requestCtx?.key
@@ -740,13 +760,48 @@ export class EnsureFinalResponse implements Processor {
             'This is your final step. Do not call any more tools. Summarize what you have found and give the user a complete final answer now.';
     }
 
-    async processInputStep({ stepNumber, sendSignal }: ProcessInputStepArgs): Promise<void> {
+    async processInputStep(args: ProcessInputStepArgs): Promise<ProcessInputStepResult | void> {
+        const { stepNumber, sendSignal } = args;
         if (stepNumber !== this.maxSteps - 1) return;
         await sendSignal?.({
             type: 'reactive',
             contents: this.reminderText,
             attributes: { reason: 'max-steps-reached', step: stepNumber + 1 },
         });
+        return {};
+    }
+}
+
+// ── Output validator (per-step) ──────────────────────────────────────────────
+
+export interface OutputValidatorOptions {
+    /** Reject the step's output when this returns a non-empty reason. */
+    check: (text: string) => string | undefined | Promise<string | undefined>;
+    /** Feedback appended to the retry when the check fails. Default: the check's reason. */
+    feedback?: (text: string, reason: string) => string;
+}
+
+/** Validate each assistant step's output and request a retry with feedback. */
+export class OutputValidatorProcessor implements Processor {
+    readonly id = 'output-validator';
+    onViolation?: (v: ProcessorViolation) => void;
+    private readonly check: OutputValidatorOptions['check'];
+    private readonly feedback?: OutputValidatorOptions['feedback'];
+
+    constructor(opts: OutputValidatorOptions) {
+        this.check = opts.check;
+        this.feedback = opts.feedback;
+    }
+
+    async processOutputStep({ text }: ProcessOutputStepArgs): Promise<ProcessOutputStepResult | void> {
+        if (!text) return;
+        const reason = await Promise.resolve(this.check(text));
+        if (!reason) return;
+        emitViolation(this, `Output validation failed: ${reason}`, { text: text.slice(0, 200) });
+        return {
+            retry: true,
+            feedback: this.feedback ? this.feedback(text, reason) : `Your previous response failed validation: ${reason}. Please try again.`,
+        };
     }
 }
 

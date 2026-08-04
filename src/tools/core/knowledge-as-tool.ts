@@ -140,7 +140,7 @@ export function knowledgeAsTool(
             if (documents.length === 0) {
                 throw new Error(`Knowledge tool "${name}": action=add requires a non-empty "documents" array.`);
             }
-            const addable = documents.map((d, i) => ({
+            const addable = documents.map((d) => ({
                 content: String((d as { content?: unknown }).content ?? '').trim(),
                 ...((d as { metadata?: Record<string, unknown> }).metadata !== undefined
                     ? { metadata: (d as { metadata?: Record<string, unknown> }).metadata }

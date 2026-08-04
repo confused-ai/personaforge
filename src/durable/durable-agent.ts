@@ -250,7 +250,7 @@ export class DurableAgent {
         try {
             const iterator = this.agent.streamEvents(input, { ...options, runId });
             for await (const chunk of iterator) {
-                await this.registry.publish(runId, chunk);
+                await this.registry.publish(runId, chunk as StreamChunk);
                 if (chunk.type === 'run-finish' && chunk.run) {
                     if (chunk.run.finishReason === 'suspended') {
                         // Persist the suspension FIRST, then resolve the run
@@ -258,7 +258,7 @@ export class DurableAgent {
                         // able to discover the suspension via listSuspendedRuns
                         // immediately after it resolves.
                         await this.registry.markStatus(runId, 'suspended');
-                        await this._storeSuspended(runId, chunk.run, input, options);
+                        await this._storeSuspended(runId, chunk.run, options);
                         handle.resultResolve(chunk.run);
                     } else {
                         handle.resultResolve(chunk.run);
@@ -304,7 +304,6 @@ export class DurableAgent {
     private async _storeSuspended(
         runId: string,
         result: AgentRunResult,
-        input: string | MultiModalInput,
         options: AgentRunOptions,
     ): Promise<void> {
         const sp = result.suspendPayload;

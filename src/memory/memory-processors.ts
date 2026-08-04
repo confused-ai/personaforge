@@ -228,10 +228,15 @@ export class SemanticRecallProcessor implements Processor {
             : results;
         const out: StorageMessage[] = [];
         const seen = new Set<string>();
+        // Skip candidates that would blow the context budget — a single
+        // oversized tool dump can crowd out every other recalled message.
+        const maxTokens = 2000;
         for (const result of ranked) {
             const id = String(result.id);
             if (seen.has(id)) continue;
             seen.add(id);
+            const content = String(result.metadata['content'] ?? '');
+            if (this.estimator(content) > maxTokens) continue;
             out.push(this._fromMetadata(result.metadata, id));
             if (out.length >= requested) break;
         }
