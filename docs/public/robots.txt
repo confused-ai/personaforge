@@ -1,0 +1,81 @@
+# personaforge docs — crawler rules
+#
+# All crawlers may access the docs site. We explicitly welcome AI / LLM
+# crawlers and point them at the LLM-optimized indexes for efficient ingestion.
+#
+# - /llms.txt        — LLM-friendly index of all guides + runbooks
+# - /llms-full.txt   — complete concatenated documentation (single fetch)
+# - /guide/          — concept guides
+# - /runbooks/       — operational runbooks (one per feature)
+# - /examples/       — runnable examples
+# - /api/            — API reference
+
+User-agent: *
+Allow: /
+Allow: /guide/
+Allow: /runbooks/
+Allow: /examples/
+Allow: /api/
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /case-studies/case-study-template.md
+
+# Standard search engines
+User-agent: Googlebot
+Allow: /
+
+# LLM / AI crawlers — explicitly welcomed
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: Claude-Web
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: Anthropic-AI
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: cohere-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: arXivBot
+Allow: /
+
+# AI crawlers that are not yet welcome (spam / data-poaching behavior)
+User-agent: Bytespider
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: diffbot
+Disallow: /
+
+Sitemap: /sitemap-index.xml

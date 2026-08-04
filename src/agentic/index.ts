@@ -45,8 +45,20 @@ export function createAgenticAgent(config: {
         toolResultsLimit?: number;
         messageSizeThreshold?: number;
     };
-    /** Optional durable event recorder — append-only, replayable run log. */
+    /**
+     * Optionale durable event recorder — append-only, replayable run log.
+     */
     recorder?: import('../core/runner/types.js').EventRecorder;
+    /** Mastra-style inspired input/output/error processor defaults. */
+    processors?: import('../processors/types.js').ProcessorSet;
+    /** Max processor-driven retries per request. */
+    maxProcessorRetries?: number;
+    /** Durable goal store for in-loop objective evaluation. */
+    goalStore?: import('../goals/index.js').GoalStore;
+    /** Durable suspended-run store for approval/suspend recovery. */
+    suspendedRunStore?: import('../approval/index.js').SuspendedRunStore;
+    /** Runtime `provider/model` resolver (per-step switches, judges). */
+    resolveExtraLlm?: (model: string) => LLMProvider | undefined;
 }): {
     name: string;
     instructions: string;
@@ -65,6 +77,17 @@ export function createAgenticAgent(config: {
             ragContext?: string;
             hooks?: AgenticLifecycleHooks;
             allowedTools?: string[];
+            structuredOutput?: AgenticRunConfig['structuredOutput'];
+            goal?: AgenticRunConfig['goal'];
+            processors?: AgenticRunConfig['processors'];
+            requireToolApproval?: AgenticRunConfig['requireToolApproval'];
+            autoResumeSuspendedTools?: boolean;
+            approvedToolCalls?: string[];
+            resumeData?: unknown;
+            resumePendingTool?: AgenticRunConfig['resumePendingTool'];
+            threadId?: string;
+            resourceId?: string;
+            requestContext?: Record<string, unknown>;
         },
         hooks?: AgenticStreamHooks,
     ): Promise<AgenticRunResult>;
@@ -87,6 +110,11 @@ export function createAgenticAgent(config: {
         maxTokens: config.maxTokens,
         compression: config.compression,
         recorder: config.recorder,
+        processors: config.processors,
+        maxProcessorRetries: config.maxProcessorRetries,
+        goalStore: config.goalStore,
+        suspendedRunStore: config.suspendedRunStore,
+        resolveExtraLlm: config.resolveExtraLlm,
     });
 
     if (config.humanInTheLoop) runner.setHumanInTheLoop(config.humanInTheLoop);
@@ -108,6 +136,17 @@ export function createAgenticAgent(config: {
                 responseModel: runConfig.responseModel,
                 hooks: runConfig.hooks,
                 allowedTools: runConfig.allowedTools,
+                ...(runConfig.structuredOutput && { structuredOutput: runConfig.structuredOutput }),
+                ...(runConfig.goal && { goal: runConfig.goal }),
+                ...(runConfig.processors && { processors: runConfig.processors }),
+                ...(runConfig.requireToolApproval && { requireToolApproval: runConfig.requireToolApproval }),
+                ...(runConfig.autoResumeSuspendedTools !== undefined && { autoResumeSuspendedTools: runConfig.autoResumeSuspendedTools }),
+                ...(runConfig.approvedToolCalls && { approvedToolCalls: runConfig.approvedToolCalls }),
+                ...(runConfig.resumeData !== undefined && { resumeData: runConfig.resumeData }),
+                ...(runConfig.resumePendingTool && { resumePendingTool: runConfig.resumePendingTool }),
+                ...(runConfig.threadId && { threadId: runConfig.threadId }),
+                ...(runConfig.resourceId && { resourceId: runConfig.resourceId }),
+                ...(runConfig.requestContext && { requestContext: runConfig.requestContext }),
                 ...(runConfig.runId && { runId: runConfig.runId }),
                 ...(runConfig.traceId && { traceId: runConfig.traceId }),
                 ...(runConfig.userId && { userId: runConfig.userId }),

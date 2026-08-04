@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Artifacts"
-description: "Operational runbook for personaforge/artifacts — import, run, verify, recover. 27 public symbols."
+description: "Operational runbook for personaforge/artifacts — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Artifacts
 
-> Auto-generated from `./dist/artifacts.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/artifacts/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/artifacts`  ·  **Public symbols:** 27  ·  **Guide:** [/guide/artifacts](../guide/artifacts.md)
+**Import path:** `personaforge/artifacts`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/artifacts](../guide/artifacts.md)
 
 ## What it is
 `personaforge/artifacts` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createTextArtifact, createMarkdownArtifact, createDataArtifact } from 'personaforge/artifacts';
+import 'personaforge/artifacts';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createTextArtifact`, `createMarkdownArtifact`, `createDataArtifact`, `createReasoningArtifact`, `createPlanArtifact`, `createImageFromUrl`, `createImageFromBase64`, `createAudioFromUrl`, `createVideoFromUrl`
-- **Classes** — `InMemoryArtifactStorage`, `MediaManager`
-- **Interfaces** — `MetricValue`, `MetricsCollector`, `ArtifactMetadata`, `Artifact`, `TextArtifact`, `DataArtifact`, `BinaryArtifact`, `ReasoningArtifact`, `PlanArtifact`, `ReportArtifact`, `ArtifactStorageConfig`, `ArtifactStorage`, …(+3)
-- **Types** — `ArtifactType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the artifacts guide:
@@ -61,7 +58,29 @@ const report = createMarkdownArtifact({
 });
 
 // Structured data
-// …see full example in the guide
+const data = createDataArtifact({
+  name: 'search-results',
+  content: { query: 'LLM benchmarks', results: [...] },
+  type: 'json',
+});
+
+// Agent reasoning trace
+const trace = createReasoningArtifact({
+  steps: [
+    { title: 'Analyse', action: 'Read the requirements', result: '...', confidence: 0.9 },
+  ],
+  conclusion: 'Use a queue-based approach.',
+  model: 'gpt-4o',
+});
+
+// Execution plan
+const plan = createPlanArtifact({
+  goal: 'Migrate database to PostgreSQL',
+  tasks: [
+    { id: '1', name: 'Backup current DB', priority: 0 },
+    { id: '2', name: 'Provision RDS', priority: 1, dependencies: ['1'] },
+  ],
+});
 ```
 
 ## Verify it works

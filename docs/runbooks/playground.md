@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Playground"
-description: "Operational runbook for personaforge/playground — import, run, verify, recover. 4 public symbols."
+description: "Operational runbook for personaforge/playground — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Playground
 
-> Auto-generated from `./dist/playground.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/playground/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/playground`  ·  **Public symbols:** 4  ·  **Guide:** [/guide/websocket](../guide/websocket.md)
+**Import path:** `personaforge/playground`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/websocket](../guide/websocket.md)
 
 ## What it is
 `personaforge/playground` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,20 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createPlayground } from 'personaforge/playground';
+import 'personaforge/playground';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createPlayground`
-- **Interfaces** — `PlaygroundAgent`, `PlaygroundOptions`, `PlaygroundServer`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createPlayground } from 'personaforge/playground';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createPlayground` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createPlayground(/* opts */);
+```ts
+import 'personaforge/playground';
 ```
 
 ## Verify it works

@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Model"
-description: "Operational runbook for personaforge/model — import, run, verify, recover. 61 public symbols."
+description: "Operational runbook for personaforge/model — import, run, verify, recover. 3 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Model
 
-> Auto-generated from `./dist/model.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/model.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/model`  ·  **Public symbols:** 61  ·  **Guide:** [/guide/providers](../guide/providers.md)
+**Import path:** `personaforge/model`  ·  **Public symbols:** 3  ·  **Guide:** [/guide/providers](../guide/providers.md)
 
 ## What it is
 `personaforge/model` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,26 +22,19 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createOpenRouterProvider, openai, anthropic } from 'personaforge/model';
+import { openai, anthropic, ollama } from 'personaforge/model';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createOpenRouterProvider`, `openai`, `anthropic`, `ollama`
-- **Classes** — `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, `BedrockConverseProvider`, `OpenAIEmbeddingProvider`, `CostTracker`
-- **Constants** — `MODEL_PRICING`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `StreamToolCallChunk`, `StreamOptions`, `OpenAIClient`, …(+31)
-- **Types** — `MessageContent`, `StreamDelta`, `OpenAIContent`, `OpenAIMessageParam`, `AnthropicContent`, `AnthropicMessageParam`, `GooglePart`
+- **Factories / functions** — `openai`, `anthropic`, `ollama`
 
 ## Minimal use
-Real example from the providers guide:
-
 ```ts
-import { createOpenRouterProvider } from 'personaforge';
+import { openai, anthropic, ollama } from 'personaforge/model';
 
-const llm = createOpenRouterProvider({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-  model: 'anthropic/claude-sonnet-4',  // any OpenRouter model id
-});
+// `openai` is the primary entry for this feature.
+// See the type signature for full options.
+const result = openai(/* opts */);
 ```
 
 ## Verify it works

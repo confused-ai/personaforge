@@ -17,7 +17,10 @@
 
 export { agent, type AgentMinimalOptions } from './agent.js';
 export { bare, type BareAgentOptions } from './bare.js';
-export { defineAgent, type DefineAgentOptions } from './define-agent.js';
 export { compose, pipe, type ComposeOptions, type ComposedAgent } from './compose.js';
+export { pipeline } from './pipeline.js';
+export { task, type TaskOptions, type TaskHandle } from './task.js';
+export { guard, GuardError, type Guard, type GuardOptions, type GuardResult, type GuardPredicate, type GuardedRunnable } from './guard.js';
+export { model, router, type RouterOptions } from './model.js';
 export { definePersona, buildPersonaInstructions, type AgentPersona } from './persona-builder.js';
 export { createDevLogger, createDevToolMiddleware } from './dev-logger.js';

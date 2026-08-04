@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Compression"
-description: "Operational runbook for personaforge/compression — import, run, verify, recover. 62 public symbols."
+description: "Operational runbook for personaforge/compression — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Compression
 
-> Auto-generated from `./dist/compression.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/compression/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/compression`  ·  **Public symbols:** 62  ·  **Guide:** [/guide/compression](../guide/compression.md)
+**Import path:** `personaforge/compression`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/compression](../guide/compression.md)
 
 ## What it is
 `personaforge/compression` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,23 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createSlidingWindow, serializeTable, deserializeTable } from 'personaforge/compression';
+import 'personaforge/compression';
 ```
 
 ## Public API surface
-- **Factories / functions** — `serializeTable`, `deserializeTable`, `compressContext`, `decompressContext`, `estimateCompressionRatio`, `createSlidingWindow`, `applyWindow`, `createRetrieveTool`, `detectContentType`, `routeContent`, `smartCrush`, `crushJsonText`, …(+9)
-- **Classes** — `CompressionManager`, `HuffmanCodec`, `SummaryBufferMemory`, `EntityExtractionMemory`, `CCRStore`, `Mastermind`, `CacheAligner`
-- **Constants** — `DEFAULT_COMPRESSION_PROMPT`
-- **Interfaces** — `CompressibleMessage`, `CompressionManagerConfig`, `HuffmanTable`, `HuffmanEncodeResult`, `SBMMessage`, `SummaryBufferConfig`, `SlidingWindowMessage`, `SlidingWindowConfig`, `SlidingWindowResult`, `SlidingWindow`, `Entity`, `EntityExtractionConfig`, …(+17)
-- **Types** — `SlidingWindowStrategy`, `EntityType`, `ContentType`, `CompressionAlgorithm`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createSlidingWindow, serializeTable, deserializeTable } from 'personaforge/compression';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createSlidingWindow` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createSlidingWindow(/* opts */);
+```ts
+import 'personaforge/compression';
 ```
 
 ## Verify it works

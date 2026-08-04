@@ -114,4 +114,11 @@ export class InMemoryBackgroundJobStore {
     }
 }
 
-export const defaultBackgroundJobStore = new InMemoryBackgroundJobStore();
+/**
+ * Create the default background job store.
+ * Call once at boot — the singleton was removed so callers
+ * explicitly wire their own store or accept the in-memory default.
+ */
+export function createDefaultBackgroundJobStore(): InMemoryBackgroundJobStore {
+    return new InMemoryBackgroundJobStore();
+}

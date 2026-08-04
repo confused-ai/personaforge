@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Memory"
-description: "Operational runbook for personaforge/tools/memory — import, run, verify, recover. 45 public symbols."
+description: "Operational runbook for personaforge/tools/memory — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Memory
 
-> Auto-generated from `./dist/tools/memory.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/memory/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/memory`  ·  **Public symbols:** 45  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/memory`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/memory` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { Mem0AddMemoryTool, Mem0SearchMemoryTool, Mem0GetMemoriesTool } from 'personaforge/tools/memory';
+import 'personaforge/tools/memory';
 ```
 
 ## Public API surface
-- **Classes** — `Mem0AddMemoryTool`, `Mem0SearchMemoryTool`, `Mem0GetMemoriesTool`, `Mem0GetMemoryTool`, `Mem0UpdateMemoryTool`, `Mem0DeleteMemoryTool`, `Mem0DeleteAllMemoriesTool`, `Mem0GetMemoryHistoryTool`, `Mem0Toolkit`, `ZepAddMemoryTool`, `ZepGetMemoryTool`, `ZepSearchMemoryTool`, …(+6)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `Mem0Config`, `ZepConfig`
-- **Types** — `EntityId`, `ToolParameters`, `AddMemoryInput`, `SearchMemoryInput`, `GetMemoriesInput`, `GetSingleMemoryInput`, `UpdateMemoryInput`, `DeleteMemoryInput`, `DeleteAllMemoriesInput`, `GetMemoryHistoryInput`, `GetMemoryInput`, `CreateSessionInput`, …(+3)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { Mem0AddMemoryTool, Mem0SearchMemoryTool, Mem0GetMemoriesTool } from 'personaforge/tools/memory';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `Mem0AddMemoryTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new Mem0AddMemoryTool(/* opts */);
+```ts
+import 'personaforge/tools/memory';
 ```
 
 ## Verify it works

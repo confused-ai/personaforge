@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Utils"
-description: "Operational runbook for personaforge/tools/utils — import, run, verify, recover. 37 public symbols."
+description: "Operational runbook for personaforge/tools/utils — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Utils
 
-> Auto-generated from `./dist/tools/utils.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/utils/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/utils`  ·  **Public symbols:** 37  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/utils`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/utils` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { HttpClientTool, BrowserTool, WriteFileTool } from 'personaforge/tools/utils';
+import 'personaforge/tools/utils';
 ```
 
 ## Public API surface
-- **Classes** — `HttpClientTool`, `BrowserTool`, `WriteFileTool`, `ReadFileTool`, `ReadFileChunkTool`, `UpdateFileChunkTool`, `DeleteFileTool`, `ListFilesTool`, `SearchFilesTool`, `CalculatorAddTool`, `CalculatorSubtractTool`, `CalculatorMultiplyTool`, …(+5)
-- **Constants** — `CalculatorToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `HttpResponse`, `HttpToolConfig`, …(+5)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { HttpClientTool, BrowserTool, WriteFileTool } from 'personaforge/tools/utils';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `HttpClientTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new HttpClientTool(/* opts */);
+```ts
+import 'personaforge/tools/utils';
 ```
 
 ## Verify it works

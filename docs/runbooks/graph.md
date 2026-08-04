@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Graph"
-description: "Operational runbook for personaforge/graph — import, run, verify, recover. 120 public symbols."
+description: "Operational runbook for personaforge/graph — import, run, verify, recover. 1 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Graph
 
-> Auto-generated from `./dist/graph.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/graph/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/graph`  ·  **Public symbols:** 120  ·  **Guide:** [/guide/graph](../guide/graph.md)
+**Import path:** `personaforge/graph`  ·  **Public symbols:** 1  ·  **Guide:** [/guide/graph](../guide/graph.md)
 
 ## What it is
 `personaforge/graph` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,34 +22,30 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createGraph, uid, replayState } from 'personaforge/graph';
+import { wrapCoreLLM } from 'personaforge/graph';
 ```
 
 ## Public API surface
-- **Factories / functions** — `uid`, `createGraph`, `replayState`, `redactSecrets`, `redactPII`, `combineRedactors`, `buildReplayProvider`, `buildReplayTools`, `replay`, `verifyChain`, `computeWaves`, `agentNode`, …(+1)
-- **Classes** — `GraphBuilder`, `DAGEngine`, `DurableExecutor`, `InMemoryEventStore`, `SqliteEventStore`, `BatchingEventStore`, `RunRecorder`, `InMemoryTaskQueue`, `RedisTaskQueue`, `DefaultScheduler`, `GraphWorker`, `DistributedEngine`, …(+12)
-- **Constants** — `nodeId`, `edgeId`, `graphId`, `executionId`, `workerId`
-- **Enums** — `NodeKind`, `NodeStatus`, `ExecutionStatus`, `GraphEventType`
-- **Interfaces** — `RetryPolicy`, `TimeoutPolicy`, `GraphNodeDef`, `AgentNodeConfig`, `WaitConfig`, `GraphEdgeDef`, `GraphDef`, `NodeState`, `GraphState`, `NodeContext`, `NodeLogger`, `GraphEvent`, …(+54)
-- **Types** — `NodeId`, `EdgeId`, `GraphId`, `ExecutionId`, `WorkerId`, `NodeConfig`, `MessageContent`, `LogLevel`
+- **Factories / functions** — `wrapCoreLLM`
 
 ## Minimal use
 Real example from the graph guide:
 
 ```ts
-import { createGraph } from 'personaforge';
-import { DAGEngine } from 'personaforge/graph';
+import { replay, buildReplayProvider, buildReplayTools, replayState } from 'personaforge/graph';
 
-const graph = createGraph('content-pipeline', { version: '1.0' })
-  .addNode('fetch',    { kind: 'task', execute: (ctx) => fetchContent(ctx.state.variables.input as string) })
-  .addNode('analyse',  { kind: 'task', execute: (ctx) => analyseContent(ctx.state.results['fetch']) })
-  .addNode('publish',  { kind: 'task', execute: (ctx) => publishContent(ctx.state.results['analyse']) })
-  .chain('fetch', 'analyse', 'publish')  // linear shorthand
-  .build();
+const result = await replay(store, executionId, {
+  name: 'researcher',
+  instructions: 'Research the given topic thoroughly.',
+});
 
-const engine = new DAGEngine(graph);
-const execution = await engine.execute({ variables: { input: 'https://example.com/article' } });
-// execution.state.results — keyed by node name
+// …or build the replay provider / tool registry yourself:
+const llm   = await buildReplayProvider(store, executionId);
+const tools = await buildReplayTools(store, executionId);
+
+// Reconstruct the full GraphState from an event log:
+const events = await store.load(executionId);
+const state  = replayState(events, graph);
 ```
 
 ## Verify it works

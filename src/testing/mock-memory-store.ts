@@ -12,10 +12,12 @@ import type { EntityId } from '../core/index.js';
 export interface MockMemoryStoreOptions {
     /** Whether store/retrieve operations should throw mock errors. */
     shouldError?: boolean;
+    /** Underlying store to wrap (defaults to InMemoryStore). */
+    store?: MemoryStore;
 }
 
 export class MockMemoryStore implements MemoryStore {
-    private innerStore: InMemoryStore;
+    private innerStore: MemoryStore;
     private options: MockMemoryStoreOptions;
 
     // Audit logs for assertion
@@ -27,7 +29,7 @@ export class MockMemoryStore implements MemoryStore {
 
     constructor(options: MockMemoryStoreOptions = {}) {
         this.options = options;
-        this.innerStore = new InMemoryStore({ debug: false });
+        this.innerStore = options.store ?? new InMemoryStore({ debug: false });
     }
 
     /** Set whether the store should error on operations. */
@@ -128,6 +130,6 @@ export class MockMemoryStore implements MemoryStore {
         this._getCalls.length = 0;
         this._updatedEntries.length = 0;
         this._deletedIds.length = 0;
-        this.innerStore = new InMemoryStore({ debug: false });
+        this.innerStore = this.options.store ?? new InMemoryStore({ debug: false });
     }
 }

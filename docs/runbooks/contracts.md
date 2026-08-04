@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Contracts"
-description: "Operational runbook for personaforge/contracts — import, run, verify, recover. 107 public symbols."
+description: "Operational runbook for personaforge/contracts — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Contracts
 
-> Auto-generated from `./dist/contracts.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/contracts/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/contracts`  ·  **Public symbols:** 107
+**Import path:** `personaforge/contracts`  ·  **Public symbols:** 0
 
 ## What it is
 `personaforge/contracts` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,24 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { newId, isPersonaForgeError, isRetryable } from 'personaforge/contracts';
+import 'personaforge/contracts';
 ```
 
 ## Public API surface
-- **Factories / functions** — `isPersonaForgeError`, `isRetryable`, `ok`, `err`, `isOk`, `isErr`, `unwrap`, `map`, `tryCatch`, `newId`, `tenantScopedKey`, `userScopedKey`, …(+1)
-- **Classes** — `PersonaForgeError`, `BudgetExceededError`, `CircuitOpenError`, `GuardrailViolatedError`, `ToolTimeoutError`, `ToolValidationError`, `ExecutionTimeoutError`, `ValidationError`, `UnauthorizedError`, `ForbiddenError`, `ToolNotAuthorizedError`, `TenantBudgetEnforcer`
-- **Constants** — `ERROR_CODES`, `asAgentId`, `asSessionId`, `asRunId`, `asMemoryId`, `asArtifactId`, `asToolCallId`, `asTraceId`, `asTaskId`, `asWorkflowId`, `asExecutionId`, `asScheduleId`
-- **Enums** — `AgentState`
-- **Interfaces** — `PersonaForgeErrorOptions`, `SerializedPersonaForgeError`, `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `ToolRegistry`, `SessionMessage`, `SessionData`, …(+39)
-- **Types** — `ErrorCode`, `Ok`, `Err`, `Result`, `Brand`, `AgentId`, `SessionId`, `RunId`, `MemoryId`, `ArtifactId`, `ToolCallId`, `TraceId`, …(+6)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { newId, isPersonaForgeError, isRetryable } from 'personaforge/contracts';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `newId` is the primary entry for this feature.
-// See the type signature for full options.
-const result = newId(/* opts */);
+```ts
+import 'personaforge/contracts';
 ```
 
 ## Verify it works

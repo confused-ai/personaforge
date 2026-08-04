@@ -75,4 +75,4 @@ That pattern is useful when internal actions should flow through immediately but
 ## What's next?
 
 - [04 · Extend & Wrap Tools](./04-extend-tools)
-- [13 · Production Resilience](./13-production)
+- [Production Resilience](/examples/13-production)

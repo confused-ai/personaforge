@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Finance"
-description: "Operational runbook for personaforge/tools/finance — import, run, verify, recover. 30 public symbols."
+description: "Operational runbook for personaforge/tools/finance — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Finance
 
-> Auto-generated from `./dist/tools/finance.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/finance/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/finance`  ·  **Public symbols:** 30  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/finance`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/finance` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,13 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { StripeCreateCustomerTool, StripeGetCustomerTool, StripeCreatePaymentIntentTool } from 'personaforge/tools/finance';
+import 'personaforge/tools/finance';
 ```
 
 ## Public API surface
-- **Classes** — `StripeCreateCustomerTool`, `StripeGetCustomerTool`, `StripeCreatePaymentIntentTool`, `StripeCreateSubscriptionTool`, `StripeCancelSubscriptionTool`, `StripeRefundTool`, `StripeToolkit`, `YFinanceTool`, `OpenBBStockQuoteTool`, `OpenBBStockHistoricalTool`, `OpenBBStockNewsTool`, `OpenBBStockFundamentalsTool`, …(+3)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `StripeToolConfig`, `OpenBBToolConfig`
-- **Types** — `EntityId`, `ToolParameters`, `YFinanceParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:

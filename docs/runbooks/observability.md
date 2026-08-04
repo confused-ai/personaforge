@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Observability"
-description: "Operational runbook for personaforge/observability — import, run, verify, recover. 83 public symbols."
+description: "Operational runbook for personaforge/observability — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Observability
 
-> Auto-generated from `./dist/observability.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/observability/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/observability`  ·  **Public symbols:** 83  ·  **Guide:** [/guide/observability](../guide/observability.md)
+**Import path:** `personaforge/observability`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/observability](../guide/observability.md)
 
 ## What it is
 `personaforge/observability` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,24 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createMultiCriteriaJudge, wordOverlapF1, rougeLWords } from 'personaforge/observability';
+import 'personaforge/observability';
 ```
 
 ## Public API surface
-- **Factories / functions** — `wordOverlapF1`, `rougeLWords`, `runLlmAsJudge`, `createMultiCriteriaJudge`, `runEvalBatch`, `parseTraceparent`, `generateTraceparent`, `childSpan`, `extractTraceContext`, `injectTraceHeaders`, `buildTraceparent`, `sendLangfuseBatch`, …(+3)
-- **Classes** — `ConsoleLogger`, `InMemoryTracer`, `MetricsCollectorImpl`, `EvalAggregator`, `OTLPTraceExporter`, `OTLPMetricsExporter`, `InMemoryEvalStore`, `SqliteEvalStore`
-- **Constants** — `ExactMatchAccuracy`, `PartialMatchAccuracy`, `LevenshteinAccuracy`, `RAG_CRITERIA`, `AGENT_CRITERIA`
-- **Enums** — `LogLevel`, `SpanStatus`, `MetricType`, `AgentEventType`, `TaskEventType`, `ExportFormat`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `LogEntry`, `LogContext`, `Logger`, `LogTransport`, `TraceSpan`, `SpanEvent`, …(+34)
-- **Types** — `EntityId`, `MultiCriteriaJudge`, `EvalScorer`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createMultiCriteriaJudge, wordOverlapF1, rougeLWords } from 'personaforge/observability';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createMultiCriteriaJudge` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createMultiCriteriaJudge(/* opts */);
+```ts
+import 'personaforge/observability';
 ```
 
 ## Verify it works

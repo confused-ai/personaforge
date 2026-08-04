@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Scraping"
-description: "Operational runbook for personaforge/tools/scraping — import, run, verify, recover. 62 public symbols."
+description: "Operational runbook for personaforge/tools/scraping — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Scraping
 
-> Auto-generated from `./dist/tools/scraping.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/scraping/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/scraping`  ·  **Public symbols:** 62  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/scraping`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/scraping` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { ApifyRunActorTool, ApifyGetRunTool, ApifyGetDatasetItemsTool } from 'personaforge/tools/scraping';
+import 'personaforge/tools/scraping';
 ```
 
 ## Public API surface
-- **Classes** — `ApifyRunActorTool`, `ApifyGetRunTool`, `ApifyGetDatasetItemsTool`, `ApifyRunActorGetDataTool`, `ApifyToolkit`, `BrightDataScrapeTool`, `BrightDataSERPSTool`, `BrightDataDatasetCollectTool`, `BrightDataToolkit`, `BrowserbaseCreateSessionTool`, `BrowserbaseGetSessionTool`, `BrowserbaseScreenshotTool`, …(+21)
-- **Constants** — `HackerNewsToolkit`, `WebSearchToolkit`, `WikipediaToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `ApifyToolConfig`, `BrightDataToolConfig`, …(+12)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { ApifyRunActorTool, ApifyGetRunTool, ApifyGetDatasetItemsTool } from 'personaforge/tools/scraping';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `ApifyRunActorTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new ApifyRunActorTool(/* opts */);
+```ts
+import 'personaforge/tools/scraping';
 ```
 
 ## Verify it works

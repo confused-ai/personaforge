@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Adapters"
-description: "Operational runbook for personaforge/adapters — import, run, verify, recover. 93 public symbols."
+description: "Operational runbook for personaforge/adapters — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Adapters
 
-> Auto-generated from `./dist/adapters.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/adapters/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/adapters`  ·  **Public symbols:** 93  ·  **Guide:** [/guide/adapters](../guide/adapters.md)
+**Import path:** `personaforge/adapters`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/adapters](../guide/adapters.md)
 
 ## What it is
 `personaforge/adapters` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createAdapterRegistry, createProductionSetup, AdapterNotFoundError } from 'personaforge/adapters';
+import 'personaforge/adapters';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createAdapterRegistry`, `createProductionSetup`
-- **Classes** — `AdapterNotFoundError`, `InMemorySqlAdapter`, `InMemoryNoSqlAdapter`, `InMemoryVectorAdapter`, `InMemoryAnalyticsAdapter`, `InMemorySearchAdapter`, `InMemoryCacheAdapter`, `InMemoryObjectStorageAdapter`, `InMemoryTimeSeriesAdapter`, `InMemoryGraphAdapter`, `InMemoryMessageQueueAdapter`, `ConsoleObservabilityAdapter`, …(+10)
-- **Interfaces** — `AdapterMeta`, `Adapter`, `AdapterHealth`, `SqlQueryOptions`, `SqlTransaction`, `SqlAdapter`, `NoSqlProjection`, `NoSqlAdapter`, `VectorRecord`, `VectorMatch`, `VectorAdapter`, `AnalyticsImportSource`, …(+52)
-- **Types** — `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `AnyAdapter`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the adapters guide:

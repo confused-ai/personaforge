@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Crm"
-description: "Operational runbook for personaforge/tools/crm — import, run, verify, recover. 34 public symbols."
+description: "Operational runbook for personaforge/tools/crm — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Crm
 
-> Auto-generated from `./dist/tools/crm.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/crm/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/crm`  ·  **Public symbols:** 34  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/crm`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/crm` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { SalesforceQueryTool, SalesforceGetRecordTool, SalesforceCreateRecordTool } from 'personaforge/tools/crm';
+import 'personaforge/tools/crm';
 ```
 
 ## Public API surface
-- **Classes** — `SalesforceQueryTool`, `SalesforceGetRecordTool`, `SalesforceCreateRecordTool`, `SalesforceUpdateRecordTool`, `SalesforceSearchTool`, `SalesforceToolkit`, `ShopifyListProductsTool`, `ShopifyGetProductTool`, `ShopifyListOrdersTool`, `ShopifyGetOrderTool`, `ShopifyListCustomersTool`, `ShopifyGetCustomerTool`, …(+7)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `SalesforceToolConfig`, `ShopifyToolConfig`, …(+1)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { SalesforceQueryTool, SalesforceGetRecordTool, SalesforceCreateRecordTool } from 'personaforge/tools/crm';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `SalesforceQueryTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new SalesforceQueryTool(/* opts */);
+```ts
+import 'personaforge/tools/crm';
 ```
 
 ## Verify it works

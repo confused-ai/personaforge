@@ -50,6 +50,7 @@ package-lock.json
 
 # AI tooling scaffolding (do not commit)
 .codex/
+.commandcode/
 .omc/
 .serena/
 .tmp-doccheck/

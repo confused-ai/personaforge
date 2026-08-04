@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Db"
-description: "Operational runbook for personaforge/db — import, run, verify, recover. 38 public symbols."
+description: "Operational runbook for personaforge/db — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Db
 
-> Auto-generated from `./dist/db.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/db/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/db`  ·  **Public symbols:** 38  ·  **Guide:** [/guide/database](../guide/database.md)
+**Import path:** `personaforge/db`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/database](../guide/database.md)
 
 ## What it is
 `personaforge/db` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,32 +22,36 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createAgentDb, AgentDb, InMemoryAgentDb } from 'personaforge/db';
+import 'personaforge/db';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createAgentDb`
-- **Classes** — `AgentDb`, `InMemoryAgentDb`, `SqliteAgentDb`, `PostgresAgentDb`, `MongoAgentDb`, `RedisAgentDb`, `JsonFileAgentDb`, `MysqlAgentDb`, `DynamoDbAgentDb`, `TursoAgentDb`
-- **Constants** — `DEFAULT_TABLE_NAMES`
-- **Interfaces** — `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, `TraceRow`, `ScheduleRow`, `SessionQuery`, `MemoryQuery`, `LearningQuery`, `KnowledgeQuery`, `UpsertSessionInput`, `UpsertMemoryInput`, …(+12)
-- **Types** — `LearningType`, `AgentDbType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the database guide:
 
 ```ts
-import {
-  SqliteAgentDb,
-  PostgresAgentDb,
-  MongoAgentDb,
-  RedisAgentDb,
-  MysqlAgentDb,
-  DynamoDbAgentDb,
-  TursoAgentDb,
-  JsonFileAgentDb,
-  InMemoryAgentDb,
-  createAgentDb,
-} from 'personaforge/db';
+import { createAgent, DbSessionStore } from 'personaforge';
+import { createDbKnowledgeEngine, OpenAIEmbeddingProvider } from 'personaforge';
+import { SqliteAgentDb } from 'personaforge/db';
+import { createDbMemoryStore } from 'personaforge/memory';
+
+const db = new SqliteAgentDb({ path: './agent.db' });
+const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
+
+const agent = createAgent({
+  name: 'persistent-agent',
+  instructions: '...',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+  sessionStore:  new DbSessionStore(db),
+  memoryStore:   createDbMemoryStore(db),   // AgentDb passed positionally
+  knowledgebase: createDbKnowledgeEngine({
+    db,
+    embed: (text) => embedder.embed(text),  // embed is an EmbeddingFn, not a provider
+  }),
+});
 ```
 
 ## Verify it works

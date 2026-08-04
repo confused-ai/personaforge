@@ -55,6 +55,8 @@ const SKIP_FILES = new Set([
     // Audit snapshots written before Phase 7 reorganization (old flat package paths)
     'TECHNICAL-AUDIT-2026-05-08.md',
     'PRODUCTION-READINESS-AUDIT.md',
+    // Spec describes historical consolidation — deleted src/models/* paths are intentional
+    '2026-07-23-consolidation-and-path-to-1.md',
 ]);
 
 // Guide/example subdirectories — contain tutorial code samples, not framework claims

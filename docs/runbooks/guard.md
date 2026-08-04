@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Guard"
-description: "Operational runbook for personaforge/guard — import, run, verify, recover. 99 public symbols."
+description: "Operational runbook for personaforge/guard — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Guard
 
-> Auto-generated from `./dist/guard.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/guard/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/guard`  ·  **Public symbols:** 99  ·  **Guide:** [/guide/guardrails](../guide/guardrails.md)
+**Import path:** `personaforge/guard`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/guardrails](../guide/guardrails.md)
 
 ## What it is
 `personaforge/guard` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,48 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createContentRule, createToolAllowlistRule, createMaxLengthRule } from 'personaforge/guard';
+import 'personaforge/guard';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createContentRule`, `createToolAllowlistRule`, `createMaxLengthRule`, `createAllowlistRule`, `createSensitiveDataRule`, `createUrlValidationRule`, `detectPii`, `createPiiDetectionRule`, `callOpenAiModeration`, `createOpenAiModerationRule`, `createForbiddenTopicsRule`, `detectPromptInjection`, …(+6)
-- **Classes** — `BudgetExceededError`, `BudgetEnforcer`, `RateLimitError`, `RateLimiter`, `CircuitOpenError`, `CircuitBreaker`, `ApprovalRejectedError`, `InMemoryApprovalStore`, `GuardrailValidator`, `HealthCheckManager`, `InMemoryIdempotencyStore`, `InMemoryAuditStore`, …(+1)
-- **Constants** — `SENSITIVE_DATA_PATTERNS`, `PII_PATTERNS`
-- **Enums** — `CircuitState`
-- **Interfaces** — `BudgetConfig`, `BudgetStore`, `MetricValue`, `MetricsCollector`, `RateLimiterConfig`, `CircuitBreakerConfig`, `CircuitBreakerResult`, `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, …(+47)
-- **Types** — `ErrorCodeType`, `BudgetExceededAction`, `MessageContent`, `ApprovalStatus`, `PiiType`, `IdempotencyState`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the guardrails guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import {
-  createContentRule,
-  createMaxLengthRule,
-  createAllowlistRule,
-  createSensitiveDataRule,
-  createUrlValidationRule,
-} from 'personaforge';
-
-const rules = [
-  // Block responses that contain specific patterns.
-  // Signature: createContentRule(name, description, pattern, severity?)
-  createContentRule(
-    'no-credentials',
-    'Blocks responses containing credential patterns.',
-    /\b(password|secret|token)\s*[:=]/i,
-    'error',
-  ),
-
-  // Limit output length.
-  // Signature: createMaxLengthRule(name, maxLength, severity?)
-  createMaxLengthRule('max-length', 10_000, 'error'),
-
-  // Enforce an allowlist over tools, hosts, paths, outputs, and blocked patterns.
-  createAllowlistRule({
-    allowedTools: ['search', 'get_order'],
-    allowedHosts: ['api.company.com', 'docs.company.com'],
-// …see full example in the guide
+import 'personaforge/guard';
 ```
 
 ## Verify it works

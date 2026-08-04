@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Shell"
-description: "Operational runbook for personaforge/tools/shell — import, run, verify, recover. 16 public symbols."
+description: "Operational runbook for personaforge/tools/shell — import, run, verify, recover. 3 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Shell
 
-> Auto-generated from `./dist/tools/shell.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/shell.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/shell`  ·  **Public symbols:** 16  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/shell`  ·  **Public symbols:** 3  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/shell` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,24 @@ npm i personaforge
 
 ## Import
 ```ts
-import { ShellTool } from 'personaforge/tools/shell';
+import { createShellTool } from 'personaforge/tools/shell';
 ```
 
 ## Public API surface
-- **Classes** — `ShellTool`
-- **Constants** — `ShellToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `ShellResult`, `ShellToolConfig`
-- **Types** — `EntityId`, `ToolParameters`
+- **Factories / functions** — `createShellTool`
+- **Constants** — `shell`
+- **Interfaces** — `ShellToolOptions`
 
 ## Minimal use
-```ts
-import { ShellTool } from 'personaforge/tools/shell';
+Real example from the tools guide:
 
-// `ShellTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new ShellTool(/* opts */);
+```ts
+import {
+  httpClient,        // HTTP requests
+  fileSystem,        // read/write local files
+  browserTool,       // headless browser
+  createShellTool,   // run shell commands
+} from 'personaforge/tool';
 ```
 
 ## Verify it works

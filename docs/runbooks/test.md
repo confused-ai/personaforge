@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Test"
-description: "Operational runbook for personaforge/test — import, run, verify, recover. 258 public symbols."
+description: "Operational runbook for personaforge/test — import, run, verify, recover. 2 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Test
 
-> Auto-generated from `./dist/test.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/test.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/test`  ·  **Public symbols:** 258  ·  **Guide:** [/guide/eval](../guide/eval.md)
+**Import path:** `personaforge/test`  ·  **Public symbols:** 2  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/test` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,19 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createMockAgent, createScenarioRunner, createTestInstructions } from 'personaforge/test';
+import { mockAgent, scenario } from 'personaforge/test';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createMockAgent`, `createScenarioRunner`, `createTestInstructions`, `createTestUserId`, `createTestSessionId`, `waitFor`, `createMockToolResponse`, `sleep`, `assertEqual`, `assertNotNull`, `createTestMetadata`, `createTestAgent`, …(+7)
-- **Classes** — `ScenarioRunner`, `MockLLMProvider`, `MockSessionStore`, `MockMemoryStore`, `MockToolRegistry`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, `TraceRow`, …(+191)
-- **Types** — `LearningType`, `EntityId`, `MessageContent`, `ContentPart`, `ToolParameters`, `SafeParseResult`, `InferToolSchema`, `SessionId`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, …(+19)
+- **Factories / functions** — `mockAgent`, `scenario`
 
 ## Minimal use
 ```ts
-import { createMockAgent, createScenarioRunner, createTestInstructions } from 'personaforge/test';
+import { mockAgent, scenario } from 'personaforge/test';
 
-// `createMockAgent` is the primary entry for this feature.
+// `mockAgent` is the primary entry for this feature.
 // See the type signature for full options.
-const result = createMockAgent(/* opts */);
+const result = mockAgent(/* opts */);
 ```
 
 ## Verify it works

@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Search"
-description: "Operational runbook for personaforge/tools/search — import, run, verify, recover. 86 public symbols."
+description: "Operational runbook for personaforge/tools/search — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Search
 
-> Auto-generated from `./dist/tools/search.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/search/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/search`  ·  **Public symbols:** 86  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/search`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/search` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,13 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { TavilySearchTool, TavilyExtractTool, TavilyToolkit } from 'personaforge/tools/search';
+import 'personaforge/tools/search';
 ```
 
 ## Public API surface
-- **Classes** — `TavilySearchTool`, `TavilyExtractTool`, `TavilyToolkit`, `ArxivSearchTool`, `ArxivGetPaperTool`, `ArxivToolkit`, `OpenWeatherCurrentTool`, `OpenWeatherForecastTool`, `OpenWeatherToolkit`, `YouTubeSearchTool`, `YouTubeGetVideoTool`, `YouTubeToolkit`, …(+42)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `TavilyToolConfig`, `ArxivEntry`, …(+18)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:

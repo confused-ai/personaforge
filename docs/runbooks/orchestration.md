@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Orchestration"
-description: "Operational runbook for personaforge/orchestration — import, run, verify, recover. 277 public symbols."
+description: "Operational runbook for personaforge/orchestration — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Orchestration
 
-> Auto-generated from `./dist/orchestration.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/orchestration/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/orchestration`  ·  **Public symbols:** 277  ·  **Guide:** [/guide/orchestration](../guide/orchestration.md)
+**Import path:** `personaforge/orchestration`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/orchestration](../guide/orchestration.md)
 
 ## What it is
 `personaforge/orchestration` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,16 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createToolkit, toolkitsToRegistry, createRunnableAgent } from 'personaforge/orchestration';
+import 'personaforge/orchestration';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createToolkit`, `toolkitsToRegistry`, `createRunnableAgent`, `createResearchTeam`, `createDecisionTeam`, `createSwarm`, `createSwarmAgent`, `createSupervisor`, `createRole`, `createPipeline`, `createConsensus`, `createHandoff`, …(+35)
-- **Classes** — `OrchestratorImpl`, `MessageBusImpl`, `RoundRobinLoadBalancer`, `LeastConnectionsLoadBalancer`, `WeightedResponseTimeLoadBalancer`, `ActorSystem`, `Actor`, `CommandBus`, `EventBus`, `Team`, `SwarmOrchestrator`, `ConsensusProtocol`, …(+12)
-- **Constants** — `A2A_ERRORS`
-- **Enums** — `AgentState`, `MessageType`, `MessagePriority`, `DelegationPriority`, `DelegationStatus`, `CoordinationType`, `CoordinationStatus`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `AgentRunOptions`, `AgentRunResult`, `AgentLifecycleHooks`, …(+162)
-- **Types** — `EntityId`, `MessageContent`, `StreamChunk`, `MessageHandler`, `ToolParameters`, `McpAuthConfig`, `ToolProvider`, `BudgetExceededAction`, `ActorMessageType`, `StartWorkflowPayload`, `ExecuteToolPayload`, `PauseWorkflowPayload`, …(+12)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the orchestration guide:

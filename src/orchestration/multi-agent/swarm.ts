@@ -159,6 +159,8 @@ export interface SwarmConfig {
     readonly concurrency?: number;
     /** Enable debug logging (default: false) */
     readonly debug?: boolean;
+    /** Memory store for subagent contexts (defaults to InMemoryStore). */
+    readonly memoryStore?: import('../../memory/index.js').MemoryStore;
 }
 
 /**
@@ -201,6 +203,7 @@ export class SwarmOrchestrator {
             llm: config.llm ?? {},
             concurrency: config.concurrency ?? 8,
             debug: config.debug ?? false,
+            memoryStore: config.memoryStore ?? new InMemoryStore(),
         };
         this.messageBus = messageBus ?? new MessageBusImpl();
         this.llmProvider = this.initializeLLMProvider(config.llm);
@@ -1055,7 +1058,7 @@ Provide a detailed, helpful response to the user's request.`;
     private createMinimalContext(agent: OrchestrableAgent): AgentContext {
         return new AgentContextBuilder()
             .withAgentId(agent.id)
-            .withMemory(new InMemoryStore())
+            .withMemory(this.config.memoryStore ?? new InMemoryStore())
             .withTools(new ToolRegistryImpl())
             .withPlanner(new ClassicalPlanner({ algorithm: PlanningAlgorithm.HIERARCHICAL }))
             .build();

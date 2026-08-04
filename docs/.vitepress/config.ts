@@ -63,6 +63,11 @@ export default defineConfig({
         ['meta', { name: 'robots', content: 'index, follow' }],
         ['meta', { name: 'google-site-verification', content: '' }],
         ['link', { rel: 'canonical', href: SITE_URL }],
+        // LLM crawler discovery (/llms.txt standard — llmstxt.org)
+        ['link', { rel: 'alternate', type: 'text/markdown', title: 'llms.txt', href: `${SITE_URL}/llms.txt` }],
+        ['link', { rel: 'alternate', type: 'text/plain', title: 'llms-full.txt', href: `${SITE_URL}/llms-full.txt` }],
+        ['meta', { name: 'llms-txt', content: `${SITE_URL}/llms.txt` }],
+        ['meta', { name: 'llms-full', content: `${SITE_URL}/llms-full.txt` }],
 
         // Structured data (JSON-LD) — Google rich results for software / open-source projects
         [
@@ -118,7 +123,7 @@ export default defineConfig({
                 ],
             },
             {
-                text: 'v2.4.2',
+                text: 'v1.1.0',
                 items: [
                     { text: '📋 Changelog', link: '/changelog' },
                     { text: '📦 npm package', link: 'https://www.npmjs.com/package/personaforge' },
@@ -184,6 +189,30 @@ export default defineConfig({
                         { text: 'Structured Output', link: '/guide/structured-output' },
                         { text: 'Vision & Multimodal', link: '/guide/vision' },
                         { text: 'Planner', link: '/guide/planner' },
+                        { text: 'Code Mode', link: '/guide/code-mode' },
+                    ],
+                },
+                {
+                    text: 'Durable & Realtime',
+                    collapsed: false,
+                    items: [
+                        { text: 'Durable Agents', link: '/guide/durable' },
+                        { text: 'Agent Registry', link: '/guide/registry' },
+                        { text: 'Events', link: '/guide/events' },
+                        { text: 'Goals', link: '/guide/goals' },
+                        { text: 'Processors', link: '/guide/processors' },
+                    ],
+                },
+                {
+                    text: 'Quality & Testing',
+                    collapsed: false,
+                    items: [
+                        { text: 'Evaluation & Benchmarking', link: '/guide/eval' },
+                        { text: 'Harness (A/B Evaluation)', link: '/guide/harness' },
+                        { text: 'Trace ↔ Dataset Loop', link: '/guide/trace-dataset' },
+                        { text: 'Guardrails & Safety', link: '/guide/guardrails' },
+                        { text: 'Agent Approval', link: '/guide/approval' },
+                        { text: 'Human-in-the-Loop (HITL)', link: '/guide/hitl' },
                     ],
                 },
                 {
@@ -237,16 +266,6 @@ export default defineConfig({
                     ],
                 },
                 {
-                    text: 'Quality & Testing',
-                    collapsed: false,
-                    items: [
-                        { text: 'Evaluation & Benchmarking', link: '/guide/eval' },
-                        { text: 'Trace ↔ Dataset Loop', link: '/guide/trace-dataset' },
-                        { text: 'Guardrails & Safety', link: '/guide/guardrails' },
-                        { text: 'Human-in-the-Loop (HITL)', link: '/guide/hitl' },
-                    ],
-                },
-                {
                     text: 'Enterprise Production',
                     collapsed: false,
                     items: [
@@ -259,6 +278,7 @@ export default defineConfig({
                         { text: 'WebSocket Transport', link: '/guide/websocket' },
                         { text: 'Admin API', link: '/guide/admin-api' },
                         { text: 'Control Plane', link: '/guide/control-plane' },
+                        { text: 'Enterprise Gateway', link: '/guide/gateway' },
                         { text: 'Secret Manager', link: '/guide/secret-manager' },
                         { text: 'Plugins', link: '/guide/plugins' },
                     ],

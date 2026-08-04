@@ -100,18 +100,25 @@ export type {
     EngineEventType,
 } from './engine-v2.js';
 
-// Durable Execution Engine (P0)
+// Durable Execution Engine (P0) — event-sourced workflow runtime
 export {
     DurableRuntime,
     DurableWorkflowContext,
     InMemoryEventStore,
+    SqliteEventStore,
+    LibSqlEventStore,
+    RedisEventStore,
+    PgEventStore,
     WorkflowPausedError,
     WorkflowStateError,
+    createEventStore,
 } from './durable.js';
 export type {
     WorkflowEventType,
     WorkflowEvent,
     EventStore,
+    EventStoreDriver,
+    CreateEventStoreConfig,
     DurableRetryPolicy,
     WorkflowFunction,
 } from './durable.js';

@@ -14,6 +14,8 @@ import { isLightweightTool } from '../tools/core/index.js';
 import { zodToJsonSchema } from '../tools/core/zod-to-schema.js';
 import { createAgentMemoryTools, InMemoryStore } from '../memory/index.js';
 import type { MemorySearchResult, MemoryStore } from '../memory/index.js';
+import type { StorageMessage } from '../memory/index.js';
+import { storageToMessage } from '../memory/index.js';
 import { createDevLogger, createDevToolMiddleware } from '../dx/dev-logger.js';
 import { BudgetEnforcer } from '../production/budget.js';
 import { Mastermind } from '../compression/mastermind/index.js';
@@ -30,6 +32,14 @@ import {
     ENV_BASE_URL,
 } from './resolve-llm.js';
 import { isMultiModalInput, multiModalToMessage } from '../providers/vision.js';
+import type { ProcessorSet } from '../processors/index.js';
+import { DurableRunRegistry, InMemoryServerCache, durableRunId, registryOutput } from '../durable/index.js';
+import type { DurableAgentOutput, DurableStreamResult, DurableRunEvent } from '../durable/index.js';
+import { InMemoryGoalStore, createSqliteGoalStore, type GoalStore, type ObjectiveRecord } from '../goals/index.js';
+import { InMemorySuspendedRunStore, createSqliteSuspendedRunStore, type SuspendedRun, type SuspendedRunStore } from '../approval/index.js';
+import type { Memory } from '../memory/index.js';
+import type { StructuredOutputConfig, GoalRunConfig } from '../agentic/index.js';
+import { createLlmProviderFromModelString } from '../providers/from-model.js';
 
 /**
  * Resolves the tools option to a ToolRegistry.
@@ -60,7 +70,10 @@ function resolveTools(
     }
 
     if (extraTools.length === 0) return registry;
-    return toToolRegistry([...registry.list(), ...extraTools] as ToolProvider);
+    const normalizedExtra = extraTools.map((tool) =>
+        isLightweightTool(tool) ? tool.toFrameworkTool() : tool,
+    );
+    return toToolRegistry([...registry.list(), ...normalizedExtra] as ToolProvider);
 }
 
 function pickBoolean(
@@ -79,6 +92,11 @@ function pickNumber(
     const value = runValue ?? agentValue ?? fallback;
     if (!Number.isFinite(value)) return fallback;
     return Math.max(0, Math.floor(value));
+}
+
+function toProcList(p: import('../processors/index.js').Processor | import('../processors/index.js').Processor[] | undefined): import('../processors/index.js').Processor[] {
+    if (Array.isArray(p)) return p;
+    return p ? [p] : [];
 }
 
 function trimHistoryByRuns(history: Message[], runLimit: number | undefined): Message[] {
@@ -234,6 +252,57 @@ function createFrameworkMemoryTools(memoryStore: MemoryStore): AgentTool[] {
             }
         },
     }));
+}
+
+/**
+ * Wraps a lightweight memory tool definition (from the Mastra-style inspired `Memory`
+ * class) into a framework `Tool` for the agent loop.
+ */
+function wrapMemoryToolDef(tool: {
+    name: string;
+    description: string;
+    parameters: unknown;
+    execute: (input: Record<string, unknown>) => Promise<unknown>;
+}): AgentTool {
+    return {
+        id: tool.name,
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters as Tool['parameters'],
+        permissions: {
+            allowNetwork: false,
+            allowFileSystem: false,
+            maxExecutionTimeMs: 60_000,
+        },
+        category: ToolCategory.UTILITY,
+        version: '1.0.0',
+        validate(params: unknown): params is never {
+            return safeValidate(tool.parameters as import('../validation/index.js').SchemaInput<unknown, unknown>, params).success;
+        },
+        async execute(params: never): Promise<ToolResult> {
+            const startedAt = new Date();
+            const startMs = Date.now();
+            try {
+                const data = await tool.execute(params as Record<string, unknown>);
+                return {
+                    success: true,
+                    data,
+                    executionTimeMs: Date.now() - startMs,
+                    metadata: { startTime: startedAt, endTime: new Date(), retries: 0 },
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'MEMORY_TOOL_ERROR',
+                        message: error instanceof Error ? error.message : String(error),
+                    },
+                    executionTimeMs: Date.now() - startMs,
+                    metadata: { startTime: startedAt, endTime: new Date(), retries: 0 },
+                };
+            }
+        },
+    };
 }
 
 /**
@@ -424,9 +493,6 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
     const agenticMemoryEnabled = options.enableAgenticMemory === true;
     const wantsMemoryContext = options.addMemoriesToContext === true;
     const effectiveMemoryStore = options.memoryStore ?? (agenticMemoryEnabled || wantsMemoryContext ? new InMemoryStore({ debug: agentDebugMode }) : undefined);
-    const memoryTools = agenticMemoryEnabled && effectiveMemoryStore
-        ? createFrameworkMemoryTools(effectiveMemoryStore)
-        : [];
 
     // tools resolved after mastermind is instantiated (CCR retrieve tool added below)
     // Resolve adapter bindings — merges registry / explicit bindings + convenience fields
@@ -456,6 +522,91 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     : new InMemorySessionStore());
 
     const llm = resolveLlmForCreateAgent(options, { model, apiKey, baseURL });
+
+    // ── Mastra-style inspired memory bundle ──────────────────────────────────────────
+    const memory: import('../memory/index.js').Memory | undefined = options.memory;
+    if (memory) {
+        // Bind the agent LLM for observational memory / mem0 extraction.
+        memory.bindLlm?.(llm as import('../memory/index.js').Memory['llm'] | undefined);
+        void memory; // processors + tools wired below
+    }
+    // Bind the agent LLM so OM / mem0 extraction work without extra config, then
+    // add the memory agent tools (working memory, OM recall, mem0).
+    if (memory) {
+        memory.bindLlm(llm);
+    }
+    const memoryTools: AgentTool[] = memory
+        ? memory.getAgentTools().map(wrapMemoryToolDef)
+        : agenticMemoryEnabled && effectiveMemoryStore
+          ? createFrameworkMemoryTools(effectiveMemoryStore)
+          : [];
+
+    // ── Durable stores (goals + suspended runs). Auto-SQLite with AGENT_DB_PATH. ──
+    const goalStore: GoalStore = options.goalStore
+        ?? (agentDbPath
+            ? (() => {
+                  try {
+                      return createSqliteGoalStore(agentDbPath);
+                  } catch {
+                      return new InMemoryGoalStore();
+                  }
+              })()
+            : new InMemoryGoalStore());
+    const suspendedRunStore: SuspendedRunStore = options.suspendedRunStore
+        ?? (agentDbPath
+            ? (() => {
+                  try {
+                      return createSqliteSuspendedRunStore(agentDbPath);
+                  } catch {
+                      return new InMemorySuspendedRunStore();
+                  }
+              })()
+            : new InMemorySuspendedRunStore());
+
+    // ── Durable-by-default registry (observe / approve / resume) ─────────────
+    const durableEnabled = options.durable !== false;
+    const durableConfig = typeof options.durable === 'object' && options.durable !== null ? options.durable : {};
+    const durableCache = (durableConfig as { cache?: import('../durable/index.js').ServerCache }).cache;
+    const durableRegistry = durableEnabled ? new DurableRunRegistry(durableCache ?? new InMemoryServerCache()) : undefined;
+    const durableAgentId = (durableConfig as { agentId?: string }).agentId ?? name;
+    const capturedRuns = new Map<string, { prompt: string | import('../providers/vision.js').MultiModalInput; options?: AgentRunOptions }>();
+
+    // ── Supervisor agents: expose `agents` as delegation tools ───────────────
+    const supervisorTools: AgentTool[] = [];
+    if (options.agents && typeof options.agents === 'object') {
+        for (const [key, sub] of Object.entries(options.agents)) {
+            const subAgent = sub as import('./types.js').CreateAgentResult;
+            const desc = (subAgent.description ?? key).slice(0, 500);
+            supervisorTools.push(agentAsTool({
+                name: key,
+                description: desc,
+                agent: subAgent as unknown as import('../tools/core/agent-as-tool.js').RunnableAgent,
+                parameters: z.object({
+                    prompt: z.string().describe(`Task for the ${key} subagent.`),
+                }),
+                maxDepth: 8,
+                beforeExecute: async (params: Record<string, unknown>) => {
+                    await options.onDelegation?.onDelegationStart?.({
+                        agent: key,
+                        prompt: String(params.prompt ?? ''),
+                        layer: 1,
+                    });
+                    return undefined;
+                },
+                afterExecute: async (result: unknown, params: Record<string, unknown>) => {
+                    await options.onDelegation?.onDelegationComplete?.({
+                        agent: key,
+                        prompt: String((params as Record<string, unknown>).prompt ?? ''),
+                        result,
+                        layer: 1,
+                    });
+                },
+            }) as unknown as AgentTool);
+        }
+    }
+
+    const resolveExtraLlm = (modelStr: string): import('../providers/types.js').LLMProvider | undefined =>
+        createLlmProviderFromModelString(modelStr);
 
     const guardrails =
         !guardrailsOption
@@ -494,7 +645,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
         ? [createCCRRetrieveTool(getMastermind)]
         : [];
 
-    const tools = resolveTools(options.tools, [...memoryTools, ...ccrTools]);
+    const tools = resolveTools(options.tools, [...memoryTools, ...ccrTools, ...supervisorTools]);
 
     const storage = options.storage;
     const effectiveLogger = logger ?? (agentDebugMode ? createDevLogger() : undefined);
@@ -529,13 +680,86 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
               }
             : undefined,
         recorder: options.recorder,
+        processors: memory
+            ? {
+                  input: [
+                      ...toProcList(options.processors?.input),
+                      ...toProcList(memory.getProcessors().input),
+                  ],
+                  output: [
+                      ...toProcList(options.processors?.output),
+                      ...toProcList(memory.getProcessors().output),
+                  ],
+                  error: toProcList(options.processors?.error),
+              } as ProcessorSet
+            : (options.processors ?? undefined),
+        maxProcessorRetries: options.maxProcessorRetries,
+        goalStore: goalStore as any,
+        suspendedRunStore: suspendedRunStore as any,
+        resolveExtraLlm,
     });
 
-    return {
-        name,
-        ...(options.description !== undefined ? { description: options.description } : {}),
-        instructions,
-        adapters: adapterBindings,
+        // ── Durable-by-default surface: observe / approve / resume / goals ────
+
+        const findSuspended = async (runId: string): Promise<SuspendedRun | undefined> => {
+            try {
+                return (await suspendedRunStore.getByRunId(runId)) ?? undefined;
+            } catch {
+                return undefined;
+            }
+        };
+
+        const registryOutputShim = (
+            runId: string,
+            continuationResult?: Promise<import('./types.js').AgentRunResult>,
+        ): DurableAgentOutput => {
+            if (!durableRegistry) {
+                return {
+                    fullStream: (async function* () {})() as AsyncIterable<DurableRunEvent>,
+                    textStream: (async function* () {})() as AsyncIterable<string>,
+                    object: Promise.resolve(undefined),
+                    runResult: (continuationResult ?? Promise.reject(new Error('durability disabled'))) as Promise<import('./types.js').AgentRunResult>,
+                };
+            }
+            return registryOutput(durableRegistry, runId, continuationResult);
+        };
+
+        const replayRun = (
+            selfObj: import('./types.js').CreateAgentResult,
+            runId: string,
+            extra: Partial<AgentRunOptions>,
+        ): Promise<DurableStreamResult> => {
+            const cap = capturedRuns.get(runId);
+            if (!cap) {
+                return Promise.reject(new Error(`No captured input for durable run "${runId}".`));
+            }
+            const continuationResult = new Promise<import('./types.js').AgentRunResult>((resolve, reject) => {
+                void (async () => {
+                    try {
+                        for await (const chunk of selfObj.streamEvents(cap.prompt, { ...cap.options, ...extra, ...(runId ? { runId } : {}) })) {
+                            if (chunk.type === 'run-finish' && chunk.run) {
+                                resolve(chunk.run);
+                                return;
+                            }
+                            if (chunk.type === 'error') {
+                                reject(chunk.error ?? new Error('Run error'));
+                                return;
+                            }
+                        }
+                        reject(new Error('Run ended without a result.'));
+                    } catch (e) {
+                        reject(e);
+                    }
+                })();
+            });
+            return Promise.resolve({ runId, output: registryOutputShim(runId, continuationResult), cleanup: () => undefined });
+        };
+
+        return {
+            name,
+            ...(options.description !== undefined ? { description: options.description } : {}),
+            instructions,
+            adapters: adapterBindings,
         async run(prompt: string | import('../providers/vision.js').MultiModalInput, runOptions?: AgentRunOptions) {
             return withSpan(
                 'agent.run',
@@ -553,6 +777,48 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 : { role: 'user', content: promptText };
 
             const sessionId = runOptions?.sessionId;
+            // Mastra-style inspired memory scoping + durable run id.
+            const memoryThreadId = runOptions?.memory?.thread ?? runOptions?.threadId;
+            const memoryResourceId = runOptions?.memory?.resource ?? runOptions?.resourceId;
+            const memoryActive = !!memory && !!memoryThreadId;
+            const runId = runOptions?.runId;
+            if (runId) capturedRuns.set(runId, { prompt, options: runOptions });
+
+            // Auto-resume `suspend()`-suspended tools from history on the next message.
+            let resumePendingTool: import('./types.js').AgentRunOptions['resumePendingTool'];
+            const autoResume = pickBoolean(
+                runOptions?.autoResumeSuspendedTools,
+                options.autoResumeSuspendedTools,
+                false,
+            );
+            if (autoResume && memoryThreadId && !runOptions?.resumePendingTool) {
+                const suspendedList = await suspendedRunStore.list({
+                    threadId: memoryThreadId,
+                    resourceId: memoryResourceId,
+                });
+                const rec = suspendedList[0];
+                const toolCall = rec?.toolCalls[0];
+                if (rec && toolCall && !toolCall.requiresApproval) {
+                    const trimmed = promptText.trim();
+                    let resumeData: unknown = promptText;
+                    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                        try {
+                            resumeData = JSON.parse(trimmed);
+                        } catch {
+                            resumeData = promptText;
+                        }
+                    }
+                    resumePendingTool = {
+                        toolCall: { id: toolCall.toolCallId, name: toolCall.toolName, arguments: toolCall.args },
+                        approved: true,
+                        resumeData,
+                        step: 0,
+                        threadId: memoryThreadId,
+                        resourceId: memoryResourceId,
+                    };
+                    await suspendedRunStore.markResolved(rec.runId).catch(() => undefined);
+                }
+            }
             const runDebugMode = pickBoolean(
                 runOptions?.debugMode,
                 options.debugMode ?? dev,
@@ -579,11 +845,17 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     runLogger?.debug('agent.run: step', { agentId: name }, { step });
                     runOptions?.onStep?.(step);
                 },
+                onApproval: (req) => { runOptions?.onApproval?.(req); },
+                onSuspended: (req) => { runOptions?.onSuspended?.(req); },
+                onTripwire: (info) => { runOptions?.onTripwire?.(info); },
+                onGoal: (evaluation) => { runOptions?.onGoal?.(evaluation); },
+                onObject: (obj) => { runOptions?.onObject?.(obj); },
             };
 
             let messages: Message[] | undefined;
             let fullSessionHistory: Message[] = [];
             let historyMessagesInContext = 0;
+            let memorySystemMessages: Message[] = [];
             if (runOptions?.messages?.length) {
                 const addHistory = pickBoolean(
                     runOptions.addHistoryToContext,
@@ -594,6 +866,37 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 historyMessagesInContext = selectedHistory.length;
                 messages = [
                     { role: 'system', content: instructions },
+                    ...selectedHistory,
+                    userMessage,
+                ];
+            } else if (memoryActive) {
+                // Mastra memory thread — history / observational window owned by the Memory bundle.
+                const omCtx = await memory!
+                    .getObservationalContext({ threadId: memoryThreadId!, resourceId: memoryResourceId ?? memoryThreadId! })
+                    .catch(() => null);
+                const history: Message[] = omCtx
+                    ? omCtx.messages.map((m) => storageToMessage(m as unknown as StorageMessage))
+                    : [];
+                if (history.length === 0 && !omCtx) {
+                    const rows = await memory!.getMessages(memoryThreadId!);
+                    history.push(...rows.map((r) => storageToMessage(r as unknown as StorageMessage)));
+                }
+                fullSessionHistory = history;
+                if (omCtx?.system) memorySystemMessages.push({ role: 'system', content: omCtx.system });
+                if (omCtx?.continuation) memorySystemMessages.push({ role: 'system', content: `[Continuation]\n${omCtx.continuation}` });
+                const wm = await memory.workingMemoryContext(memoryResourceId ?? memoryThreadId!).catch(() => undefined);
+                if (wm) memorySystemMessages.push({ role: 'system', content: wm });
+                const addHistory = pickBoolean(
+                    runOptions?.addHistoryToContext,
+                    options.addHistoryToContext,
+                    true,
+                );
+                // OM already returns a bounded window; only trim the non-OM path.
+                const selectedHistory = omCtx ? history : addHistory ? selectHistoryForContext(history, runOptions, options) : [];
+                historyMessagesInContext = selectedHistory.length;
+                messages = [
+                    { role: 'system', content: instructions },
+                    ...memorySystemMessages,
                     ...selectedHistory,
                     userMessage,
                 ];
@@ -645,13 +948,24 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
             const memoryContext = addMemoriesToContext
                 ? await buildMemoryContext(effectiveMemoryStore, promptText, memoryLimit)
                 : { count: 0 };
-            const ragContext = combineContext(memoryContext.context, knowledgeContext);
+            let ragContext = combineContext(memoryContext.context, knowledgeContext);
+
+            // Semantic recall (cross-thread) — folded into RAG context.
+            let recallCount = 0;
+            if (memoryActive) {
+                const recall = await memory!.recall(memoryThreadId!, memoryResourceId, promptText).catch(() => []);
+                recallCount = recall.length;
+                if (recall.length) {
+                    ragContext = combineContext(ragContext, `[Memory Recall]\n${recall.map((r) => `- ${r}`).join('\n')}`);
+                }
+            }
 
             runLogger?.debug('agent.run: start', { agentId: name }, {
                 sessionId,
                 historyMessages: historyMessagesInContext,
                 memoryResults: memoryContext.count,
                 knowledgeContext: !!knowledgeContext,
+                recallCount,
             });
 
             // ── Mastermind: always compress messages before sending to LLM ──
@@ -681,6 +995,24 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
             // Per-run hooks are passed via runConfig.hooks — the runner merges them with
             // agent-level hooks locally. No shared config mutation; concurrent runs are isolated.
             const inputMessageCount = messages?.length ?? 0;
+
+            // Durable goal — the thread's objective gates the loop via the judge.
+            let goalRunConfig: GoalRunConfig | undefined;
+            if (options.goal && memoryThreadId) {
+                const objective = await goalStore.getObjective(memoryThreadId).catch(() => null);
+                if (objective && objective.status === 'active') {
+                    goalRunConfig = {
+                        objective: objective.objective,
+                        judge: options.goal.judge,
+                        maxRuns: objective.maxRuns ?? options.goal.maxRuns ?? 50,
+                        runsUsed: objective.runsUsed,
+                        threadId: memoryThreadId,
+                        resourceId: memoryResourceId,
+                    };
+                }
+            }
+            const requireToolApproval = runOptions?.requireToolApproval ?? options.requireToolApproval;
+
             let result = await agent.run(
                 {
                     prompt: messages ? '' : promptText,
@@ -695,9 +1027,26 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     ...(runOptions?.userId  && { userId: runOptions.userId }),
                     ...(runOptions?.signal  && { signal: runOptions.signal }),
                     ...(runOptions?.allowedTools && { allowedTools: runOptions.allowedTools }),
+                    ...(runOptions?.processors && { processors: runOptions.processors }),
+                    ...((runOptions?.structuredOutput ?? options.structuredOutput) && { structuredOutput: runOptions?.structuredOutput ?? options.structuredOutput }),
+                    ...(goalRunConfig && { goal: goalRunConfig }),
+                    ...(requireToolApproval !== undefined && { requireToolApproval }),
+                    ...(runOptions?.approvedToolCalls && { approvedToolCalls: runOptions.approvedToolCalls }),
+                    ...(runOptions?.resumeData !== undefined && { resumeData: runOptions.resumeData }),
+                    ...(resumePendingTool && { resumePendingTool }),
+                    ...(memoryThreadId && { threadId: memoryThreadId }),
+                    ...(memoryResourceId && { resourceId: memoryResourceId }),
                 },
                 streamHooks
             ) as AgentRunResult;
+
+            // Publish run-finish for direct (non-streaming) durable runs.
+            if (durableRegistry && runId && !runOptions?.onChunk) {
+                await durableRegistry.publish(runId, { type: 'run-finish', run: result } as import('../create-agent/types.js').StreamChunk);
+                if (result.finishReason === 'suspended') await durableRegistry.markStatus(runId, 'suspended');
+                else await durableRegistry.markStatus(runId, 'done');
+                durableRegistry.close(runId);
+            }
 
             const followupsEnabled = pickBoolean(
                 runOptions?.followUps,
@@ -755,7 +1104,20 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 };
             }
 
-            if (sessionId && sessionStore && result.messages?.length) {
+            if (memoryActive && result.messages?.length) {
+                // Persist new turns into the Memory thread.
+                const newMessages = messages
+                    ? result.messages.slice(inputMessageCount).filter((message: Message) => message.role !== 'system')
+                    : result.messages.filter((message: Message) => message.role !== 'system');
+                const stamped = await memory!.saveMessages(memoryThreadId!, memoryResourceId, [userMessage, ...newMessages]);
+                // Observational memory buffering + mem0 extraction + semantic indexing.
+                await memory!.processMemoryAfterRun({
+                    threadId: memoryThreadId!,
+                    resourceId: memoryResourceId ?? memoryThreadId!,
+                    messages: [userMessage, ...newMessages],
+                    storedMessages: stamped,
+                }).catch(() => undefined);
+            } else if (sessionId && sessionStore && result.messages?.length) {
                 const newMessages = messages
                     ? result.messages.slice(inputMessageCount).filter((message: Message) => message.role !== 'system')
                     : result.messages.filter((message: Message) => message.role !== 'system');
@@ -883,6 +1245,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
         },
         streamEvents(prompt: string | import('../providers/vision.js').MultiModalInput, runOptions?: Omit<AgentRunOptions, 'onChunk'>) {
             const self = this as import('./types.js').CreateAgentResult;
+            const effectiveRunId = runOptions?.runId ?? (durableRegistry ? durableRunId() : undefined);
 
             async function* generate(): AsyncGenerator<StreamChunk> {
                 const queue: StreamChunk[] = [];
@@ -890,26 +1253,73 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 let finished = false;
                 let runError: unknown;
                 let runResult: import('./types.js').AgentRunResult | undefined;
+                const publish = (chunk: StreamChunk) => {
+                    void durableRegistry?.publish(effectiveRunId!, chunk);
+                };
 
                 const runPromise = self.run(prompt, {
                     ...runOptions,
+                    ...(effectiveRunId ? { runId: effectiveRunId } : {}),
                     onChunk: (chunk: string) => {
-                        queue.push({ type: 'text-delta', delta: chunk });
+                        const evt: StreamChunk = { type: 'text-delta', delta: chunk };
+                        queue.push(evt);
+                        publish(evt);
                         notify?.();
                         notify = null;
                     },
                     onToolCall: (toolName: string, input: Record<string, unknown>) => {
-                        queue.push({ type: 'tool-call', tool: { name: toolName, input } });
+                        const evt: StreamChunk = { type: 'tool-call', tool: { name: toolName, input } };
+                        queue.push(evt);
+                        publish(evt);
                         notify?.();
                         notify = null;
                     },
                     onToolResult: (toolName: string, output: unknown) => {
-                        queue.push({ type: 'tool-result', tool: { name: toolName, input: undefined, output } });
+                        const evt: StreamChunk = { type: 'tool-result', tool: { name: toolName, input: undefined, output } };
+                        queue.push(evt);
+                        publish(evt);
                         notify?.();
                         notify = null;
                     },
                     onStep: (stepNumber: number) => {
-                        queue.push({ type: 'step-finish', stepNumber });
+                        const evt: StreamChunk = { type: 'step-finish', stepNumber };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onApproval: (req) => {
+                        const evt: StreamChunk = { type: 'tool-call-approval', approval: { ...req, requiresApproval: true } };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onSuspended: (req) => {
+                        const evt: StreamChunk = { type: 'tool-call-suspended', suspend: req };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onTripwire: (info) => {
+                        const evt: StreamChunk = { type: 'tripwire', tripwire: info };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onGoal: (evaluation) => {
+                        const evt: StreamChunk = { type: 'goal', goal: evaluation };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onObject: (obj) => {
+                        const evt: StreamChunk = { type: 'object-result', object: obj };
+                        queue.push(evt);
+                        publish(evt);
                         notify?.();
                         notify = null;
                     },
@@ -929,12 +1339,25 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                         while (queue.length > 0) yield queue.shift()!;
                         await runPromise;
                         if (runError) {
-                            yield { type: 'error', error: runError instanceof Error ? runError : new Error(String(runError)) };
+                            const evt: StreamChunk = { type: 'error', error: runError instanceof Error ? runError : new Error(String(runError)) };
+                            yield evt;
+                            publish(evt);
+                            if (effectiveRunId) await durableRegistry?.markStatus(effectiveRunId, 'error').catch(() => undefined);
                             return;
                         }
                         if (runResult) {
-                            yield { type: 'run-finish', run: runResult };
+                            const evt: StreamChunk = { type: 'run-finish', run: runResult };
+                            yield evt;
+                            publish(evt);
+                            if (effectiveRunId) {
+                                if (runResult.finishReason === 'suspended') {
+                                    await durableRegistry?.markStatus(effectiveRunId, 'suspended').catch(() => undefined);
+                                } else {
+                                    await durableRegistry?.markStatus(effectiveRunId, 'done').catch(() => undefined);
+                                }
+                            }
                         }
+                        if (effectiveRunId) durableRegistry?.close(effectiveRunId);
                         return;
                     }
                     await new Promise<void>((r) => { notify = r; });
@@ -952,6 +1375,150 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
             // Reads the same lazy Mastermind instance the run loop compresses with,
             // so totals reflect every run so far. undefined when mastermind: false.
             return getMastermind()?.stats();
+        },
+
+        // ── Durable-by-default surface ─────────────────────────────────────────
+        async observe(runId: string) {
+            const self = this as import('./types.js').CreateAgentResult;
+            void self;
+            if (!durableRegistry) throw new Error('Durability is disabled for this agent (durable: false).');
+            const handle = durableRegistry.get(runId);
+            const output = registryOutputShim(runId, handle?.result);
+            let cleaned = false;
+            return {
+                runId,
+                output,
+                cleanup() {
+                    if (cleaned) return;
+                    cleaned = true;
+                    if (handle) {
+                        handle.closed = true;
+                        handle.notify();
+                    }
+                },
+            } as DurableStreamResult;
+        },
+        async approveToolCall(options: { runId: string; toolCallId?: string }) {
+            const self = this as import('./types.js').CreateAgentResult;
+            const rec = await findSuspended(options.runId);
+            if (!rec) throw new Error(`No suspended run found for "${options.runId}".`);
+            const toolCall = rec.toolCalls.find((t) => t.toolCallId === options.toolCallId) ?? rec.toolCalls[0];
+            if (!toolCall) throw new Error('Suspended run has no tool calls to answer.');
+            await suspendedRunStore.markResolved(options.runId).catch(() => undefined);
+            return replayRun(self, options.runId, {
+                approvedToolCalls: [toolCall.toolCallId],
+                resumePendingTool: {
+                    toolCall: { id: toolCall.toolCallId, name: toolCall.toolName, arguments: toolCall.args },
+                    approved: true,
+                    step: 0,
+                    threadId: rec.threadId,
+                    resourceId: rec.resourceId,
+                },
+            });
+        },
+        async declineToolCall(options: { runId: string; toolCallId?: string }) {
+            const self = this as import('./types.js').CreateAgentResult;
+            const rec = await findSuspended(options.runId);
+            if (!rec) throw new Error(`No suspended run found for "${options.runId}".`);
+            const toolCall = rec.toolCalls.find((t) => t.toolCallId === options.toolCallId) ?? rec.toolCalls[0];
+            if (!toolCall) throw new Error('Suspended run has no tool calls to answer.');
+            await suspendedRunStore.markResolved(options.runId).catch(() => undefined);
+            return replayRun(self, options.runId, {
+                approvedToolCalls: [toolCall.toolCallId],
+                resumePendingTool: {
+                    toolCall: { id: toolCall.toolCallId, name: toolCall.toolName, arguments: toolCall.args },
+                    approved: false,
+                    step: 0,
+                    threadId: rec.threadId,
+                    resourceId: rec.resourceId,
+                },
+            });
+        },
+        async approveToolCallGenerate(options: { runId: string; toolCallId?: string }) {
+            const { output } = await (this as import('./types.js').CreateAgentResult).approveToolCall(options);
+            return output.runResult;
+        },
+        async declineToolCallGenerate(options: { runId: string; toolCallId?: string }) {
+            const { output } = await (this as import('./types.js').CreateAgentResult).declineToolCall(options);
+            return output.runResult;
+        },
+        async resumeStream(resumeData: unknown, options: { runId?: string; toolCallId?: string } = {}) {
+            const self = this as import('./types.js').CreateAgentResult;
+            if (!options.runId) throw new Error('resumeStream requires a runId (use listSuspendedRuns to find one).');
+            const rec = await findSuspended(options.runId);
+            const toolCall = rec?.toolCalls.find((t) => t.toolCallId === options.toolCallId) ?? rec?.toolCalls[0];
+            if (!rec || !toolCall) throw new Error(`No suspended run found for "${options.runId}".`);
+            await suspendedRunStore.markResolved(options.runId).catch(() => undefined);
+            return replayRun(self, options.runId, {
+                resumeData,
+                resumePendingTool: {
+                    toolCall: { id: toolCall.toolCallId, name: toolCall.toolName, arguments: toolCall.args },
+                    approved: true,
+                    step: 0,
+                    threadId: rec.threadId,
+                    resourceId: rec.resourceId,
+                },
+            });
+        },
+        async listSuspendedRuns(opts: { threadId?: string; resourceId?: string } = {}) {
+            const runs = await suspendedRunStore.list({
+                agentId: durableAgentId,
+                threadId: opts.threadId,
+                resourceId: opts.resourceId,
+            });
+            return { runs };
+        },
+        async recoverActiveRuns(options: { runId?: string } = {}) {
+            const self = this as import('./types.js').CreateAgentResult;
+            const candidates = options.runId
+                ? [options.runId]
+                : Array.from(new Set([...capturedRuns.keys(), ...(durableRegistry ? await durableRegistry.listCachedRunIds() : [])]));
+            let recovered = 0;
+            let succeeded = 0;
+            let failed = 0;
+            for (const runId of candidates) {
+                const handle = durableRegistry?.get(runId);
+                if (handle && handle.status !== 'running' && handle.status !== 'suspended') continue;
+                recovered++;
+                try {
+                    await replayRun(self, runId, {});
+                    succeeded++;
+                } catch {
+                    failed++;
+                }
+            }
+            return { recovered, succeeded, failed };
+        },
+
+        // ── Goals (durable thread-scoped objectives) ──────────────────────────
+        async setObjective(objective: string, opts: { threadId?: string; resourceId?: string; maxRuns?: number } = {}) {
+            if (!opts.threadId) throw new Error('setObjective requires a threadId (use AgentRunOptions.memory.thread).');
+            const record: ObjectiveRecord = {
+                objective,
+                threadId: opts.threadId,
+                resourceId: opts.resourceId,
+                maxRuns: opts.maxRuns ?? options.goal?.maxRuns,
+                runsUsed: 0,
+                status: 'active',
+                updatedAt: new Date().toISOString(),
+            };
+            await goalStore.setObjective(record);
+            return record;
+        },
+        async getObjective(opts: { threadId?: string }) {
+            if (!opts.threadId) return null;
+            return goalStore.getObjective(opts.threadId);
+        },
+        async updateObjectiveOptions(opts: { threadId?: string; maxRuns?: number; prompt?: string }) {
+            if (!opts.threadId) return;
+            await goalStore.updateOptions(opts.threadId, {
+                ...(opts.maxRuns !== undefined ? { maxRuns: opts.maxRuns } : {}),
+                ...(opts.prompt !== undefined ? { prompt: opts.prompt } : {}),
+            });
+        },
+        async clearObjective(opts: { threadId?: string }) {
+            if (!opts.threadId) return;
+            await goalStore.clear(opts.threadId);
         },
     };
 }

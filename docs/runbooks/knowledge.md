@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Knowledge"
-description: "Operational runbook for personaforge/knowledge — import, run, verify, recover. 83 public symbols."
+description: "Operational runbook for personaforge/knowledge — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Knowledge
 
-> Auto-generated from `./dist/knowledge.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/knowledge/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/knowledge`  ·  **Public symbols:** 83  ·  **Guide:** [/guide/rag](../guide/rag.md)
+**Import path:** `personaforge/knowledge`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/rag](../guide/rag.md)
 
 ## What it is
 `personaforge/knowledge` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,46 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createKnowledgeEngine, withEmbeddingCache, createDbKnowledgeEngine } from 'personaforge/knowledge';
+import 'personaforge/knowledge';
 ```
 
 ## Public API surface
-- **Factories / functions** — `withEmbeddingCache`, `createKnowledgeEngine`, `createDbKnowledgeEngine`, `loadPdf`, `loadCsv`, `loadUrl`, `rrfFuse`, `loadMarkdown`, `loadMarkdownText`, `loadHtml`, `loadHtmlText`, `loadJson`, …(+4)
-- **Classes** — `KnowledgeEngine`, `DbKnowledgeEngine`, `DbVectorStore`, `Neo4jKnowledgeAdapter`, `ChromaKnowledgeAdapter`, `PgvectorKnowledgeAdapter`, `RecursiveCharacterSplitter`, `MarkdownSplitter`, `SemanticSplitter`, `BM25Index`, `HybridRetriever`, `CohereReranker`, …(+8)
-- **Interfaces** — `Document`, `SearchResult`, `VectorStore`, `RAGEngine`, `RAGChunk`, `RAGQueryOptions`, `RAGQueryResult`, `KnowledgeEngineOptions`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, …(+33)
-- **Types** — `EmbeddingFn`, `LearningType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the rag guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createAgent } from 'personaforge';
-import { createKnowledgeEngine, loadUrl } from 'personaforge';
-import { OpenAIEmbeddingProvider } from 'personaforge';
-
-// 1. Build the engine — `embed` is an EmbeddingFn: (text) => Promise<number[]>
-const embedder = new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! });
-const kb = createKnowledgeEngine({
-  embed: (text) => embedder.embed(text),
-  // default: InMemoryVectorStore (cosine similarity)
-});
-
-// 2. Ingest documents
-const docs = await loadUrl('https://docs.example.com/api-reference', { recursive: true, maxPages: 20 });
-await kb.addDocuments(docs);
-
-// 3. Attach to agent
-const agent = createAgent({
-  name: 'docs-assistant',
-  instructions: 'Answer questions about our product using the provided documentation.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  knowledgebase: kb,
-  addKnowledgeToContext: true,   // automatically prepends retrieved chunks to system prompt (default: true when a knowledgebase is set)
-});
-
-const result = await agent.run('How do I authenticate API requests?');
-// …see full example in the guide
+import 'personaforge/knowledge';
 ```
 
 ## Verify it works

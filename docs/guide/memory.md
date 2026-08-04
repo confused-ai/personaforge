@@ -33,6 +33,184 @@ console.log(result.text);  // references TypeScript
 
 ---
 
+## The unified `Memory` layer
+
+`Memory` is the modern, all-in-one way to give agents durable memory — message history, working memory, semantic recall, observational memory, and even a mem0-style fact engine. It mirrors Mastra's `@mastra/memory` API and is **production-ready by default** (libSQL persistence, zero-config semantic recall).
+
+```ts
+import { createAgent, Memory } from 'personaforge';
+
+const memory = new Memory({
+  // storage defaults to libSQL (`:memory:`, or `file:`/remote when LIB_SQL_URL is set)
+  options: {
+    lastMessages: 20,                       // history window
+    workingMemory: { template: '# Profile\n- Name:\n- Location:' },
+  },
+});
+
+const agent = createAgent({
+  name: 'assistant',
+  instructions: 'You are a helpful assistant.',
+  model: 'gpt-4o',
+  apiKey: process.env.OPENAI_API_KEY!,
+  memory,                                   // ← attaches threads/working-memory/tools
+});
+
+// Scope every run with a thread + resource (user/entity).
+await agent.run('Remember I like dark mode.', { memory: { thread: 't1', resource: 'alice' } });
+```
+
+When `memory` is set, `createAgent`:
+
+- loads/persists message history through the `Memory` bundle (instead of the legacy `sessionStore` blob),
+- injects working memory and observational memory as system context,
+- registers the memory agent tools (`updateWorkingMemory`, `recall_memory`, mem0 tools),
+- automatically runs observational buffering, mem0 extraction and semantic indexing after each turn.
+
+### Thread stores — libSQL by default
+
+Threads and messages persist through a `ThreadStore`. The default is **libSQL** (`@libsql/client`) — local `file:` databases, shared `:memory:`, or Turso cloud (`libsql://`). If libSQL isn't installed it falls back to in-memory; `better-sqlite3` is also supported.
+
+```ts
+import { createAgent, Memory, createThreadStore } from 'personaforge';
+
+const storage = createThreadStore({ url: 'file:./memory.db' }); // durable, recommended
+const memory  = new Memory({ storage });
+
+// or equivalently via env:
+//   LIB_SQL_URL=file:./memory.db
+
+// available stores
+import { InMemoryThreadStore, LibSqlThreadStore, SqliteThreadStore } from 'personaforge';
+new Memory({ storage: new InMemoryThreadStore() });   // dev / tests
+new Memory({ storage: new LibSqlThreadStore({ url: 'libsql://my-db-org.turso.io', authToken }) });
+new Memory({ storage: new SqliteThreadStore({ path: './memory.db' }) }); // better-sqlite3
+```
+
+### Working memory
+
+A persistent, always-available block (user profile / task state) injected as a system message every turn. Two styles:
+
+```ts
+// Markdown template — the agent rewrites the whole block.
+new Memory({
+  options: {
+    workingMemory: { template: `
+# User Profile
+- Name:
+- Location:
+- Communication style:
+` },
+  },
+});
+
+// Structured JSON (deep-merge updates; null deletes fields; arrays replace).
+import { z } from 'zod';
+new Memory({
+  options: {
+    workingMemory: {
+      schema: z.object({ name: z.string(), prefs: z.record(z.any()) }),
+      scope: 'resource',   // shared across all threads of the user (default)
+    },
+  },
+});
+```
+
+Programmatic API:
+
+```ts
+await memory.updateWorkingMemory({ threadId: 't1', resourceId: 'alice', workingMemory: '...' });
+const block = await memory.getWorkingMemory({ threadId: 't1', resourceId: 'alice' });
+```
+
+### Semantic recall
+
+RAG over past messages. Enable with `semanticRecall: true` — zero-config: a deterministic local hashing embedder + in-memory vector store work out of the box. Bring a real embedder + vector store for production-grade similarity.
+
+```ts
+import { createAgent, Memory, InMemoryVectorStore, OpenAIEmbeddingProvider } from 'personaforge';
+
+const memory = new Memory({
+  vector: new InMemoryVectorStore(),
+  embedder: new OpenAIEmbeddingProvider({ apiKey: process.env.OPENAI_API_KEY! }),
+  options: { semanticRecall: { topK: 3, scope: 'resource' } },
+});
+
+// Direct recall anywhere
+const { messages } = await memory.recall({
+  threadId: 't1',
+  vectorSearchString: 'what code theme do I prefer?',
+  perPage: 5,
+});
+```
+
+### Observational memory
+
+Compress very long conversations into a dense observation log with background Observer/Reflector agents — the context window stays bounded no matter how long the thread runs.
+
+```ts
+const memory = new Memory({
+  llm, // agent-level LLM is bound automatically when using createAgent
+  options: {
+    observationalMemory: {
+      messageTokens: 30_000,     // when to compress history (default 30k)
+      observationTokens: 40_000, // when to reflect/condense the log (default 40k)
+      bufferTokens: 0.2,         // background buffering cadence
+      observation: {
+        manageWorkingMemory: true, // Observer keeps the user profile fresh
+        extract: [new Extractor({ name: 'Blockers', instructions: 'What is blocking the user?' })],
+      },
+    },
+  },
+});
+```
+
+When activated, observed messages leave the context window and a compact `[Observational Memory]` system block (plus a continuation hint) takes their place. Raw messages stay in storage for the `recall_memory` tool.
+
+### mem0-style memory
+
+An LLM extracts discrete, editable **facts** from each turn (mem0's `ADD / UPDATE / NONE / DELETE` pipeline), stored and searchable with a CRUD API + agent tools.
+
+```ts
+import { createAgent, Memory } from 'personaforge';
+
+const memory = new Memory({
+  llm,
+  options: {
+    mem0: { autoExtract: true }, // extract + store facts after every run
+  },
+});
+
+// programmatic API
+await memory.mem0?.add('Alice prefers dark mode', { userID: 'alice' });
+const facts = await memory.mem0?.search('theme preference', { userID: 'alice' });
+
+// standalone engine (anywhere)
+import { Mem0Memory, InMemoryMem0Store } from 'personaforge';
+const mem0 = new Mem0Memory({
+  llm,
+  store: new InMemoryMem0Store(),
+  embedder: undefined, // optional semantic search
+  vectorStore: undefined, // optional semantic search
+});
+await mem0.processMessages(conversation, { userID: 'alice' });
+```
+
+### Memory processors (Mastra parity)
+
+The individual pieces are also available as standalone `Processor`s for the agent processor pipeline: `MessageHistoryProcessor`, `SemanticRecallProcessor`, `WorkingMemoryProcessor`, `TokenLimiterProcessor`, `ObservationalMemoryProcessor`, and `Mem0ExtractionProcessor`. You can compose them manually with `memory.getProcessors()` or reference them directly when building a custom runner.
+
+### Scoped, multi-user threads
+
+Every thread belongs to a single `resourceId` (user/entity); a resource can own many threads. Threads are isolated first-class records — use one `thread` per conversation and one `resource` per user:
+
+```ts
+await agent.run('...', { memory: { thread: 'support-42', resource: 'user-7' } });
+await memory.listThreads({ resourceId: 'user-7' }); // all of user-7's conversations
+```
+
+---
+
 ## Memory stores
 
 ### `InMemoryStore`

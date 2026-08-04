@@ -1,6 +1,6 @@
 ---
 title: "Runbook: Control Plane"
-description: "Operational runbook for personaforge/control-plane — import, run, verify, recover. 3 public symbols."
+description: "Operational runbook for personaforge/control-plane — import, run, verify, recover. 5 public symbols."
 outline: [2, 3]
 generated: true
 ---
@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./src/control-plane/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/control-plane`  ·  **Public symbols:** 3  ·  **Guide:** [/guide/control-plane](../guide/control-plane.md)
+**Import path:** `personaforge/control-plane`  ·  **Public symbols:** 5  ·  **Guide:** [/guide/control-plane](../guide/control-plane.md)
 
 ## What it is
 `personaforge/control-plane` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -27,7 +27,7 @@ import { createControlPlane } from 'personaforge/control-plane';
 
 ## Public API surface
 - **Factories / functions** — `createControlPlane`
-- **Interfaces** — `ControlPlaneConfig`, `ControlPlaneServer`
+- **Interfaces** — `SystemSnapshot`, `ControlPlaneAgent`, `ControlPlaneConfig`, `ControlPlaneServer`
 
 ## Minimal use
 Real example from the control-plane guide:

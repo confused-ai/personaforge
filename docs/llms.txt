@@ -9,10 +9,12 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [Runbook: Adapter Redis](runbooks/adapter-redis.md): `personaforge/adapter-redis`
 - [Runbook: Adapters](runbooks/adapters.md): `personaforge/adapters`
 - [Runbook: Agentic](runbooks/agentic.md): `personaforge/agentic`
+- [Runbook: Approval](runbooks/approval.md): `personaforge/approval`
 - [Runbook: Artifacts](runbooks/artifacts.md): `personaforge/artifacts`
 - [Runbook: Background](runbooks/background.md): `personaforge/background`
 - [Runbook: Checkpoint](runbooks/checkpoint.md): `personaforge/checkpoint`
 - [Runbook: Cli](runbooks/cli.md): `personaforge/cli`
+- [Runbook: Code Mode](runbooks/code-mode.md): `personaforge/code-mode`
 - [Runbook: Compression](runbooks/compression.md): `personaforge/compression`
 - [Runbook: Config](runbooks/config.md): `personaforge/config`
 - [Runbook: Context](runbooks/context.md): `personaforge/context`
@@ -21,12 +23,17 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [Runbook: Core](runbooks/core.md): `personaforge/core`
 - [Runbook: Create Agent](runbooks/create-agent.md): `personaforge/create-agent`
 - [Runbook: Db](runbooks/db.md): `personaforge/db`
+- [Runbook: Durable](runbooks/durable.md): `personaforge/durable`
 - [Runbook: Dx](runbooks/dx.md): `personaforge/dx`
 - [Runbook: Eval](runbooks/eval.md): `personaforge/eval`
+- [Runbook: Events](runbooks/events.md): `personaforge/events`
 - [Runbook: Execution](runbooks/execution.md): `personaforge/execution`
+- [Runbook: Goals](runbooks/goals.md): `personaforge/goals`
 - [Runbook: Graph](runbooks/graph.md): `personaforge/graph`
 - [Runbook: Guard](runbooks/guard.md): `personaforge/guard`
 - [Runbook: Guardrails](runbooks/guardrails.md): `personaforge/guardrails`
+- [Runbook: Harness](runbooks/harness.md): `personaforge/harness`
+- [Runbook: Hooks](runbooks/hooks.md): `personaforge/hooks`
 - [Runbook: Framework Core](runbooks/index.md): `personaforge`
 - [Runbook: Interfaces](runbooks/interfaces.md): `personaforge/interfaces`
 - [Runbook: Knowledge](runbooks/knowledge.md): `personaforge/knowledge`
@@ -42,9 +49,11 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [Runbook: Planner](runbooks/planner.md): `personaforge/planner`
 - [Runbook: Playground](runbooks/playground.md): `personaforge/playground`
 - [Runbook: Plugins](runbooks/plugins.md): `personaforge/plugins`
+- [Runbook: Processors](runbooks/processors.md): `personaforge/processors`
 - [Runbook: Production](runbooks/production.md): `personaforge/production`
 - [Runbook: Providers](runbooks/providers.md): `personaforge/providers`
 - [Runbook: Reasoning](runbooks/reasoning.md): `personaforge/reasoning`
+- [Runbook: Registry](runbooks/registry.md): `personaforge/registry`
 - [Runbook: Router](runbooks/router.md): `personaforge/router`
 - [Runbook: Runnable](runbooks/runnable.md): `personaforge/runnable`
 - [Runbook: Runtime](runbooks/runtime.md): `personaforge/runtime`
@@ -58,6 +67,7 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [Runbook: Storage](runbooks/storage.md): `personaforge/storage`
 - [Runbook: Streaming](runbooks/streaming.md): `personaforge/streaming`
 - [Runbook: Structured](runbooks/structured.md): `personaforge/structured`
+- [Runbook: System](runbooks/system.md): `personaforge/system`
 - [Runbook: Test](runbooks/test.md): `personaforge/test`
 - [Runbook: Test Utils](runbooks/test-utils.md): `personaforge/test-utils`
 - [Runbook: Test Utils: Conformance](runbooks/test-utils-conformance.md): `personaforge/test-utils/conformance`
@@ -91,9 +101,12 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [admin-api](guide/admin-api.md)
 - [agents](guide/agents.md)
 - [all-modules](guide/all-modules.md)
+- [approval](guide/approval.md)
 - [artifacts](guide/artifacts.md)
 - [background-queues](guide/background-queues.md)
 - [checkpoint](guide/checkpoint.md)
+- [code-mode](guide/code-mode.md)
+- [comparisons](guide/comparisons.md)
 - [compose](guide/compose.md)
 - [compression](guide/compression.md)
 - [concepts](guide/concepts.md)
@@ -103,11 +116,15 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [custom-tools](guide/custom-tools.md)
 - [database](guide/database.md)
 - [deep-research](guide/deep-research.md)
+- [durable](guide/durable.md)
 - [eval](guide/eval.md)
 - [event-streaming](guide/event-streaming.md)
+- [events](guide/events.md)
 - [getting-started](guide/getting-started.md)
+- [goals](guide/goals.md)
 - [graph](guide/graph.md)
 - [guardrails](guide/guardrails.md)
+- [harness](guide/harness.md)
 - [hitl](guide/hitl.md)
 - [hooks](guide/hooks.md)
 - [introduction](guide/introduction.md)
@@ -116,14 +133,12 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [loaders](guide/loaders.md)
 - [mcp](guide/mcp.md)
 - [memory](guide/memory.md)
+- [migration-agno](guide/migration-agno.md)
 - [migration-crewai](guide/migration-crewai.md)
 - [migration-langchain](guide/migration-langchain.md)
-- [migration-vercel](guide/migration-vercel.md)
 - [migration-langgraph](guide/migration-langgraph.md)
 - [migration-mastra](guide/migration-mastra.md)
-- [migration-agno](guide/migration-agno.md)
-- [comparisons](guide/comparisons.md)
-- [trust](guide/trust.md)
+- [migration-vercel](guide/migration-vercel.md)
 - [model-fallbacks](guide/model-fallbacks.md)
 - [monorepo-migration](guide/monorepo-migration.md)
 - [multi-tenancy](guide/multi-tenancy.md)
@@ -133,11 +148,13 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [packages](guide/packages.md)
 - [planner](guide/planner.md)
 - [plugins](guide/plugins.md)
+- [processors](guide/processors.md)
 - [production](guide/production.md)
 - [providers](guide/providers.md)
 - [rag](guide/rag.md)
 - [reasoning](guide/reasoning.md)
 - [reasoning-tools](guide/reasoning-tools.md)
+- [registry](guide/registry.md)
 - [retrieval-advanced](guide/retrieval-advanced.md)
 - [runnable](guide/runnable.md)
 - [scheduler](guide/scheduler.md)
@@ -152,6 +169,7 @@ TypeScript AI agent framework. Start with one package, add features via tree-sha
 - [toolkits](guide/toolkits.md)
 - [tools](guide/tools.md)
 - [trace-dataset](guide/trace-dataset.md)
+- [trust](guide/trust.md)
 - [video](guide/video.md)
 - [vision](guide/vision.md)
 - [voice](guide/voice.md)

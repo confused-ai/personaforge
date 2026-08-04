@@ -65,7 +65,7 @@ The authoritative `CHANGELOG.md` lives in the repository root.
 
 #### DX Improvements
 - `defineTool()` helper — AI SDK-style fluent builder with Zod schemas, `needsApproval`, streaming hooks
-- `createWorkflow().then(step).commit()` — Mastra-style typed step workflows
+- `createWorkflow().then(step).commit()` — Mastra-style inspired typed step workflows
 - `createStepWorkflow`, `StepWorkflow`, `StepWorkflowBuilder`, `StepWorkflowStep` exports
 
 #### Resilience

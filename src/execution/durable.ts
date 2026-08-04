@@ -1,4 +1,7 @@
+import { createRequire } from 'node:module';
 import { generateEntityId } from '../core/index.js';
+
+const _require = createRequire(import.meta.url);
 
 // ── Event Sourcing ──────────────────────────────────────────────────────────
 
@@ -26,7 +29,11 @@ export interface EventStore {
     getEvents(workflowId: string): Promise<WorkflowEvent[]>;
     /** Optional: delete all events for a workflow (e.g. on completion to free storage). */
     deleteEvents?(workflowId: string): Promise<void>;
+    /** Optional: close underlying connections. */
+    close?(): Promise<void>;
 }
+
+// ── In-Memory (zero-config) ────────────────────────────────────────────────
 
 export class InMemoryEventStore implements EventStore {
     private streams: Map<string, WorkflowEvent[]> = new Map();
@@ -49,6 +56,476 @@ export class InMemoryEventStore implements EventStore {
 
     async deleteEvents(workflowId: string): Promise<void> {
         this.streams.delete(workflowId);
+    }
+
+    async close(): Promise<void> {
+        this.streams.clear();
+    }
+}
+
+// ── SQLite (better-sqlite3) ────────────────────────────────────────────────
+
+const MISSING_BETTER_SQLITE3 =
+    '[personaforge/execution] SqliteEventStore requires better-sqlite3.\n' +
+    '  Install: npm install better-sqlite3';
+
+interface Sqlite3Db {
+    exec(sql: string): void;
+    prepare(sql: string): { run(...params: unknown[]): unknown; get(...params: unknown[]): unknown; all(...params: unknown[]): unknown[] };
+    close(): void;
+}
+
+type Sqlite3Ctor = new (path: string) => Sqlite3Db;
+
+export class SqliteEventStore implements EventStore {
+    private db: Sqlite3Db;
+
+    constructor(dbOrPath: Sqlite3Db | string) {
+        if (typeof dbOrPath === 'string') {
+            let Database: Sqlite3Ctor;
+            try {
+                Database = _require('better-sqlite3') as Sqlite3Ctor;
+            } catch {
+                throw new Error(MISSING_BETTER_SQLITE3);
+            }
+            this.db = new Database(dbOrPath);
+        } else {
+            this.db = dbOrPath;
+        }
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS workflow_events (
+                id TEXT PRIMARY KEY,
+                workflow_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                payload TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_workflow_events_wf ON workflow_events (workflow_id, timestamp);
+        `);
+    }
+
+    static create(filePath: string): SqliteEventStore {
+        return new SqliteEventStore(filePath);
+    }
+
+    async append(workflowId: string, event: Omit<WorkflowEvent, 'id' | 'timestamp'>): Promise<WorkflowEvent> {
+        const fullEvent: WorkflowEvent = {
+            ...event,
+            id: generateEntityId(),
+            timestamp: Date.now(),
+        };
+        this.db.prepare(
+            `INSERT INTO workflow_events (id, workflow_id, type, timestamp, payload) VALUES (?, ?, ?, ?, ?)`
+        ).run(fullEvent.id, fullEvent.workflowId, fullEvent.type, fullEvent.timestamp, fullEvent.payload ? JSON.stringify(fullEvent.payload) : null);
+        return fullEvent;
+    }
+
+    async getEvents(workflowId: string): Promise<WorkflowEvent[]> {
+        const rows = this.db.prepare(
+            `SELECT * FROM workflow_events WHERE workflow_id = ? ORDER BY timestamp ASC`
+        ).all(workflowId) as Array<{ id: string; workflow_id: string; type: string; timestamp: number; payload: string | null }>;
+        return rows.map(rowToWorkflowEvent);
+    }
+
+    async deleteEvents(workflowId: string): Promise<void> {
+        this.db.prepare(`DELETE FROM workflow_events WHERE workflow_id = ?`).run(workflowId);
+    }
+
+    async close(): Promise<void> {
+        this.db.close();
+    }
+}
+
+// ── libSQL (@libsql/client) ────────────────────────────────────────────────
+
+const MISSING_LIBSQL =
+    '[personaforge/execution] LibSqlEventStore requires @libsql/client.\n' +
+    '  Install: npm install @libsql/client';
+
+interface LibSqlRow { [k: string]: unknown; }
+interface LibSqlResult { rows: LibSqlRow[]; rowsAffected: number; }
+interface LibSqlClient {
+    execute(stmt: string | { sql: string; args: unknown[] }): Promise<LibSqlResult>;
+    close(): void;
+}
+type LibSqlCreator = { createClient(config: Record<string, unknown>): LibSqlClient };
+
+export class LibSqlEventStore implements EventStore {
+    private client: LibSqlClient;
+    private _initialized = false;
+    private _init: Promise<void>;
+
+    constructor(urlOrClient: string | LibSqlClient, authToken?: string) {
+        if (typeof urlOrClient === 'object') {
+            this.client = urlOrClient;
+        } else {
+            let createClient: LibSqlCreator['createClient'];
+            try {
+                createClient = (_require('@libsql/client') as LibSqlCreator).createClient;
+            } catch {
+                throw new Error(MISSING_LIBSQL);
+            }
+            this.client = createClient({ url: urlOrClient, authToken });
+        }
+        this._init = this._ensureTable();
+    }
+
+    static create(url: string, authToken?: string): LibSqlEventStore {
+        return new LibSqlEventStore(url, authToken);
+    }
+
+    private async _ensureTable(): Promise<void> {
+        if (this._initialized) return;
+        await this.client.execute(`
+            CREATE TABLE IF NOT EXISTS workflow_events (
+                id TEXT PRIMARY KEY,
+                workflow_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                payload TEXT
+            )
+        `);
+        await this.client.execute(`CREATE INDEX IF NOT EXISTS idx_workflow_events_wf ON workflow_events (workflow_id, timestamp)`);
+        this._initialized = true;
+    }
+
+    async append(workflowId: string, event: Omit<WorkflowEvent, 'id' | 'timestamp'>): Promise<WorkflowEvent> {
+        await this._init;
+        const fullEvent: WorkflowEvent = {
+            ...event,
+            id: generateEntityId(),
+            timestamp: Date.now(),
+        };
+        await this.client.execute({
+            sql: `INSERT INTO workflow_events (id, workflow_id, type, timestamp, payload) VALUES (?, ?, ?, ?, ?)`,
+            args: [fullEvent.id, fullEvent.workflowId, fullEvent.type, fullEvent.timestamp, fullEvent.payload ? JSON.stringify(fullEvent.payload) : null],
+        });
+        return fullEvent;
+    }
+
+    async getEvents(workflowId: string): Promise<WorkflowEvent[]> {
+        await this._init;
+        const result = await this.client.execute({
+            sql: `SELECT * FROM workflow_events WHERE workflow_id = ? ORDER BY timestamp ASC`,
+            args: [workflowId],
+        });
+        return result.rows.map((r) => rowToWorkflowEvent(r as { id: string; workflow_id: string; type: string; timestamp: number; payload: string | null }));
+    }
+
+    async deleteEvents(workflowId: string): Promise<void> {
+        await this._init;
+        await this.client.execute({ sql: `DELETE FROM workflow_events WHERE workflow_id = ?`, args: [workflowId] });
+    }
+
+    async close(): Promise<void> {
+        this.client.close();
+    }
+}
+
+// ── Redis (ioredis) ─────────────────────────────────────────────────────────
+
+const MISSING_REDIS =
+    '[personaforge/execution] RedisEventStore requires ioredis.\n' +
+    '  Install: npm install ioredis';
+
+interface RedisClientLike {
+    rpush(key: string, ...values: string[]): Promise<number>;
+    lrange(key: string, start: number, stop: number): Promise<string[]>;
+    del(key: string): Promise<number>;
+    keys(pattern: string): Promise<string[]>;
+    quit(): Promise<string>;
+}
+
+type RedisCtor = new (url?: string, opts?: Record<string, unknown>) => RedisClientLike;
+
+const REDIS_KEY_PREFIX = 'durable:wf:';
+const REDIS_TTL_SECONDS = 7 * 86_400;
+
+export class RedisEventStore implements EventStore {
+    private client: RedisClientLike;
+
+    constructor(clientOrUrl: RedisClientLike | string) {
+        if (typeof clientOrUrl === 'object') {
+            this.client = clientOrUrl;
+        } else {
+            let Redis: any;
+            try {
+                Redis = _require('ioredis');
+                if (typeof Redis !== 'function' && 'default' in Redis) Redis = Redis.default;
+                if (typeof Redis !== 'function' && 'Redis' in Redis) Redis = Redis.Redis;
+            } catch {
+                throw new Error(MISSING_REDIS);
+            }
+            this.client = new Redis(clientOrUrl);
+        }
+    }
+
+    static create(url?: string): RedisEventStore {
+        return new RedisEventStore(url ?? 'redis://localhost:6379');
+    }
+
+    private _key(workflowId: string): string {
+        return `${REDIS_KEY_PREFIX}${workflowId}`;
+    }
+
+    async append(workflowId: string, event: Omit<WorkflowEvent, 'id' | 'timestamp'>): Promise<WorkflowEvent> {
+        const fullEvent: WorkflowEvent = {
+            ...event,
+            id: generateEntityId(),
+            timestamp: Date.now(),
+        };
+        const key = this._key(workflowId);
+        await this.client.rpush(key, JSON.stringify(fullEvent));
+        return fullEvent;
+    }
+
+    async getEvents(workflowId: string): Promise<WorkflowEvent[]> {
+        const key = this._key(workflowId);
+        const raw = await this.client.lrange(key, 0, -1);
+        return raw.map((s) => JSON.parse(s) as WorkflowEvent);
+    }
+
+    async deleteEvents(workflowId: string): Promise<void> {
+        await this.client.del(this._key(workflowId));
+    }
+
+    async close(): Promise<void> {
+        await this.client.quit();
+    }
+}
+
+// ── Postgres (node-postgres / pg) ────────────────────────────────────────────
+
+const MISSING_PG =
+    '[personaforge/execution] PgEventStore requires pg.\n' +
+    '  Install: npm install pg\n' +
+    '           npm install -D @types/pg';
+
+interface PgPoolLike {
+    query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }>;
+    end(): Promise<void>;
+}
+
+type PgPoolCtor = new (config: Record<string, unknown>) => PgPoolLike;
+
+export class PgEventStore implements EventStore {
+    private pool: PgPoolLike;
+    private _initialized = false;
+    private _init: Promise<void>;
+
+    constructor(poolOrConfig: PgPoolLike | string | Record<string, unknown>) {
+        if (typeof poolOrConfig === 'object' && 'query' in poolOrConfig) {
+            this.pool = poolOrConfig as PgPoolLike;
+        } else {
+            let Pool: PgPoolCtor;
+            try {
+                const pg = _require('pg') as { Pool: PgPoolCtor; default?: { Pool: PgPoolCtor } };
+                Pool = pg.Pool ?? pg.default?.Pool;
+            } catch {
+                throw new Error(MISSING_PG);
+            }
+            if (!Pool) throw new Error(MISSING_PG);
+            const config = typeof poolOrConfig === 'string'
+                ? { connectionString: poolOrConfig }
+                : poolOrConfig;
+            this.pool = new Pool(config as Record<string, unknown>);
+        }
+        this._init = this._ensureTable();
+    }
+
+    static create(connectionString?: string): PgEventStore {
+        return new PgEventStore(connectionString ?? 'postgres://localhost:5432/personaforge');
+    }
+
+    private async _ensureTable(): Promise<void> {
+        if (this._initialized) return;
+        await this.pool.query(`
+            CREATE TABLE IF NOT EXISTS workflow_events (
+                id TEXT PRIMARY KEY,
+                workflow_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                timestamp BIGINT NOT NULL,
+                payload JSONB
+            )
+        `);
+        await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_workflow_events_wf ON workflow_events (workflow_id, timestamp)`);
+        this._initialized = true;
+    }
+
+    async append(workflowId: string, event: Omit<WorkflowEvent, 'id' | 'timestamp'>): Promise<WorkflowEvent> {
+        await this._init;
+        const fullEvent: WorkflowEvent = {
+            ...event,
+            id: generateEntityId(),
+            timestamp: Date.now(),
+        };
+        await this.pool.query(
+            `INSERT INTO workflow_events (id, workflow_id, type, timestamp, payload) VALUES ($1, $2, $3, $4, $5)`,
+            [fullEvent.id, fullEvent.workflowId, fullEvent.type, fullEvent.timestamp, fullEvent.payload ? JSON.stringify(fullEvent.payload) : null],
+        );
+        return fullEvent;
+    }
+
+    async getEvents(workflowId: string): Promise<WorkflowEvent[]> {
+        await this._init;
+        const result = await this.pool.query(
+            `SELECT * FROM workflow_events WHERE workflow_id = $1 ORDER BY timestamp ASC`,
+            [workflowId],
+        );
+        return result.rows.map((r) => ({
+            id: r['id'] as string,
+            workflowId: r['workflow_id'] as string,
+            type: r['type'] as WorkflowEventType,
+            timestamp: Number(r['timestamp']),
+            payload: r['payload'] ? (typeof r['payload'] === 'string' ? JSON.parse(r['payload'] as string) : r['payload']) : undefined,
+        }));
+    }
+
+    async deleteEvents(workflowId: string): Promise<void> {
+        await this._init;
+        await this.pool.query(`DELETE FROM workflow_events WHERE workflow_id = $1`, [workflowId]);
+    }
+
+    async close(): Promise<void> {
+        await this.pool.end();
+    }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function rowToWorkflowEvent(row: { id: string; workflow_id: string; type: string; timestamp: number; payload: string | null }): WorkflowEvent {
+    return {
+        id: row.id,
+        workflowId: row.workflow_id,
+        type: row.type as WorkflowEventType,
+        timestamp: row.timestamp,
+        payload: row.payload ? JSON.parse(row.payload) : undefined,
+    };
+}
+
+// ── Event Store Factory ─────────────────────────────────────────────────────
+
+export type EventStoreDriver = 'memory' | 'sqlite' | 'libsql' | 'redis' | 'postgres' | 'custom';
+
+export interface CreateEventStoreConfig {
+    /** Storage driver. Default: 'memory' (zero config). */
+    driver?: EventStoreDriver;
+    /** better-sqlite3 file path (driver 'sqlite'). Default: ':memory:'. */
+    path?: string;
+    /** libSQL / Redis / Postgres URL string. */
+    url?: string;
+    /** libSQL auth token (Turso cloud). */
+    authToken?: string;
+    /**
+     * Fall back to in-memory when the requested driver's dependency is not
+     * installed. Default true.
+     */
+    fallbackToMemory?: boolean;
+    /**
+     * Pre-built client/pool/instance — pass your own connection pool, shared
+     * Redis client, or an existing libSQL handle so the store integrates with
+     * your infrastructure instead of owning the connection lifecycle.
+     *
+     * | driver    | type                                          |
+     * |-----------|-----------------------------------------------|
+     * | `sqlite`  | better-sqlite3 `Database` instance           |
+     * | `libsql`  | `@libsql/client` `Client` instance           |
+     * | `redis`   | ioredis `Redis` instance                     |
+     * | `postgres`| node-postgres `Pool` instance                |
+     */
+    client?: unknown;
+    /**
+     * Bring your own EventStore implementation (driver `'custom'`).
+     * Pass a ready-to-use store, or a factory `() => EventStore`.
+     *
+     * ```ts
+     * import { createEventStore } from 'personaforge/execution';
+     * import { MongoEventStore } from './my-adapters.js';
+     * const store = createEventStore({ driver: 'custom', custom: () => new MongoEventStore(url) });
+     * ```
+     */
+    custom?: EventStore | (() => EventStore);
+}
+
+const SHARED_LIBSQL_MEMORY = 'file::memory:?cache=shared';
+
+/**
+ * Create an EventStore. Pick the driver that fits your deployment:
+ *
+ * - `memory`   (default) — zero-config dev, no persistence
+ * - `sqlite`   — better-sqlite3, local file, survives restarts
+ * - `libsql`   — @libsql/client, local file / shared-memory / Turso cloud
+ * - `redis`    — ioredis, distributed, single-list per workflow
+ * - `postgres` — node-postgres, distributed SQL, JSONB payloads
+ *
+ * @example
+ * ```ts
+ * import { createEventStore } from 'personaforge/execution';
+ *
+ * // Zero config (memory)
+ * const store = createEventStore();
+ *
+ * // Durable local file via libSQL
+ * const store = createEventStore({ driver: 'libsql', url: 'file:./workflows.db' });
+ *
+ * // Distributed — Redis
+ * const store = createEventStore({ driver: 'redis', url: 'redis://localhost:6379' });
+ *
+ * // Distributed — Postgres
+ * const store = createEventStore({ driver: 'postgres', url: 'postgres://localhost:5432/personaforge' });
+ * ```
+ */
+export function createEventStore(config: CreateEventStoreConfig = {}): EventStore {
+    const driver = config.driver ?? 'memory';
+    const fallback = config.fallbackToMemory ?? true;
+
+    switch (driver) {
+        case 'memory':
+            return new InMemoryEventStore();
+        case 'sqlite': {
+            try {
+                if (config.client) return new SqliteEventStore(config.client as any);
+                return new SqliteEventStore(config.path ?? ':memory:');
+            } catch (e) {
+                if (!fallback) throw e;
+                return new InMemoryEventStore();
+            }
+        }
+        case 'libsql': {
+            try {
+                if (config.client) return new LibSqlEventStore(config.client as any);
+                return new LibSqlEventStore(config.url ?? SHARED_LIBSQL_MEMORY, config.authToken);
+            } catch (e) {
+                if (!fallback) throw e;
+                return new InMemoryEventStore();
+            }
+        }
+        case 'redis': {
+            try {
+                if (config.client) return new RedisEventStore(config.client as any);
+                return new RedisEventStore(config.url ?? 'redis://localhost:6379');
+            } catch (e) {
+                if (!fallback) throw e;
+                return new InMemoryEventStore();
+            }
+        }
+        case 'postgres': {
+            try {
+                if (config.client) return new PgEventStore(config.client as any);
+                return new PgEventStore(config.url ?? 'postgres://localhost:5432/personaforge');
+            } catch (e) {
+                if (!fallback) throw e;
+                return new InMemoryEventStore();
+            }
+        }
+        case 'custom': {
+            if (!config.custom) throw new Error('[personaforge/execution] Driver "custom" requires a `custom` store or factory.');
+            return typeof config.custom === 'function'
+                ? (config.custom as () => EventStore)()
+                : config.custom as EventStore;
+        }
+        default:
+            return new InMemoryEventStore();
     }
 }
 

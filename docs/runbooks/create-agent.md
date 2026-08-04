@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Create Agent"
-description: "Operational runbook for personaforge/create-agent — import, run, verify, recover. 146 public symbols."
+description: "Operational runbook for personaforge/create-agent — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Create Agent
 
-> Auto-generated from `./dist/create-agent.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/create-agent/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/create-agent`  ·  **Public symbols:** 146  ·  **Guide:** [/guide/agents](../guide/agents.md)
+**Import path:** `personaforge/create-agent`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/agents](../guide/agents.md)
 
 ## What it is
 `personaforge/create-agent` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,42 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createAgent, resolveLlmForCreateAgent } from 'personaforge/create-agent';
+import 'personaforge/create-agent';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createAgent`, `resolveLlmForCreateAgent`
-- **Constants** — `ENV_API_KEY`, `ENV_MODEL`, `ENV_BASE_URL`, `ENV_OPENROUTER_API_KEY`, `ENV_OPENROUTER_MODEL`, `OPENROUTER_BASE_URL`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `EventRecorder`, `MultiModalInput`, …(+112)
-- **Types** — `EntityId`, `MessageContent`, `ContentPart`, `ToolParameters`, `SafeParseResult`, `InferToolSchema`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `AnyAdapter`, `BudgetExceededAction`, …(+2)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the agents guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createAgent, tool } from 'personaforge';
-import { z } from 'zod';
-
-const getWeather = tool({
-  name: 'get_weather',
-  description: 'Get current weather for a city.',
-  parameters: z.object({ city: z.string() }),
-  execute: async ({ city }) => {
-    // call your weather API
-    return { city, temperature: 22, condition: 'sunny' };
-  },
-});
-
-const agent = createAgent({
-  name: 'weather-agent',
-  instructions: 'You help with weather queries. Always use the get_weather tool.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  tools: [getWeather],
-});
-
-const result = await agent.run('What is the weather in Tokyo?');
-console.log(result.text);
+import 'personaforge/create-agent';
 ```
 
 ## Verify it works

@@ -19,6 +19,16 @@ export interface ToolContext {
     readonly sessionId: string;
     readonly timeoutMs?: number;
     readonly permissions: ToolPermissions;
+    /** Per-run abort signal — tools may observe it for cooperative cancellation. */
+    readonly signal?: AbortSignal;
+    /** Data provided when resuming a `suspend()`-suspended tool. */
+    readonly resumeData?: unknown;
+    /** Agent-side helpers available inside `execute()` (approval / suspension). */
+    readonly agent?: {
+        readonly resumeData?: unknown;
+        /** Self-suspend the tool mid-execution to request more input. */
+        suspend(payload: unknown): never;
+    };
 }
 
 /**
@@ -81,6 +91,12 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
      * being returned to the caller or fed back to the LLM.
      */
     readonly outputSchema?: SchemaInput<unknown, TOutput>;
+    /** Pause this tool's call before `execute()` for human approval. */
+    readonly requireApproval?: boolean;
+    /** Schema for the custom payload emitted when the tool self-suspends. */
+    readonly suspendSchema?: SchemaInput;
+    /** Schema for the data accepted when resuming a suspended call. */
+    readonly resumeSchema?: SchemaInput;
 
     /**
      * Execute the tool with validated parameters

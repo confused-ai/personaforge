@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Runtime"
-description: "Operational runbook for personaforge/runtime — import, run, verify, recover. 161 public symbols."
+description: "Operational runbook for personaforge/runtime — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Runtime
 
-> Auto-generated from `./dist/runtime.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/runtime/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/runtime`  ·  **Public symbols:** 161  ·  **Guide:** [/guide/production](../guide/production.md)
+**Import path:** `personaforge/runtime`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/production](../guide/production.md)
 
 ## What it is
 `personaforge/runtime` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createAuthMiddleware, apiKeyAuth, bearerAuth } from 'personaforge/runtime';
+import 'personaforge/runtime';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createAuthMiddleware`, `apiKeyAuth`, `bearerAuth`, `createHttpService`, `listenService`, `getRuntimeOpenApiJson`, `verifyJwtHs256`, `verifyJwtAsymmetric`, `hasRole`, `jwtAuth`, `attachWebSocketTransport`
-- **Interfaces** — `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, `TraceRow`, `ScheduleRow`, `SessionQuery`, `MemoryQuery`, `LearningQuery`, `KnowledgeQuery`, `UpsertSessionInput`, `UpsertMemoryInput`, …(+121)
-- **Types** — `LearningType`, `EntityId`, `MessageContent`, `ContentPart`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `EmbeddingFn`, `IdempotencyState`, `ApprovalStatus`, `ComponentType`, …(+5)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createAuthMiddleware, apiKeyAuth, bearerAuth } from 'personaforge/runtime';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createAuthMiddleware` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createAuthMiddleware(/* opts */);
+```ts
+import 'personaforge/runtime';
 ```
 
 ## Verify it works

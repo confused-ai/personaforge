@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Config"
-description: "Operational runbook for personaforge/config — import, run, verify, recover. 28 public symbols."
+description: "Operational runbook for personaforge/config — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Config
 
-> Auto-generated from `./dist/config.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/config/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/config`  ·  **Public symbols:** 28  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
+**Import path:** `personaforge/config`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
 
 ## What it is
 `personaforge/config` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createSecretManager, loadConfig, loadConfigWithDefaults } from 'personaforge/config';
+import 'personaforge/config';
 ```
 
 ## Public API surface
-- **Factories / functions** — `loadConfig`, `loadConfigWithDefaults`, `logConfig`, `validateConfig`, `getConfigErrorHelp`, `createSecretManager`
-- **Classes** — `EnvSecretManagerAdapter`, `AwsSecretsManagerAdapter`, `AzureKeyVaultAdapter`, `VaultAdapter`, `GcpSecretManagerAdapter`
-- **Interfaces** — `LLMConfig`, `DatabaseConfig`, `ServerConfig`, `LoggingConfig`, `ServerGuardrailsConfig`, `ResilienceConfig`, `SessionConfig`, `AppConfig`, `ConfigValidationError`, `SecretManagerAdapter`, `AwsSecretManagerOptions`, `AzureSecretManagerOptions`, …(+3)
-- **Types** — `SecretManagerProvider`, `CreateSecretManagerOptions`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createSecretManager, loadConfig, loadConfigWithDefaults } from 'personaforge/config';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createSecretManager` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createSecretManager(/* opts */);
+```ts
+import 'personaforge/config';
 ```
 
 ## Verify it works

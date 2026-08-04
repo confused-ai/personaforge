@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Data"
-description: "Operational runbook for personaforge/tools/data — import, run, verify, recover. 47 public symbols."
+description: "Operational runbook for personaforge/tools/data — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Data
 
-> Auto-generated from `./dist/tools/data.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/data/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/data`  ·  **Public symbols:** 47  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/data`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/data` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,13 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { PostgreSQLQueryTool, PostgreSQLInsertTool, MySQLQueryTool } from 'personaforge/tools/data';
+import 'personaforge/tools/data';
 ```
 
 ## Public API surface
-- **Classes** — `PostgreSQLQueryTool`, `PostgreSQLInsertTool`, `MySQLQueryTool`, `SQLiteQueryTool`, `DatabaseToolkit`, `RedisGetTool`, `RedisSetTool`, `RedisDeleteTool`, `RedisKeysTool`, `RedisHashGetTool`, `RedisIncrTool`, `RedisToolkit`, …(+19)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `DatabaseToolConfig`, `RedisToolConfig`, …(+2)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:

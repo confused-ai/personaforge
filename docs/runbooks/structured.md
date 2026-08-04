@@ -1,6 +1,6 @@
 ---
 title: "Runbook: Structured"
-description: "Operational runbook for personaforge/structured — import, run, verify, recover. 7 public symbols."
+description: "Operational runbook for personaforge/structured — import, run, verify, recover. 8 public symbols."
 outline: [2, 3]
 generated: true
 ---
@@ -9,7 +9,7 @@ generated: true
 
 > Auto-generated from `./src/structured/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/structured`  ·  **Public symbols:** 7  ·  **Guide:** [/guide/structured-output](../guide/structured-output.md)
+**Import path:** `personaforge/structured`  ·  **Public symbols:** 8  ·  **Guide:** [/guide/structured-output](../guide/structured-output.md)
 
 ## What it is
 `personaforge/structured` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -28,7 +28,7 @@ import { detectProviderKind, generateStructured } from 'personaforge/structured'
 ## Public API surface
 - **Factories / functions** — `detectProviderKind`, `generateStructured`
 - **Interfaces** — `JsonSchema`, `StructuredSchema`, `StructuredOutputOptions`, `StructuredOutputResult`
-- **Types** — `ProviderKind`
+- **Types** — `AnyStructuredSchema`, `ProviderKind`
 
 ## Minimal use
 Real example from the structured-output guide:

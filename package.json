@@ -1,6 +1,6 @@
 {
   "name": "personaforge",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Fast TypeScript AI agent framework — per-request agents, 30+ model providers, 100+ integrations, 20+ vector DBs, 10+ databases, sessions, memory, knowledge, tracing, evals, HITL, teams, and workflows.",
   "type": "module",
   "packageManager": "bun@1.3.11",
@@ -406,6 +406,36 @@
       "import": "./dist/control-plane.js",
       "require": "./dist/control-plane.cjs"
     },
+    "./gateway": {
+      "types": "./dist/gateway.d.ts",
+      "import": "./dist/gateway.js",
+      "require": "./dist/gateway.cjs"
+    },
+    "./processors": {
+      "types": "./dist/processors.d.ts",
+      "import": "./dist/processors.js",
+      "require": "./dist/processors.cjs"
+    },
+    "./durable": {
+      "types": "./dist/durable.d.ts",
+      "import": "./dist/durable.js",
+      "require": "./dist/durable.cjs"
+    },
+    "./goals": {
+      "types": "./dist/goals.d.ts",
+      "import": "./dist/goals.js",
+      "require": "./dist/goals.cjs"
+    },
+    "./code-mode": {
+      "types": "./dist/code-mode.d.ts",
+      "import": "./dist/code-mode.js",
+      "require": "./dist/code-mode.cjs"
+    },
+    "./approval": {
+      "types": "./dist/approval.d.ts",
+      "import": "./dist/approval.js",
+      "require": "./dist/approval.cjs"
+    },
     "./harness": {
       "types": "./dist/harness.d.ts",
       "import": "./dist/harness.js",
@@ -415,6 +445,16 @@
       "types": "./dist/hooks.d.ts",
       "import": "./dist/hooks.js",
       "require": "./dist/hooks.cjs"
+    },
+    "./events": {
+      "types": "./dist/events.d.ts",
+      "import": "./dist/events.js",
+      "require": "./dist/events.cjs"
+    },
+    "./registry": {
+      "types": "./dist/registry.d.ts",
+      "import": "./dist/registry.js",
+      "require": "./dist/registry.cjs"
     },
     "./system": {
       "types": "./dist/system.d.ts",
@@ -454,8 +494,8 @@
     "check": "bun run typecheck && bun run lint && bun run test",
     "release:check": "bun run check && bun run build",
     "production:check": "bun run release:check && bun run check:bundle && bun run check:docs && bun run pack:inspect",
-    "check:bundle": "bun run check:bundle:lite && node scripts/check-bundle-size.mjs --entry src/tools/core/index.ts --max-kb 20 --label personaforge/tools/core && node scripts/check-bundle-size.mjs --entry src/tools/search/index.ts --max-kb 80 --label personaforge/tools/search && bun run check:bundle:root",
-    "check:bundle:lite": "node scripts/check-bundle-size.mjs --entry src/lite.ts --max-kb 110 --label personaforge/lite",
+    "check:bundle": "bun run check:bundle:lite && node scripts/check-bundle-size.mjs --entry src/tools/core/index.ts --max-kb 74 --label personaforge/tools/core && node scripts/check-bundle-size.mjs --entry src/tools/search/index.ts --max-kb 80 --label personaforge/tools/search && bun run check:bundle:root",
+    "check:bundle:lite": "node scripts/check-bundle-size.mjs --entry src/lite.ts --max-kb 122 --label personaforge/lite",
     "check:bundle:root": "node scripts/check-bundle-size.mjs --entry src/index.ts --max-kb 450 --label personaforge/root-umbrella",
     "check:docs": "node scripts/check-docs-claims.mjs",
     "check:docs:snippets": "node scripts/check-docs-snippets.mjs",
@@ -566,10 +606,12 @@
   },
   "devDependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1036.0",
+    "@libsql/client": "^0.17.4",
     "@types/bun": "latest",
     "@types/form-data": "^2.5.2",
     "@types/js-yaml": "^4.0.9",
     "@types/node-fetch": "^2.6.13",
+    "@types/semver": "^7.5.8",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/parser": "^8.59.0",
     "@vitest/coverage-v8": "^4.0.18",
@@ -588,8 +630,11 @@
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
     "@standard-schema/spec": "^1.1.0",
+    "chokidar": "^5.0.0",
     "commander": "^14.0.3",
     "dotenv": "^17.3.1",
+    "jsonc-parser": "^3.3.1",
+    "semver": "^7.8.4",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },

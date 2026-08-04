@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Planner"
-description: "Operational runbook for personaforge/planner — import, run, verify, recover. 27 public symbols."
+description: "Operational runbook for personaforge/planner — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Planner
 
-> Auto-generated from `./dist/planner.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/planner/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/planner`  ·  **Public symbols:** 27  ·  **Guide:** [/guide/planner](../guide/planner.md)
+**Import path:** `personaforge/planner`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/planner](../guide/planner.md)
 
 ## What it is
 `personaforge/planner` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,46 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { LLMPlanner, ClassicalPlanner, PlanValidator } from 'personaforge/planner';
+import 'personaforge/planner';
 ```
 
 ## Public API surface
-- **Classes** — `LLMPlanner`, `ClassicalPlanner`, `PlanValidator`
-- **Enums** — `TaskPriority`, `TaskStatus`, `PlanExecutionStatus`, `PlanningAlgorithm`
-- **Interfaces** — `Task`, `TaskMetadata`, `TaskResult`, `TaskError`, `Plan`, `PlanMetadata`, `PlanExecutionResult`, `PlannerConfig`, `RetryPolicy`, `Planner`, `PlanContext`, `PlanFeedback`, …(+6)
-- **Types** — `EntityId`, `ValidationRule`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the planner guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createAgent, OpenAIProvider } from 'personaforge';
-import { LLMPlanner, TaskPriority } from 'personaforge';
-
-const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o' });
-
-const planner = new LLMPlanner(
-  {
-    maxIterations: 10,
-    allowParallelExecution: true,
-    model: 'gpt-4o',
-    temperature: 0.3,
-    maxTokens: 2_000,
-  },
-  {
-    generateText: async (prompt) => {
-      const result = await llm.generateText([{ role: 'user', content: prompt }]);
-      return result.text;
-    },
-  },
-);
-
-// Generate a plan
-const plan = await planner.plan('Launch a new product blog post', {
-  availableTools: ['search_web', 'write_content', 'publish_post'],
-  constraints: ['Must be done in 2 hours', 'Use SEO best practices'],
-});
-// …see full example in the guide
+import 'personaforge/planner';
 ```
 
 ## Verify it works

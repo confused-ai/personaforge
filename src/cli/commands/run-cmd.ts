@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { watch } from 'node:fs';
+import { watch } from 'chokidar';
 
 async function runFile(resolved: string, input: string): Promise<void> {
     // Bust module cache by appending a timestamp query param for watch re-runs
@@ -36,7 +36,8 @@ export function registerRunCommand(program: Command): void {
                 return;
             }
 
-            // Watch mode: re-run on change
+            // Watch mode: re-run on change (chokidar — cross-platform, debounces
+            // the multi-event storms node:fs.watch produces on macOS/Linux).
             console.log(`Watching ${resolved} for changes…`);
             await runFile(resolved, input).catch((e) => console.error('[error]', e));
 
@@ -52,6 +53,6 @@ export function registerRunCommand(program: Command): void {
 
             // Keep process alive
             process.stdin.resume();
-            process.on('SIGINT', () => { watcher.close(); process.exit(0); });
+            process.on('SIGINT', () => { void watcher.close(); process.exit(0); });
         });
 }

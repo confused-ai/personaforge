@@ -132,6 +132,16 @@ export interface A2ASignatureOptions {
 }
 
 /**
+ * Read a single header value. Node represents repeated headers as arrays;
+ * take the first element rather than coercing the whole array (which would
+ * yield a comma-joined string that can never verify).
+ */
+function _headerValue(raw: string | string[] | undefined): string {
+    if (Array.isArray(raw)) return raw.length > 0 ? String(raw[0] ?? '') : '';
+    return raw === undefined ? '' : String(raw);
+}
+
+/**
  * Verify an inbound A2A HMAC-SHA256 signature.
  *
  * Expected signature = HMAC-SHA256(`${timestamp}.${nonce}.${rawBody}`, secret)
@@ -154,9 +164,9 @@ export function verifyA2ASignature(
         const nonceHeader = options.nonceHeader      ?? 'x-a2a-nonce';
         const maxAge      = options.maxAgeMs         ?? DEFAULT_NONCE_WINDOW_MS;
 
-        const rawSig  = String(request.headers[sigHeader]  ?? '');
-        const rawTs   = String(request.headers[tsHeader]   ?? '');
-        const nonce   = String(request.headers[nonceHeader] ?? '');
+        const rawSig  = _headerValue(request.headers[sigHeader]);
+        const rawTs   = _headerValue(request.headers[tsHeader]);
+        const nonce   = _headerValue(request.headers[nonceHeader]);
 
         if (!rawSig || !rawTs || !nonce) return Promise.resolve(false);
 

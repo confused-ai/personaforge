@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Devtools"
-description: "Operational runbook for personaforge/tools/devtools — import, run, verify, recover. 62 public symbols."
+description: "Operational runbook for personaforge/tools/devtools — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Devtools
 
-> Auto-generated from `./dist/tools/devtools.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/devtools/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/devtools`  ·  **Public symbols:** 62  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/devtools`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/devtools` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { GitHubSearchRepositoriesTool, GitHubGetRepositoryTool, GitHubListIssuesTool } from 'personaforge/tools/devtools';
+import 'personaforge/tools/devtools';
 ```
 
 ## Public API surface
-- **Classes** — `GitHubSearchRepositoriesTool`, `GitHubGetRepositoryTool`, `GitHubListIssuesTool`, `GitHubCreateIssueTool`, `GitHubListPullRequestsTool`, `GitLabSearchProjectsTool`, `GitLabGetProjectTool`, `GitLabListIssuesTool`, `GitLabCreateIssueTool`, `GitLabListMRsTool`, `GitLabCreateMRTool`, `GitLabToolkit`, …(+29)
-- **Constants** — `GitHubToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `GitHubResult`, `GitLabToolConfig`, …(+6)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:

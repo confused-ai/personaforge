@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Execution"
-description: "Operational runbook for personaforge/execution — import, run, verify, recover. 91 public symbols."
+description: "Operational runbook for personaforge/execution — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Execution
 
-> Auto-generated from `./dist/execution.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/execution/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/execution`  ·  **Public symbols:** 91  ·  **Guide:** [/guide/workflows](../guide/workflows.md)
+**Import path:** `personaforge/execution`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/workflows](../guide/workflows.md)
 
 ## What it is
 `personaforge/execution` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,24 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createThreadPool, createStep, executeParallel } from 'personaforge/execution';
+import 'personaforge/execution';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createThreadPool`, `createStep`, `executeParallel`, `stateMachine`
-- **Classes** — `ExecutionEngineImpl`, `ExecutionGraphBuilder`, `WorkerPool`, `ThreadPool`, `StateGraph`, `StateNode`, `WorkflowExecutor`, `StepExecutor`, `PipelineBuilder`, `BackpressureQueue`, `InMemoryEventStore`, `DurableWorkflowContext`, …(+4)
-- **Constants** — `EngineEvent`
-- **Enums** — `BackoffStrategy`, `ExecutionNodeStatus`, `ExecutionState`, `NodeType`, `TransitionType`, `WorkflowStatus`, `StepPriority`
-- **Interfaces** — `Task`, `TaskMetadata`, `TaskResult`, `TaskError`, `Plan`, `PlanMetadata`, `PlanExecutionResult`, `ExecutionEngineConfig`, `ExecutionRetryPolicy`, `ExecutionContext`, `TaskExecutionMetadata`, `TaskExecutor`, …(+39)
-- **Types** — `EntityId`, `ExecutionEventType`, `ExecutionEventHandler`, `ExecutionId`, `ThreadJob`, `WorkflowStepStatus`, `EngineEventType`, `EventHandler`, `WorkflowEventType`, `WorkflowFunction`, `AgentLifecycleState`, `StateMachineConfig`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createThreadPool, createStep, executeParallel } from 'personaforge/execution';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createThreadPool` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createThreadPool(/* opts */);
+```ts
+import 'personaforge/execution';
 ```
 
 ## Verify it works

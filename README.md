@@ -146,6 +146,47 @@ Zero-config. Treeshakeable. No peer dependencies required for basic use.
 - **Scheduled agents** — cron and interval-based execution
 - **CLI** — `npx personaforge` for quick agent runs
 
+### 🛂 Enterprise Gateway
+
+One declarative config turns on authentication, multi-tenant isolation, RBAC,
+budget enforcement, rate limiting, and durable audit — plus a board-ready
+**compliance dashboard** (SOC 2, HIPAA, GDPR, ISO 27001).
+
+```ts
+import { createAgent } from 'personaforge';
+import { createEnterpriseGateway } from 'personaforge/gateway';
+import { apiKeyAuth } from 'personaforge/runtime';
+import { createSqliteAuditStore } from 'personaforge/production';
+
+const support = createAgent({ name: 'support', instructions: 'You are a support agent.' });
+const billing = createAgent({ name: 'billing', instructions: 'You handle billing questions.' });
+
+const gateway = createEnterpriseGateway({
+  agents: { support, billing },
+  auth: apiKeyAuth([process.env.GATEWAY_API_KEY!]),
+  tenants: [
+    {
+      id: 'acme',
+      monthlyBudgetUsd: 500,
+      maxRpm: 60,
+      allowedAgents: ['support', 'billing'],
+    },
+  ],
+  policy: { monthlyBudgetUsd: 5000, requestTimeoutMs: 60_000 },
+  auditStore: createSqliteAuditStore('./audit.db'),
+});
+
+await gateway.start(8787);
+// → http://localhost:8787/compliance  (compliance dashboard)
+```
+
+| Capability | What it does |
+|---|---|
+| **Multi-tenant** | Per-tenant budgets, rate limits, agent allowlists, RBAC |
+| **Policy engine** | Global + per-tenant USD caps, RPM limits, timeouts |
+| **Audit trail** | Hashed prompts, IPs, costs, tools called — SOC 2 ready |
+| **Compliance dashboard** | `/compliance` — live SOC 2 / HIPAA / GDPR / ISO 27001 controls |
+
 ### 🎛️ Control Plane Dashboard
 
 Built-in AgentOS dashboard served by `createControlPlane()`:

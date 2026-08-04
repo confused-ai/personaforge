@@ -182,4 +182,4 @@ const getRelevantSchema = tool({
 ## What's next?
 
 - [09 · Supervisor Workflow](./09-supervisor) — agent that delegates to sub-analysts
-- [15 · Full-Stack App](./15-full-stack) — database analyst behind an HTTP API
+- [Full-Stack App](/examples/15-full-stack) — database analyst behind an HTTP API

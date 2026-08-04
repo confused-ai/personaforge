@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Media"
-description: "Operational runbook for personaforge/tools/media — import, run, verify, recover. 45 public symbols."
+description: "Operational runbook for personaforge/tools/media — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Media
 
-> Auto-generated from `./dist/tools/media.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/media/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/media`  ·  **Public symbols:** 45  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/media`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/media` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { GiphySearchTool, GiphyTrendingTool, GiphyGetGifTool } from 'personaforge/tools/media';
+import 'personaforge/tools/media';
 ```
 
 ## Public API surface
-- **Classes** — `GiphySearchTool`, `GiphyTrendingTool`, `GiphyGetGifTool`, `GiphyRandomTool`, `GiphyTranslateTool`, `GiphyToolkit`, `UnsplashSearchPhotosTool`, `UnsplashGetPhotoTool`, `UnsplashGetRandomPhotoTool`, `UnsplashSearchCollectionsTool`, `UnsplashListCollectionPhotosTool`, `UnsplashToolkit`, …(+15)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `GiphyToolConfig`, `UnsplashToolConfig`, …(+4)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { GiphySearchTool, GiphyTrendingTool, GiphyGetGifTool } from 'personaforge/tools/media';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `GiphySearchTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new GiphySearchTool(/* opts */);
+```ts
+import 'personaforge/tools/media';
 ```
 
 ## Verify it works

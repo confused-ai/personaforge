@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Models"
-description: "Operational runbook for personaforge/models — import, run, verify, recover. 81 public symbols."
+description: "Operational runbook for personaforge/models — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Models
 
-> Auto-generated from `./dist/models.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/models/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/models`  ·  **Public symbols:** 81  ·  **Guide:** [/guide/providers](../guide/providers.md)
+**Import path:** `personaforge/models`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/providers](../guide/providers.md)
 
 ## What it is
 `personaforge/models` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,26 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createOpenRouterProvider, openai, anthropic } from 'personaforge/models';
+import 'personaforge/models';
 ```
 
 ## Public API surface
-- **Factories / functions** — `openai`, `anthropic`, `google`, `ollama`, `bedrock`, `createOpenRouterProvider`, `resolveModelString`, `isModelString`, `text`, `buildMessage`, `contentToText`, `isVisionCapable`, …(+12)
-- **Classes** — `OpenAIProvider`
-- **Constants** — `DEEPINFRA_BASE_URL`, `HUGGINGFACE_INFERENCE_BASE_URL`, `LEPTON_BASE_URL`, `FEATHERLESS_BASE_URL`, `SNOWFLAKE_BASE_URL`, `HUNYUAN_BASE_URL`, `VOLCENGINE_BASE_URL`, `MINIMAX_BASE_URL`, `BAICHUAN_BASE_URL`, `STEPFUN_BASE_URL`, `INTERNLM_BASE_URL`, `REPLICATE_BASE_URL`, …(+12)
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `TextStreamChunk`, `StreamToolCallChunk`, `ModelAdapterConfig`, …(+14)
-- **Types** — `MessageContent`, `StreamDelta`, `OpenAIContent`, `OpenAIMessageParam`, `EnvFn`, `ContentPart`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the providers guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createOpenRouterProvider } from 'personaforge';
-
-const llm = createOpenRouterProvider({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-  model: 'anthropic/claude-sonnet-4',  // any OpenRouter model id
-});
+import 'personaforge/models';
 ```
 
 ## Verify it works

@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tool"
-description: "Operational runbook for personaforge/tool — import, run, verify, recover. 139 public symbols."
+description: "Operational runbook for personaforge/tool — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tool
 
-> Auto-generated from `./dist/tool.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tool.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tool`  ·  **Public symbols:** 139  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tool`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tool` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,38 +22,41 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createTools, toToolRegistry, tool } from 'personaforge/tool';
+import 'personaforge/tool';
 ```
 
 ## Public API surface
-- **Factories / functions** — `toToolRegistry`, `tool`, `createTools`, `isLightweightTool`, `extendTool`, `wrapTool`, `pipeTools`, `versionTool`, `withCache`, `withCompression`, `handleToolGatewayRequest`, `zodToJsonSchema`, …(+15)
-- **Classes** — `BaseTool`, `ToolRegistryImpl`, `ToolNameTrie`, `NGramIndex`, `ToolBuilder`, `ToolCache`, `ToolCompressor`, `HttpMcpClient`, `McpHttpServer`, `StreamableMcpClient`, `McpResourceRegistry`, `McpPromptRegistry`, …(+21)
-- **Constants** — `createTool`, `httpClient`, `fileSystem`, `browserTool`, `ShellToolkit`, `CalculatorToolkit`
-- **Enums** — `ToolCategory`
-- **Interfaces** — `Tool`, `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `ToolRegistry`, `ToolSandboxConfig`, `ToolMiddleware`, `ToolFactory`, `ToolSchema`, `ParameterSchema`, …(+47)
-- **Types** — `EntityId`, `ToolParameters`, `ToolProvider`, `SafeParseResult`, `InferToolSchema`, `ToolWrapMiddleware`, `CompressionStrategy`, `ToolInput`, `McpAuthConfig`, `NotificationHandler`, `McpResourceContent`, `McpMessageRole`, …(+1)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:
 
 ```ts
-import { createTools } from 'personaforge/tool';
-import { z } from 'zod';
+import { extendTool, wrapTool, pipeTools } from 'personaforge/tool';
 
-const tools = createTools({
-  search_orders: {
-    description: 'Find a customer order by id.',
-    parameters: z.object({ orderId: z.string() }),
-    execute: async ({ orderId }) => ({ orderId, status: 'shipped', eta: '2026-05-14' }),
-  },
-  cancel_order: {
-    description: 'Cancel an order. Only use if the customer explicitly requests cancellation.',
-    parameters: z.object({ orderId: z.string(), reason: z.string() }),
-    execute: async ({ orderId, reason }) => ({ cancelled: true, orderId, reason }),
-  },
+// Normalise inputs and trim results around an existing tool
+const reliableSearch = extendTool(searchTool, {
+  name: 'reliable_search',
+  transformInput: (params) => ({ ...params, query: params.query.trim() }),
+  transformOutput: (results) => (Array.isArray(results) ? results.slice(0, 3) : results),
+  timeoutMs: 10_000,
 });
 
-const agent = createAgent({ name: 'support', instructions: '...', model: 'gpt-4o-mini', apiKey: process.env.OPENAI_API_KEY!, tools: Object.values(tools) });
+// Wrap with a middleware pipeline: (params, ctx, next)
+const wrappedSearch = wrapTool(searchTool, [
+  async (params, ctx, next) => {
+    const sanitised = { ...params, query: params.query.trim() };
+    const result = await next(sanitised, ctx);
+    return { ...result, source: 'search' };
+  },
+]);
+
+// Chain tools: output of tool1 becomes input of tool2
+const pipeline = pipeTools(fetchPageTool, summariseTool, {
+  name: 'fetch_and_summarise',
+  description: 'Fetch a page then summarise it.',
+  adapter: (page) => ({ text: page.body }),
+});
 ```
 
 ## Verify it works

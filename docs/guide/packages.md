@@ -51,6 +51,14 @@ Common subpaths:
 | `personaforge/observability` | Logging, tracing, eval utilities |
 | `personaforge/llm` | Provider classes and routing utilities |
 | `personaforge/model` | `openai()`, `anthropic()`, `ollama()` shorthands |
+| `personaforge/processors` | Mastra-style input/output/error processor pipeline |
+| `personaforge/durable` | Long-running, resumable agent execution with replay |
+| `personaforge/goals` | Durable, thread-scoped judge-scored objectives |
+| `personaforge/code-mode` | Sandboxed multi-tool computation |
+| `personaforge/approval` | Human-in-the-loop approval + suspended runs |
+| `personaforge/events` | Typed event bus + core event vocabulary |
+| `personaforge/registry` | Agent registration, discovery, delegation toolkit |
+| `personaforge/harness` | `evaluate()` — A/B harness over agents/tasks/workflows |
 
 ## Contributor note
 

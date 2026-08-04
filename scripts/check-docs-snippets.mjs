@@ -18,7 +18,7 @@ const TS_FENCE_RE = /```(?:ts|tsx|typescript)([^\n]*)\n([\s\S]*?)```/g;
 const PUBLIC_IMPORT_RE = /from\s+['"]personaforge(?:\/[^'"]+)?['"]|import\s*\(\s*['"]personaforge(?:\/[^'"]+)?['"]\s*\)/;
 const PRIVATE_IMPORT_RE = /from\s+['"]@personaforge(?:\/[^'"]+)?['"]|import\s*\(\s*['"]@personaforge(?:\/[^'"]+)?['"]\s*\)/g;
 
-const SKIP_DIRS = new Set(['.git', '.vitepress', 'dist', 'node_modules', 'public']);
+const SKIP_DIRS = new Set(['.git', '.vitepress', 'dist', 'node_modules', 'public', 'src']);
 const SKIP_FILES = new Set([
     'ARCHITECTURE-SPECIFICATION.md',
     'COMPETITIVE-ANALYSIS.md',

@@ -261,6 +261,60 @@ export interface CreateAgentOptions extends AgentContextOptions {
      * ```
      */
     recorder?: EventRecorder;
+    /**
+     * Mastra-style inspired input/output/error processors — agent-level defaults.
+     * Per-run arrays (AgentRunOptions.processors) replace these for a run.
+     */
+    processors?: import('../processors/types.js').ProcessorSet;
+    /** Max processor-driven retries per request (output/error processors that `abort({ retry: true })`). */
+    maxProcessorRetries?: number;
+    /**
+     * Structured output — schema-validated JSON returned as `result.object`.
+     * Agent-level default; per-run `structuredOutput` overrides.
+     */
+    structuredOutput?: import('../agentic/index.js').StructuredOutputConfig;
+    /**
+     * Durable, thread-scoped goal config. Set an objective per thread with
+     * `setObjective(...)`; the loop then iterates until the judge passes or
+     * `maxRuns` is exhausted. Requires a judge model.
+     */
+    goal?: {
+        /** Judge model — `provider/model` string or a TaskJudge/evaluate fn. */
+        judge?: import('../agentic/index.js').GoalRunConfig['judge'];
+        /** Default run budget. Default 50. */
+        maxRuns?: number;
+        /** Extra feedback prompt for the judge. */
+        prompt?: string;
+    };
+    /** Require human approval for tool calls on every run by default. */
+    requireToolApproval?: boolean | ((input: { toolName: string; args: Record<string, unknown>; agentId?: string; sessionId?: string }) => boolean | Promise<boolean>);
+    /** Automatically resume `suspend()`-suspended tools from history on the next message. */
+    autoResumeSuspendedTools?: boolean;
+    /** Mastra-style inspired Memory bundle (threads, working memory, semantic recall, observational). */
+    memory?: import('../memory/index.js').Memory;
+    /**
+     * Supervisor agents — subagents the agent can delegate to via tool calls.
+     * Each entry is exposed as a tool whose description drives routing.
+     */
+    agents?: Record<string, import('./types.js').CreateAgentResult | import('../durable/index.js').DurableAgent>;
+    /** Delegation hooks fired when this agent (as a supervisor) delegates to a subagent. */
+    onDelegation?: {
+        onDelegationStart?: (info: { agent: string; prompt: string; layer: number; round?: number }) => Promise<void> | void;
+        onDelegationComplete?: (info: { agent: string; prompt: string; result: unknown; layer: number; round?: number; durationMs?: number }) => Promise<void> | void;
+    };
+    /** LLM-as-judge rubric to score when the task is complete (supervisor / goals). */
+    isTaskComplete?: import('../agentic/index.js').GoalRunConfig['judge'];
+    /** Durable goal store for thread objectives. Default in-memory (sqlite when AGENT_DB_PATH set). */
+    goalStore?: import('../goals/index.js').GoalStore;
+    /** Durable suspended-run store for approval/suspend recovery. */
+    suspendedRunStore?: import('../approval/index.js').SuspendedRunStore;
+    /**
+     * Durable-by-default execution: every run gets a runId, stream chunks are
+     * published per runId for `observe()`, and approve/decline/resume work out
+     * of the box. Pass a config to add a shared event cache (e.g. Redis).
+     * @default true
+     */
+    durable?: boolean | import('../durable/index.js').DurableAgentConfig;
 }
 
 export interface AgentRunOptions extends AgentContextOptions {
@@ -271,6 +325,16 @@ export interface AgentRunOptions extends AgentContextOptions {
     onToolCall?: (name: string, args: Record<string, unknown>) => void;
     onToolResult?: (name: string, result: unknown) => void;
     onStep?: (step: number) => void;
+    /** Emitted when a tool call requires human approval (requireApproval). */
+    onApproval?: (req: { toolCallId: string; toolName: string; args: Record<string, unknown>; requiresApproval: boolean }) => void;
+    /** Emitted when a tool self-suspends via `context.agent.suspend(...)`. */
+    onSuspended?: (req: { toolCallId?: string; toolName: string; args: Record<string, unknown>; suspendPayload: unknown }) => void;
+    /** Emitted when a processor blocks the request (tripwire). */
+    onTripwire?: (info: { processorId?: string; reason?: string; metadata?: unknown }) => void;
+    /** Emitted after each in-loop goal evaluation. */
+    onGoal?: (evaluation: import('../goals/index.js').GoalEvaluation) => void;
+    /** Emitted with the final structured output object. */
+    onObject?: (obj: unknown) => void;
     /** Per-run lifecycle hooks (merged with agent-level hooks). */
     hooks?: AgenticLifecycleHooks;
     /**
@@ -283,6 +347,38 @@ export interface AgentRunOptions extends AgentContextOptions {
     allowedTools?: string[];
     /** Abort/cancel the run. */
     signal?: import('../agentic/index.js').AgenticRunConfig['signal'];
+    /**
+     * Mastra-style inspired input/output/error processors — per-call arrays replace the
+     * agent-level arrays for this run.
+     */
+    processors?: import('../processors/types.js').ProcessorSet;
+    /**
+     * Structured output — schema-validated JSON returned as `result.object`.
+     */
+    structuredOutput?: import('../agentic/index.js').StructuredOutputConfig;
+    /**
+     * Durable thread-scoped goal — the loop iterates until a judge passes.
+     */
+    goal?: import('../agentic/index.js').GoalRunConfig;
+    /**
+     * Require human approval for tool calls. Boolean → every tool;
+     * function → per-call decision (fails closed).
+     */
+    requireToolApproval?: boolean | ((input: { toolName: string; args: Record<string, unknown>; agentId?: string; sessionId?: string }) => boolean | Promise<boolean>);
+    /** Automatically resume suspended tools from message history on the next message. */
+    autoResumeSuspendedTools?: boolean;
+    /** Tool calls already approved for this run (by toolCallId) — used by approval resume. */
+    approvedToolCalls?: string[];
+    /** Resume data passed to a `suspend()`-suspended tool. */
+    resumeData?: unknown;
+    /** Pending tool call to execute first on resume (from a durable snapshot). */
+    resumePendingTool?: import('../agentic/index.js').AgenticRunConfig['resumePendingTool'];
+    /** Thread identifier (memory/approval/goal scoping). */
+    threadId?: string;
+    /** Resource (user) identifier (memory/approval/goal scoping). */
+    resourceId?: string;
+    /** Memory scoping shorthand — `{ thread, resource }` (Mastra parity). */
+    memory?: { thread?: string; resource?: string };
 }
 
 /**
@@ -292,7 +388,18 @@ export interface AgentRunOptions extends AgentContextOptions {
  * text deltas, tool calls, tool results, step completions, and the final run result.
  */
 export interface StreamChunk {
-    type: 'text-delta' | 'tool-call' | 'tool-result' | 'step-finish' | 'run-finish' | 'error';
+    type:
+        | 'text-delta'
+        | 'tool-call'
+        | 'tool-result'
+        | 'step-finish'
+        | 'run-finish'
+        | 'error'
+        | 'tool-call-approval'
+        | 'tool-call-suspended'
+        | 'tripwire'
+        | 'goal'
+        | 'object-result';
     /** Present when type is 'text-delta'. */
     delta?: string;
     /** Present when type is 'tool-call' or 'tool-result'. */
@@ -303,6 +410,16 @@ export interface StreamChunk {
     run?: AgentRunResult;
     /** Present when type is 'error'. */
     error?: Error;
+    /** Present when type is 'tool-call-approval'. */
+    approval?: { toolCallId: string; toolName: string; args: Record<string, unknown>; requiresApproval: boolean };
+    /** Present when type is 'tool-call-suspended'. */
+    suspend?: { toolCallId?: string; toolName: string; args: Record<string, unknown>; suspendPayload: unknown };
+    /** Present when type is 'tripwire'. */
+    tripwire?: { processorId?: string; reason?: string; metadata?: unknown };
+    /** Present when type is 'goal' — the latest in-loop goal evaluation. */
+    goal?: import('../goals/index.js').GoalEvaluation;
+    /** Present when type is 'object-result' — the final structured output. */
+    object?: unknown;
 }
 
 export interface CreateAgentResult {
@@ -404,6 +521,42 @@ export interface CreateAgentResult {
      * Alias of {@link CreateAgentResult.run} — Mastra/Agno-style naming.
      */
     generate(prompt: string | MultiModalInput, options?: AgentRunOptions): Promise<AgentRunResult>;
+    /**
+     * Observe / reconnect to an in-progress or completed durable run by `runId`.
+     * Replays cached stream events (if any) then follows live events.
+     */
+    observe(runId: string): Promise<import('../durable/index.js').DurableStreamResult>;
+    /**
+     * Approve a suspended tool call (requireApproval) and resume the run.
+     * Returns a new stream to iterate.
+     */
+    approveToolCall(options: { runId: string; toolCallId?: string }): Promise<import('../durable/index.js').DurableStreamResult>;
+    /** Decline a suspended tool call and resume the run. */
+    declineToolCall(options: { runId: string; toolCallId?: string }): Promise<import('../durable/index.js').DurableStreamResult>;
+    /** Approve a suspended tool call for a `generate()` run — returns the full result. */
+    approveToolCallGenerate(options: { runId: string; toolCallId?: string }): Promise<AgentRunResult>;
+    /** Decline a suspended tool call for a `generate()` run. */
+    declineToolCallGenerate(options: { runId: string; toolCallId?: string }): Promise<AgentRunResult>;
+    /** Resume a `suspend()`-suspended tool with resume data — returns a new stream. */
+    resumeStream(resumeData: unknown, options?: { runId?: string; toolCallId?: string }): Promise<import('../durable/index.js').DurableStreamResult>;
+    /**
+     * Set a durable, thread-scoped objective for this agent. Requires storage +
+     * a judge model (see `goal` config). No-ops when not memory-backed.
+     */
+    setObjective(objective: string, options?: { threadId?: string; resourceId?: string; maxRuns?: number }): Promise<import('../goals/index.js').ObjectiveRecord | null>;
+    /** Read the current objective record for a thread. */
+    getObjective(options: { threadId?: string }): Promise<import('../goals/index.js').ObjectiveRecord | null>;
+    /** Update options (maxRuns / prompt) of the active objective for a thread. */
+    updateObjectiveOptions(options: { threadId?: string; maxRuns?: number; prompt?: string }): Promise<void>;
+    /** Drop the objective for a thread. */
+    clearObjective(options: { threadId?: string }): Promise<void>;
+    /** Rediscover suspended (approval/suspend) runs for a conversation from storage. */
+    listSuspendedRuns(options?: { threadId?: string; resourceId?: string }): Promise<{ runs: import('../approval/index.js').SuspendedRun[] }>;
+    /**
+     * Re-drive durable-agent runs stuck in `running` status after a crash.
+     * Re-issues LLM/tool calls from the last snapshot — make tools idempotent.
+     */
+    recoverActiveRuns(options?: { runId?: string }): Promise<{ recovered: number; succeeded: number; failed: number }>;
     /** Optional capability description (used by supervisors). */
     readonly description?: string;
     /** All resolved adapter bindings (merged from `adapters` + convenience fields). */

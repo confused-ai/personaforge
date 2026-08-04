@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Router"
-description: "Operational runbook for personaforge/router — import, run, verify, recover. 11 public symbols."
+description: "Operational runbook for personaforge/router — import, run, verify, recover. 5 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Router
 
-> Auto-generated from `./dist/router.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/router/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/router`  ·  **Public symbols:** 11  ·  **Guide:** [/guide/llm-router](../guide/llm-router.md)
+**Import path:** `personaforge/router`  ·  **Public symbols:** 5  ·  **Guide:** [/guide/llm-router](../guide/llm-router.md)
 
 ## What it is
 `personaforge/router` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -28,7 +28,7 @@ import { createCostOptimizedRouter } from 'personaforge/router';
 ## Public API surface
 - **Factories / functions** — `createCostOptimizedRouter`
 - **Constants** — `DEFAULT_COSTS`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `ModelCost`, `RouterOptions`, `RoutingDecision`
+- **Interfaces** — `ModelCost`, `RouterOptions`, `RoutingDecision`
 
 ## Minimal use
 Real example from the llm-router guide:

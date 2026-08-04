@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Test Utils: Conformance"
-description: "Operational runbook for personaforge/test-utils/conformance — import, run, verify, recover. 24 public symbols."
+description: "Operational runbook for personaforge/test-utils/conformance — import, run, verify, recover. 10 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Test Utils: Conformance
 
-> Auto-generated from `./dist/test-utils/conformance.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/test-utils/conformance.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/test-utils/conformance`  ·  **Public symbols:** 24  ·  **Guide:** [/guide/eval](../guide/eval.md)
+**Import path:** `personaforge/test-utils/conformance`  ·  **Public symbols:** 10  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/test-utils/conformance` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -27,7 +27,7 @@ import { runSessionStoreConformance, runMemoryStoreConformance, runProviderConfo
 
 ## Public API surface
 - **Factories / functions** — `runSessionStoreConformance`, `runMemoryStoreConformance`, `runProviderConformance`, `runVectorStoreConformance`, `runToolConformance`, `runKVStoreConformance`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `SessionMessage`, `SessionData`, `SessionStore`, `MemoryEntry`, `MemoryQuery`, …(+6)
+- **Interfaces** — `Assertion`, `TestRunner`, `VectorStoreAdapter`, `KVStoreLike`
 
 ## Minimal use
 ```ts

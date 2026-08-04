@@ -61,3 +61,8 @@ export {
     DbEntityMemoryStore,
     DbDecisionLogStore,
 } from './db-learning-stores.js';
+
+// ── Continuous improvement subsystem ─────────────────────────────────────────
+// Feedback, rewards, scoring, automatic optimization, versioned pipelines,
+// rollback-safe policy store, and the always-on improvement loop.
+export * from './improvement/index.js';

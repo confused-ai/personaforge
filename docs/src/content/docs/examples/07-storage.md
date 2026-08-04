@@ -44,4 +44,4 @@ console.log(await diskStore.list('runs:'));
 ## What's next?
 
 - [08 · Multi-Agent Team](./08-team)
-- [13 · Production Resilience](./13-production)
+- [Production Resilience](/examples/13-production)

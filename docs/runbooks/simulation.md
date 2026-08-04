@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Simulation"
-description: "Operational runbook for personaforge/simulation — import, run, verify, recover. 30 public symbols."
+description: "Operational runbook for personaforge/simulation — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Simulation
 
-> Auto-generated from `./dist/simulation.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/simulation/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/simulation`  ·  **Public symbols:** 30  ·  **Guide:** [/guide/eval](../guide/eval.md)
+**Import path:** `personaforge/simulation`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/simulation` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { simulate, trainsetFromReport } from 'personaforge/simulation';
+import 'personaforge/simulation';
 ```
 
 ## Public API surface
-- **Factories / functions** — `simulate`, `trainsetFromReport`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `ToolRegistry`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `AgentRunResult`, …(+11)
-- **Types** — `MessageContent`, `NodeId`, `GraphId`, `ExecutionId`, `WorkerId`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { simulate, trainsetFromReport } from 'personaforge/simulation';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `simulate` is the primary entry for this feature.
-// See the type signature for full options.
-const result = simulate(/* opts */);
+```ts
+import 'personaforge/simulation';
 ```
 
 ## Verify it works

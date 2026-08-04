@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Ai"
-description: "Operational runbook for personaforge/tools/ai — import, run, verify, recover. 20 public symbols."
+description: "Operational runbook for personaforge/tools/ai — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Ai
 
-> Auto-generated from `./dist/tools/ai.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/ai/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/ai`  ·  **Public symbols:** 20  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/ai`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/ai` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { OpenAIGenerateImageTool, OpenAITranscribeAudioTool, SerpApiGoogleSearchTool } from 'personaforge/tools/ai';
+import 'personaforge/tools/ai';
 ```
 
 ## Public API surface
-- **Classes** — `OpenAIGenerateImageTool`, `OpenAITranscribeAudioTool`, `SerpApiGoogleSearchTool`, `SerpApiYouTubeSearchTool`
-- **Constants** — `OpenAIToolkit`, `SerpApiToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `OpenAIResult`, `SerpApiResult`
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { OpenAIGenerateImageTool, OpenAITranscribeAudioTool, SerpApiGoogleSearchTool } from 'personaforge/tools/ai';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `OpenAIGenerateImageTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new OpenAIGenerateImageTool(/* opts */);
+```ts
+import 'personaforge/tools/ai';
 ```
 
 ## Verify it works

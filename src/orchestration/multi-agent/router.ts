@@ -55,6 +55,8 @@ export interface AgentRouterConfig {
     readonly customRouter?: (task: string, agents: Record<string, RoutableAgent>) => string | undefined;
     /** Fallback agent name when no match is found. */
     readonly fallback?: string;
+    /** Memory store for routed agent contexts (defaults to InMemoryStore). */
+    readonly memoryStore?: import('../../memory/index.js').MemoryStore;
 }
 
 /** Router result. */
@@ -73,6 +75,7 @@ export class AgentRouter {
     private readonly strategy: AgentRoutingStrategy;
     private readonly customRouter?: (task: string, agents: Record<string, RoutableAgent>) => string | undefined;
     private readonly fallback?: string;
+    private readonly memoryStore: import('../../memory/index.js').MemoryStore;
     private roundRobinIndex = 0;
     private loadMap: Map<string, number> = new Map();
     // Pre-computed to avoid repeated Object.keys() calls and toLowerCase() per route()
@@ -84,6 +87,7 @@ export class AgentRouter {
         this.strategy = config.strategy ?? 'capability-match';
         this.customRouter = config.customRouter;
         this.fallback = config.fallback;
+        this.memoryStore = config.memoryStore ?? new InMemoryStore();
         this.agentNames = Object.keys(this.agents);
 
         this.capabilityCache = new Map();
@@ -111,7 +115,7 @@ export class AgentRouter {
             const input: AgentInput = { prompt, context };
             const ctx: AgentContext = {
                 agentId: entry.agent.id,
-                memory: new InMemoryStore(),
+                memory: this.memoryStore,
                 tools: new ToolRegistryImpl(),
                 planner: null as any,
                 metadata: context ?? {},

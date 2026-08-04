@@ -166,6 +166,48 @@ export function createMockAgent(options: MockAgentOptions): MockAgentHandle {
             return agent.run(prompt, options);
         },
 
+        async observe(runId: string) {
+            return {
+                runId,
+                output: {
+                    fullStream: (async function* () {})(),
+                    textStream: (async function* () {})(),
+                    object: Promise.resolve(undefined),
+                    runResult: Promise.reject(new Error('MockAgent does not support durable runs.')),
+                },
+                cleanup() {},
+            } as import('../durable/index.js').DurableStreamResult;
+        },
+        async approveToolCall() {
+            return agent.observe('');
+        },
+        async declineToolCall() {
+            return agent.observe('');
+        },
+        async approveToolCallGenerate() {
+            throw new Error('MockAgent does not support tool approval.');
+        },
+        async declineToolCallGenerate() {
+            throw new Error('MockAgent does not support tool approval.');
+        },
+        async resumeStream() {
+            throw new Error('MockAgent does not support suspended tool resume.');
+        },
+        async setObjective() {
+            return null as never;
+        },
+        async getObjective() {
+            return null;
+        },
+        async updateObjectiveOptions() {},
+        async clearObjective() {},
+        async listSuspendedRuns() {
+            return { runs: [] };
+        },
+        async recoverActiveRuns() {
+            return { recovered: 0, succeeded: 0, failed: 0 };
+        },
+
         get callHistory() {
             return callHistory as ReadonlyArray<MockAgentCall>;
         },
