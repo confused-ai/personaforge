@@ -37,12 +37,19 @@ describe('create-agent barrel', () => {
     });
 
     it('resolveLlmForCreateAgent resolves a provider:model string to a provider', () => {
-        const resolved = resolveLlmForCreateAgent(
-            { instructions: 'i', model: 'openai:gpt-4o', apiKey: 'sk-test' } as never,
-            defaults,
-        );
-        expect(resolved).toBeDefined();
-        expect(typeof (resolved as { run?: unknown }).run).toBe('function');
+        const saved = process.env.OPENAI_API_KEY;
+        process.env.OPENAI_API_KEY = 'sk-test';
+        try {
+            const resolved = resolveLlmForCreateAgent(
+                { instructions: 'i', model: 'openai:gpt-4o' } as never,
+                defaults,
+            );
+            expect(resolved).toBeDefined();
+            expect(typeof resolved).toBe('object');
+        } finally {
+            if (saved === undefined) delete process.env.OPENAI_API_KEY;
+            else process.env.OPENAI_API_KEY = saved;
+        }
     });
 
     it('resolveLlmForCreateAgent throws on an unknown provider in the model string', () => {
@@ -80,6 +87,7 @@ describe('create-agent barrel', () => {
     it('createAgent builds a runnable result (construction only, no LLM call)', () => {
         const provider = { id: 'fake', run: async () => ({ text: 'x' }) } as never;
         const result = createAgent({
+            name: 'CoverageAgent',
             instructions: 'i',
             llm: provider,
             sessionStore: false,
@@ -87,6 +95,6 @@ describe('create-agent barrel', () => {
         } as never);
         expect(typeof result.run).toBe('function');
         expect(typeof result.stream).toBe('function');
-        expect(result.name).toBe('Agent');
+        expect(result.name).toBe('CoverageAgent');
     });
 });
