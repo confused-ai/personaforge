@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Video"
-description: "Operational runbook for personaforge/video — import, run, verify, recover. 2 public symbols."
+description: "Operational runbook for personaforge/video — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Video
 
-> Auto-generated from `./dist/video.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/video/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/video`  ·  **Public symbols:** 2  ·  **Guide:** [/guide/video](../guide/video.md)
+**Import path:** `personaforge/video`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/video](../guide/video.md)
 
 ## What it is
 `personaforge/video` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,44 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { VideoOrchestrator } from 'personaforge/video';
+import 'personaforge/video';
 ```
 
 ## Public API surface
-- **Classes** — `VideoOrchestrator`
-- **Interfaces** — `VideoGenerationResult`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the video guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { tool, createAgent } from 'personaforge';
-import { VideoOrchestrator } from 'personaforge';
-import { z } from 'zod';
-
-const orchestrator = new VideoOrchestrator();
-
-const generateVideoTool = tool({
-  name: 'generate_video_short',
-  description: 'Generate a 30-45 second narrated video short on any topic.',
-  schema: z.object({
-    topic: z.string().describe('Topic or theme for the video'),
-  }),
-  timeoutMs: 120_000,   // video generation can take up to 2 minutes
-  execute: async ({ topic }) => {
-    const result = await orchestrator.generateShort(topic);
-    if (!result.success) return { error: result.error };
-    return { videoPath: result.videoPath, message: 'Video generated successfully.' };
-  },
-});
-
-const agent = createAgent({
-  name: 'video-creator',
-  instructions: 'Create short video clips for users on any topic they request.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  tools: [generateVideoTool],
-// …see full example in the guide
+import 'personaforge/video';
 ```
 
 ## Verify it works

@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Storage"
-description: "Operational runbook for personaforge/storage — import, run, verify, recover. 5 public symbols."
+description: "Operational runbook for personaforge/storage — import, run, verify, recover. 6 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Storage
 
-> Auto-generated from `./dist/storage.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/storage/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/storage`  ·  **Public symbols:** 5  ·  **Guide:** [/guide/storage](../guide/storage.md)
+**Import path:** `personaforge/storage`  ·  **Public symbols:** 6  ·  **Guide:** [/guide/storage](../guide/storage.md)
 
 ## What it is
 `personaforge/storage` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -28,7 +28,7 @@ import { createStorage, MemoryStorageAdapter, FileStorageAdapter } from 'persona
 ## Public API surface
 - **Factories / functions** — `createStorage`
 - **Classes** — `MemoryStorageAdapter`, `FileStorageAdapter`
-- **Interfaces** — `StorageAdapter`, `StorageOptions`
+- **Interfaces** — `StorageAdapter`, `Storage`, `StorageOptions`
 
 ## Minimal use
 Real example from the storage guide:

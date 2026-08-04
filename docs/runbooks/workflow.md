@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Workflow"
-description: "Operational runbook for personaforge/workflow — import, run, verify, recover. 355 public symbols."
+description: "Operational runbook for personaforge/workflow — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Workflow
 
-> Auto-generated from `./dist/workflow.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/workflow/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/workflow`  ·  **Public symbols:** 355  ·  **Guide:** [/guide/workflows](../guide/workflows.md)
+**Import path:** `personaforge/workflow`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/workflows](../guide/workflows.md)
 
 ## What it is
 `personaforge/workflow` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,16 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createGraph, compose, pipe } from 'personaforge/workflow';
+import 'personaforge/workflow';
 ```
 
 ## Public API surface
-- **Factories / functions** — `compose`, `pipe`, `uid`, `createGraph`, `replayState`, `redactSecrets`, `redactPII`, `combineRedactors`, `buildReplayProvider`, `buildReplayTools`, `replay`, `verifyChain`, …(+26)
-- **Classes** — `GraphBuilder`, `DAGEngine`, `DurableExecutor`, `InMemoryEventStore`, `SqliteEventStore`, `BatchingEventStore`, `RunRecorder`, `InMemoryTaskQueue`, `RedisTaskQueue`, `DefaultScheduler`, `GraphWorker`, `DistributedEngine`, …(+24)
-- **Constants** — `nodeId`, `edgeId`, `graphId`, `executionId`, `workerId`
-- **Enums** — `NodeKind`, `NodeStatus`, `ExecutionStatus`, `GraphEventType`, `CoordinationType`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `ToolRegistry`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `AgentRunOptions`, …(+232)
-- **Types** — `EntityId`, `MessageContent`, `StreamChunk`, `ContentPart`, `ToolParameters`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `BudgetExceededAction`, `McpAuthConfig`, `CompressionAlgorithm`, …(+15)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the workflows guide:
@@ -63,7 +58,11 @@ const graph = createGraph('data-pipeline')
     },
   })
   .chain('fetch', 'transform', 'save')  // linear shorthand for addEdge
-// …see full example in the guide
+  .build();
+
+const engine = new DAGEngine(graph);
+const result = await engine.execute({ variables: { url: 'https://api.example.com/data' } });
+console.log(result.state.results);
 ```
 
 ## Verify it works

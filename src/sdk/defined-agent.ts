@@ -3,6 +3,9 @@ import { parse } from '../validation/index.js';
 import type { SchemaInput } from '../validation/index.js';
 import { MemoryStore, InMemoryStore } from '../memory/index.js';
 import { ToolRegistry, ToolRegistryImpl, Tool } from '../tools/index.js';
+import { agentAsTool } from '../tools/core/agent-as-tool.js';
+import type { RunnableAgent, AgentAsToolOptions } from '../tools/core/agent-as-tool.js';
+import type { LightweightTool, ToolObjectSchemaLike } from '../tools/core/tool-helper.js';
 import { ClassicalPlanner, PlanningAlgorithm } from '../planner/index.js';
 import type { Planner } from '../planner/index.js';
 import { ExecutionEngine, ExecutionEngineImpl } from '../execution/index.js';
@@ -233,6 +236,25 @@ export interface TypedAgent<TIn, TOut> {
      * ```
      */
     getConfig(): AgentBuilderConfig<TIn, TOut>;
+
+    /**
+     * Expose this typed agent as a tool so another agent can invoke it via
+     * tool calling (agent-as-tool).
+     *
+     * The tool accepts the agent's input schema wrapped as `{ input }` and
+     * returns the typed result.
+     *
+     * @example
+     * ```ts
+     * const qaTool = qaAgent.asTool({
+     *   name: 'qa',
+     *   description: 'Answer a question with sources.',
+     * });
+     * ```
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<AgentAsToolOptions<unknown, TOutput>, 'agent' | 'parameters' | 'transformOutput'>,
+    ): LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput>;
 }
 
 // ---------------------------------------------------------------------------
@@ -767,6 +789,30 @@ class TypedAgentImpl<TIn, TOut> implements TypedAgent<TIn, TOut> {
     getConfig(): AgentBuilderConfig<TIn, TOut> {
         return { ...this.cfg };
     }
+
+    /**
+     * Expose this typed agent as a tool (agent-as-tool). Parameters default to
+     * the agent's input schema wrapped as `{ input }`; the raw validated input
+     * is forwarded to {@link run}.
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<AgentAsToolOptions<unknown, TOutput>, 'agent' | 'parameters' | 'transformOutput'>,
+    ): LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput> {
+        const runnable: RunnableAgent = {
+            run: async (input, runOptions) => {
+                const inner = (input as { input?: unknown })?.input ?? input;
+                return this.run(inner as TIn, { sessionId: runOptions?.sessionId });
+            },
+        };
+        return agentAsTool({
+            ...options,
+            agent: runnable,
+            parameters: z.object({
+                input: this.cfg.inputSchema,
+            }).describe('Agent input') as ToolObjectSchemaLike<Record<string, unknown>>,
+            transformOutput: (output) => output as TOutput,
+        });
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -959,5 +1005,31 @@ export class DefinedAgent<TInput, TOutput> {
 
     getConfig(): AgentDefinitionConfig<TInput, TOutput> {
         return { ...this.config };
+    }
+
+    /**
+     * Expose this defined agent as a tool (agent-as-tool). Parameters default to
+     * the agent's input schema wrapped as `{ input }`.
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<AgentAsToolOptions<unknown, TOutput>, 'agent' | 'parameters' | 'transformOutput'>,
+    ): LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput> {
+        const runnable: RunnableAgent = {
+            run: async (input, runOptions) => {
+                const inner = (input as { input?: unknown })?.input ?? input;
+                return this.run({
+                    input: inner as TInput,
+                    context: runOptions?.sessionId !== undefined ? { __sessionId: runOptions.sessionId } : undefined,
+                });
+            },
+        };
+        return agentAsTool({
+            ...options,
+            agent: runnable,
+            parameters: z.object({
+                input: this.config.inputSchema,
+            }).describe('Agent input') as ToolObjectSchemaLike<Record<string, unknown>>,
+            transformOutput: (output) => output as TOutput,
+        });
     }
 }

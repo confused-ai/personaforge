@@ -7,6 +7,7 @@
 export * from './loader.js';
 export * from './validator.js';
 export * from './types.js';
+export { loadConfigFile } from './file-loader.js';
 
 // Secret managers — AWS, Azure, GCP, Vault, Env
 export {

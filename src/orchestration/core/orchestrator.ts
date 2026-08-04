@@ -44,6 +44,7 @@ export class OrchestratorImpl implements Orchestrator {
     private subscriptions: Map<EntityId, Subscription> = new Map();
     private messageBus: MessageBus;
     private loadBalancer: LoadBalancer;
+    private readonly memoryStore: import('../../memory/index.js').MemoryStore;
     private _isRunning = false;
     // Inverted indexes for O(1)/O(k) lookups instead of O(n) full scans
     private readonly _capabilityIndex: Map<string, Set<EntityId>> = new Map();
@@ -51,10 +52,12 @@ export class OrchestratorImpl implements Orchestrator {
 
     constructor(
         messageBus?: MessageBus,
-        loadBalancer?: LoadBalancer
+        loadBalancer?: LoadBalancer,
+        memoryStore?: import('../../memory/index.js').MemoryStore,
     ) {
         this.messageBus = messageBus ?? new MessageBusImpl();
         this.loadBalancer = loadBalancer ?? new RoundRobinLoadBalancer();
+        this.memoryStore = memoryStore ?? new InMemoryStore();
     }
 
     async registerAgent(agent: OrchestrableAgent, role: AgentRole): Promise<void> {
@@ -90,7 +93,7 @@ export class OrchestratorImpl implements Orchestrator {
             async (msg) => {
                 const payload = msg.payload as { type?: string; task?: AgentInput };
                 const taskInput = (payload?.task ?? payload) as AgentInput;
-                const ctx = createMinimalContext(agent);
+                const ctx = createMinimalContext(agent, this.memoryStore);
                 try {
                     const output = await agent.run(taskInput, ctx);
                     await this.messageBus.send({
@@ -388,10 +391,10 @@ export class OrchestratorImpl implements Orchestrator {
 /**
  * Create a minimal AgentContext for in-process agent execution
  */
-function createMinimalContext(agent: OrchestrableAgent): AgentContext {
+function createMinimalContext(agent: OrchestrableAgent, memoryStore: import('../../memory/index.js').MemoryStore): AgentContext {
     return new AgentContextBuilder()
         .withAgentId(agent.id)
-        .withMemory(new InMemoryStore())
+        .withMemory(memoryStore)
         .withTools(new ToolRegistryImpl())
         .withPlanner(new ClassicalPlanner({ algorithm: PlanningAlgorithm.HIERARCHICAL }))
         .build();

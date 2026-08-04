@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Eval"
-description: "Operational runbook for personaforge/eval — import, run, verify, recover. 90 public symbols."
+description: "Operational runbook for personaforge/eval — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Eval
 
-> Auto-generated from `./dist/eval.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/eval/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/eval`  ·  **Public symbols:** 90  ·  **Guide:** [/guide/eval](../guide/eval.md)
+**Import path:** `personaforge/eval`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/eval` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,16 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createSqliteEvalStore, wordOverlapF1, rougeLWords } from 'personaforge/eval';
+import 'personaforge/eval';
 ```
 
 ## Public API surface
-- **Factories / functions** — `wordOverlapF1`, `rougeLWords`, `createSqliteEvalStore`, `runEvalSuite`, `runLlmAsJudge`, `createMultiCriteriaJudge`, `runEvalBatch`, `loadDataset`, `runRegression`, `printRegressionReport`, `generateDataset`, `writeSplitDataset`, …(+14)
-- **Classes** — `EvalAggregator`, `InMemoryEvalStore`, `SqliteEvalStore`, `MetricsCollectorImpl`
-- **Constants** — `ExactMatchAccuracy`, `PartialMatchAccuracy`, `LevenshteinAccuracy`, `RAG_CRITERIA`, `AGENT_CRITERIA`
-- **Enums** — `MetricType`
-- **Interfaces** — `EvalResult`, `EvalStats`, `AccuracyEvaluator`, `CreateAgentResult`, `EvalDatasetItem`, `EvalDatasetResult`, `EvalSuiteRun`, `EvalReport`, `RunEvalSuiteOptions`, `EvalStore`, `Message`, `LLMToolDefinition`, …(+38)
-- **Types** — `EvalScorer`, `MultiCriteriaJudge`, `DatasetFormat`, `ScorerFn`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the eval guide:
@@ -63,7 +58,13 @@ const report = await runBenchmark({
     exactMatchScorer(),
     containsScorer(),
     wordOverlapScorer(),
-// …see full example in the guide
+    rougeLScorer(),
+    llmJudgeScorer({ llm, rubric: 'Award full marks for a correct, complete answer.' }),
+  ],
+  concurrency: 5,
+});
+
+console.log(formatBenchmarkReport(report));
 ```
 
 ## Verify it works

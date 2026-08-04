@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Plugins"
-description: "Operational runbook for personaforge/plugins — import, run, verify, recover. 28 public symbols."
+description: "Operational runbook for personaforge/plugins — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Plugins
 
-> Auto-generated from `./dist/plugins.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/plugins/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/plugins`  ·  **Public symbols:** 28  ·  **Guide:** [/guide/plugins](../guide/plugins.md)
+**Import path:** `personaforge/plugins`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/plugins](../guide/plugins.md)
 
 ## What it is
 `personaforge/plugins` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createPluginRegistry, hooksToPlugin, createLoggingPlugin } from 'personaforge/plugins';
+import 'personaforge/plugins';
 ```
 
 ## Public API surface
-- **Factories / functions** — `hooksToPlugin`, `createPluginRegistry`, `createLoggingPlugin`, `createRateLimitPlugin`, `createTelemetryPlugin`
-- **Constants** — `INTERCEPTION_ORDER`
-- **Interfaces** — `AgentInput`, `ExecutionMetadata`, `AgentOutput`, `Logger`, `ToolRef`, `ToolExecutionResult`, `ToolMiddlewareObject`, `PluginContext`, `Plugin`, `MetricsCollector`, `TextContent`, `ImageContent`, …(+8)
-- **Types** — `ToolMiddleware`, `MessageContent`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the plugins guide:
@@ -61,7 +58,11 @@ const context = { agentId: 'my-agent', logger: console, metadata: {} };
 const input = await plugins.runBeforeHooks({ prompt: 'Summarize the latest report.' }, context);
 
 const result = await agent.run(input.prompt);
-// …see full example in the guide
+
+// Collect the combined tool middleware from every plugin. Run the after /
+// error hooks with `plugins.runAfterHooks(output, context)` and
+// `plugins.runErrorHooks(error, context)`.
+const toolMiddleware = plugins.getToolMiddleware();
 ```
 
 ## Verify it works

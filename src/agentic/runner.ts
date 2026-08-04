@@ -17,7 +17,7 @@
  *   in the original call order so the LLM sees a deterministic message history.
  */
 
-import type { Message, ToolCall as LLMToolCall, LLMToolDefinition, GenerateResult } from '../core/index.js';
+import type { Message, ToolCall as LLMToolCall, LLMToolDefinition, GenerateResult, LLMProvider } from '../core/index.js';
 import { newId } from '../contracts/index.js';
 import type { Tool, ToolResult, ToolContext } from './_tool-types.js';
 import type {
@@ -27,6 +27,8 @@ import type {
     AgenticStreamHooks,
     AgenticRetryPolicy,
     AgenticLifecycleHooks,
+    StructuredOutputConfig,
+    GoalRunConfig,
 } from './types.js';
 import type { HumanInTheLoopHooks, GuardrailContext } from './_guardrail-types.js';
 import type { GuardrailEngine } from './_guardrail-types.js';
@@ -34,12 +36,30 @@ import type { Span } from '@opentelemetry/api';
 import { LLMError, ToolNotAuthorizedError } from '../shared/index.js';
 import { isTransientLLMError } from '../guard/index.js';
 import { toolToLLMDef } from './_zod-to-schema.js';
-import { validateStructuredOutput, buildStructuredOutputPrompt } from './_structured-output.js';
+import { validateStructuredOutput, buildStructuredOutputPrompt, extractJson } from './_structured-output.js';
 import { withRetry as guardWithRetry, runToolWithTimeout, createDeadline } from '../guard/index.js';
 import type { RetryPolicy } from '../guard/index.js';
 import { withSpan, Metrics, genAiAttributes, recordLlmUsage } from '../observe/index.js';
 import { ReasoningManager, TreeOfThoughtEngine } from '../reasoning/index.js';
 import { CompressionManager } from '../compression/index.js';
+import {
+    resolveProcessorSet,
+    createProcessorState,
+    runInputProcessors,
+    runInputStepProcessors,
+    runLLMRequestProcessors,
+    runLLMResponseProcessors,
+    runOutputStepProcessors,
+    runOutputResultProcessors,
+    filterOutputStreamPart,
+    runAPIErrorProcessors,
+} from '../processors/pipeline.js';
+import { TripWireError, type ProcessorContext, type Processor } from '../processors/types.js';
+import { ApprovalRequiredError, ToolSuspendedError, isApprovalRequiredError, isToolSuspendedError } from '../approval/signals.js';
+import { createLlmProviderFromModelString } from '../providers/from-model.js';
+import type { GoalEvaluation } from '../goals/store.js';
+import { goalJudgeFromModelString } from '../goals/judge.js';
+import { StructuredOutputError } from './structured-agent.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -48,6 +68,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_RETRIES = 2;
 const DEFAULT_BACKOFF_MS = 1_000;
 const DEFAULT_TOOL_TIMEOUT_MS = 30_000;
+const DEFAULT_STRUCTURED_RETRIES = 3;
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -64,6 +85,25 @@ interface RunContext {
     readonly allowedTools: string[] | undefined;
     /** Per-run abort signal (linked to run signal + deadline) forwarded to LLM + tools. */
     readonly signal: AbortSignal | undefined;
+    /** Tool calls already approved (by toolCallId) for this run — skips approval gate. */
+    readonly approvedToolCalls: string[];
+    /** Resume data for a suspend()-suspended tool (matched by `resumeToolCallId`). */
+    readonly resumeData?: unknown;
+    /** toolCallId whose execute should receive `resumeData`. */
+    readonly resumeToolCallId?: string;
+    /** Run-level approval policy (boolean or per-call function). */
+    readonly requireToolApproval?: AgenticRunConfig['requireToolApproval'];
+}
+
+/** Per-request processor pipeline context. */
+interface ProcRun {
+    readonly input: Processor[];
+    readonly output: Processor[];
+    readonly error: Processor[];
+    readonly state: Record<string, unknown>;
+    readonly context: ProcessorContext;
+    /** How many processor-driven retries have been performed this request. */
+    retryCount: number;
 }
 
 // ── Pure utility functions ────────────────────────────────────────────────────
@@ -147,11 +187,22 @@ export class AgenticRunner {
     private _totEngine?: TreeOfThoughtEngine;
     /** Optional compression manager — created lazily when compression is enabled. */
     private _compressionManager?: CompressionManager;
+    private readonly _inputProcessors: Processor[];
+    private readonly _outputProcessors: Processor[];
+    private readonly _errorProcessors: Processor[];
+    private readonly _maxProcessorRetries: number;
 
     constructor(config: AgenticRunnerConfig) {
         this.config = { ...config, toolMiddleware: config.toolMiddleware ?? [] };
         this._cachedLlmTools = config.tools.list().map((t) => toolToLLMDef(t));
         if (config.guardrails) this.guardrails = config.guardrails;
+        const sets = resolveProcessorSet(config.processors);
+        this._inputProcessors = sets.input;
+        this._outputProcessors = sets.output;
+        this._errorProcessors = sets.error;
+        this._maxProcessorRetries =
+            config.maxProcessorRetries ??
+            (sets.error.length > 0 || sets.output.length > 0 ? 10 : 0);
     }
 
     setHumanInTheLoop(hooks: HumanInTheLoopHooks): void {
@@ -250,6 +301,20 @@ export class AgenticRunner {
             }
         }
 
+        // Inline structured-output prompt — append the schema to the latest user turn.
+        if (runConfig.structuredOutput?.jsonPromptInjection === 'inline') {
+            const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+            if (lastUser && typeof lastUser.content === 'string') {
+                const so = runConfig.structuredOutput;
+                lastUser.content = `${lastUser.content}\n\n${buildStructuredOutputPrompt({
+                    schema: so.schema,
+                    description: so.description,
+                    strict: true,
+                    maxRetries: so.maxRetries,
+                })}`;
+            }
+        }
+
         // ── Per-run AbortController: aborted on run-signal abort or deadline timeout.
         //   Forwarded into LLM SDK calls and tool execution so in-flight work cancels.
         const runAbort = new AbortController();
@@ -274,19 +339,109 @@ export class AgenticRunner {
             }
         }
 
+        const resumeToolCallId = runConfig.resumePendingTool?.toolCall.id;
         const baseCtx: Omit<RunContext, 'step'> = {
             agentId, sessionId, lifecycle, streamHooks,
             toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
             retry,
             allowedTools: runConfig.allowedTools,
             signal: runAbort.signal,
+            approvedToolCalls: runConfig.approvedToolCalls ?? [],
+            resumeData: runConfig.resumeData,
+            resumeToolCallId,
+            requireToolApproval: runConfig.requireToolApproval,
         };
+
+        // ── Processor pipeline (input/output/error) — Mastra parity ────────
+        const procInput: Processor[] = runConfig.processors
+            ? resolveProcessorSet(runConfig.processors).input
+            : this._inputProcessors;
+        const procOutput: Processor[] = runConfig.processors
+            ? resolveProcessorSet(runConfig.processors).output
+            : this._outputProcessors;
+        const procError: Processor[] = runConfig.processors
+            ? resolveProcessorSet(runConfig.processors).error
+            : this._errorProcessors;
+
+        const procRun: ProcRun = {
+            input: procInput,
+            output: procOutput,
+            error: procError,
+            state: createProcessorState(),
+            context: {
+                agentId,
+                sessionId,
+                runId: runConfig.runId,
+                threadId: runConfig.threadId,
+                resourceId: runConfig.resourceId,
+                requestContext: runConfig.requestContext,
+            },
+            retryCount: 0,
+        };
+
+        // ── Input processors — run once before the loop on fresh runs ──────
+        // (Resumed/suspended runs replay from their snapshot instead.)
+        if (!runConfig.resumePendingTool && steps === 0 && procInput.length) {
+            try {
+                messages = await runInputProcessors(procInput, messages, procRun.context, procRun.state);
+            } catch (err) {
+                if (err instanceof TripWireError) {
+                    await streamHooks?.onTripwire?.({
+                        processorId: err.processorId,
+                        reason: err.message,
+                        metadata: err.metadata,
+                    });
+                    return this._tripwireResult(runConfig, messages, { ...err, processorId: err.processorId }, agentId, sessionId);
+                }
+                throw err;
+            }
+        }
+
+        // ── Resume a durable/suspended run: execute the pending tool, then
+        //   continue the loop from the restored step (approval or suspend()).
+        if (runConfig.resumePendingTool) {
+            const pending = runConfig.resumePendingTool;
+            try {
+                steps = Math.max(pending.step, steps);
+                const execCtx: RunContext = { ...baseCtx, step: steps + 1 };
+                const hasAssistant = messages.some((m) =>
+                    m.role === 'assistant' &&
+                    (m as Message & { toolCalls?: LLMToolCall[] }).toolCalls?.some((tc) => tc.id === pending.toolCall.id),
+                );
+                if (!hasAssistant) {
+                    messages = [
+                        ...messages,
+                        { role: 'assistant', content: '', toolCalls: [pending.toolCall] } as Message & { toolCalls?: LLMToolCall[] },
+                    ];
+                }
+                const toolMessage = await this._executeOneTool(pending.toolCall, execCtx);
+                messages = [...messages, toolMessage];
+            } catch (err) {
+                if (isApprovalRequiredError(err) || isToolSuspendedError(err)) {
+                    const p = this._suspensionPayload(err);
+                    if (isApprovalRequiredError(err)) {
+                        streamHooks?.onApproval?.({
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, requiresApproval: true,
+                        });
+                    } else {
+                        streamHooks?.onSuspended?.({
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, suspendPayload: p.suspendPayload,
+                        });
+                    }
+                    return this._suspendedResult(runConfig, messages, p, agentId, sessionId);
+                }
+                throw err;
+            }
+        }
 
         let lastText = '';
         let usage: AgenticRunResult['usage'];
         let finishReason: AgenticRunResult['finishReason'] = 'stop';
+        let tripwire: AgenticRunResult['tripwire'];
+        let suspendPayload: AgenticRunResult['suspendPayload'];
         const startTime = Date.now();
         const deadline   = createDeadline(timeoutMs, 'agent.run');
+        const maxProcessorRetries = this._maxProcessorRetries;
 
         // Durable event log — start of run. ponytail: emitted once the loop is
         // reached; input-guardrail-blocked runs return earlier and log nothing,
@@ -305,11 +460,57 @@ export class AgenticRunner {
                 messages = await lifecycle.beforeStep(steps, messages);
             }
 
+            // ── Input-step processors — per-step overrides / signals ───────
+            let stepOverrides: import('../processors/types.js').ProcessInputStepResult = {};
+            if (procInput.length) {
+                stepOverrides = await runInputStepProcessors(procInput, {
+                    stepNumber: steps,
+                    messages,
+                    context: { ...procRun.context, step: steps },
+                }, procRun.state);
+                if (stepOverrides.signals?.length) messages = [...messages, ...stepOverrides.signals];
+            }
+
             // ── LLM call ──────────────────────────────────────────────────
             let result: GenerateResult;
             try {
-                result = await this._invokeLlm(messages, { ...baseCtx, step: steps });
+                const invoked = await this._invokeLlm(messages, { ...baseCtx, step: steps }, {
+                    model: stepOverrides.model,
+                    toolChoice: stepOverrides.toolChoice,
+                    tools: stepOverrides.tools?.length ? stepOverrides.tools.map((n) => {
+                        const t = this.config.tools.getByName(n);
+                        return t ? toolToLLMDef(t) : undefined;
+                    }).filter((t): t is LLMToolDefinition => !!t) : undefined,
+                    processorContext: procRun,
+                });
+                result = invoked.result;
             } catch (err) {
+                if (err instanceof TripWireError) {
+                    const handled = await this._handleTripwireError(
+                        err, procRun, maxProcessorRetries, messages, streamHooks,
+                    );
+                    if (handled.retry) {
+                        messages = [...messages, { role: 'user', content: handled.feedback }];
+                        continue;
+                    }
+                    finishReason = 'aborted';
+                    tripwire = { processorId: err.processorId, reason: err.message, metadata: err.metadata };
+                    break;
+                }
+                // ── Error processors — recover from provider rejections ────
+                const recovery = procError.length
+                    ? await runAPIErrorProcessors(procError, {
+                        error: err,
+                        messages,
+                        retryCount: procRun.retryCount,
+                        context: procRun.context,
+                    }, procRun.state)
+                    : {};
+                if (recovery.retry && procRun.retryCount < maxProcessorRetries && !deadline.expired() && !runConfig.signal?.aborted) {
+                    procRun.retryCount++;
+                    if (recovery.messages) messages = recovery.messages;
+                    continue;
+                }
                 finishReason = 'error';
                 const error = err instanceof Error ? err : new Error(String(err));
                 await lifecycle.onError?.(error, steps);
@@ -365,12 +566,63 @@ export class AgenticRunner {
                 } as Message & { toolCalls?: LLMToolCall[] });
             }
             if (result.text) {
-                const isStreaming = !!streamHooks?.onChunk && !!this.config.llm.streamText;
-                if (!isStreaming) streamHooks?.onChunk?.(result.text);
+                const hasStreamFilter = procOutput.some((p) => p.processOutputStream);
+                const isStreaming = !!streamHooks?.onChunk && !!this.config.llm.streamText && !hasStreamFilter;
+                if (!isStreaming) {
+                    if (hasStreamFilter) {
+                        const part = await filterOutputStreamPart(
+                            procOutput,
+                            { type: 'text-delta', text: result.text },
+                            procRun.context,
+                            procRun.state,
+                        );
+                        if (part?.text) streamHooks?.onChunk?.(part.text);
+                    } else {
+                        streamHooks?.onChunk?.(result.text);
+                    }
+                }
             }
 
             if (lifecycle.afterStep) {
                 await lifecycle.afterStep(steps, messages, lastText);
+            }
+
+            // ── Output-step processors — validate the response, maybe retry ─
+            if (lastText && procOutput.length) {
+                let shouldRetry = false;
+                let retryFeedback: string | undefined;
+                try {
+                    const out = await runOutputStepProcessors(procOutput, {
+                        text: lastText,
+                        messages,
+                        retryCount: procRun.retryCount,
+                        context: { ...procRun.context, step: steps },
+                    }, procRun.state);
+                    shouldRetry = !!out?.retry;
+                    retryFeedback = out?.feedback;
+                } catch (err) {
+                    if (err instanceof TripWireError) {
+                        if (err.options?.retry && procRun.retryCount < maxProcessorRetries) {
+                            shouldRetry = true;
+                            retryFeedback = err.message;
+                        } else {
+                            finishReason = 'aborted';
+                            tripwire = { processorId: err.processorId, reason: err.message, metadata: err.metadata };
+                            await streamHooks?.onTripwire?.(tripwire);
+                            break;
+                        }
+                    } else {
+                        throw err;
+                    }
+                }
+                if (shouldRetry && procRun.retryCount < maxProcessorRetries) {
+                    procRun.retryCount++;
+                    messages = [
+                        ...messages,
+                        { role: 'user', content: retryFeedback ?? 'Your previous response did not meet the requirements. Please try again.' },
+                    ];
+                    continue;
+                }
             }
 
             // ── Terminal state: no tool calls = final answer ───────────────
@@ -380,13 +632,72 @@ export class AgenticRunner {
                     const approved = await this.humanInTheLoop.beforeFinish(lastText, guardrailCtx);
                     if (!approved) { finishReason = 'human_rejected'; break; }
                 }
+
+                // ── Durable goal — keep iterating until the judge passes ───
+                if (runConfig.goal && lastText) {
+                    const goalRes = await this._evaluateGoal(runConfig.goal, lastText, procRun, streamHooks);
+                    if (goalRes.runsUsedReached) { finishReason = 'max_runs'; break; }
+                    if (!goalRes.passed) {
+                        if (goalRes.feedback && !goalRes.suppressFeedback) {
+                            messages = [...messages, { role: 'user', content: goalRes.feedback }];
+                            continue;
+                        }
+                        finishReason = 'max_runs';
+                        break;
+                    }
+                }
+
                 finishReason = 'stop';
                 break;
             }
 
             // ── Tool dispatch (parallel) ───────────────────────────────────
             // (Assistant message with toolCalls was already appended above.)
-            const toolMessages = await this._executeAllTools(result.toolCalls ?? [], { ...baseCtx, step: steps });
+            let toolMessages: Message[];
+            try {
+                toolMessages = await this._executeAllTools(result.toolCalls ?? [], { ...baseCtx, step: steps });
+            } catch (err) {
+                if (isApprovalRequiredError(err) || isToolSuspendedError(err)) {
+                    // Suspend the run: persist a snapshot so approve/decline/resume
+                    // can replay from this exact point, then emit the event.
+                    if (checkpointStore && runId) {
+                        await this._saveCheckpoint(checkpointStore, runId, steps, messages, runConfig, startTime)
+                            .catch(() => undefined);
+                    }
+                    const p = this._suspensionPayload(err);
+                    if (this.config.suspendedRunStore && runId) {
+                        await this.config.suspendedRunStore.save({
+                            runId,
+                            agentId,
+                            threadId: (err as ApprovalRequiredError).step ? runConfig.threadId : runConfig.threadId,
+                            resourceId: runConfig.resourceId,
+                            status: isApprovalRequiredError(err) ? 'approval' : 'suspended',
+                            toolCalls: [{
+                                toolCallId: p.toolCallId,
+                                toolName: p.toolName,
+                                args: p.args,
+                                requiresApproval: isApprovalRequiredError(err),
+                                suspendPayload: p.suspendPayload,
+                            }],
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                        }).catch(() => undefined);
+                    }
+                    if (isApprovalRequiredError(err)) {
+                        streamHooks?.onApproval?.({
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, requiresApproval: true,
+                        });
+                    } else {
+                        streamHooks?.onSuspended?.({
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, suspendPayload: p.suspendPayload,
+                        });
+                    }
+                    suspendPayload = p;
+                    finishReason = 'suspended';
+                    break;
+                }
+                throw err;
+            }
             messages.push(...toolMessages);
 
             // Durable event log — one entry per tool call, paired to its result by id.
@@ -423,8 +734,34 @@ export class AgenticRunner {
         // Detach the external-abort listener to avoid leaking it on the caller's signal.
         detachAbort?.();
 
-        // ── Post-loop: structured output, hooks, budget, cleanup ─────────────
-        const structuredOutput = await this._validateStructuredOutput(runConfig, lastText);
+        // ── Post-loop: structured output, output processors, hooks ─────────
+        const structuredOut = await this._resolveStructuredObject(runConfig, lastText, procRun);
+
+        // Output-result processors may transform messages / attach metadata.
+        if (procOutput.length && finishReason !== 'suspended') {
+            try {
+                messages = await runOutputResultProcessors(procOutput, {
+                    result: { text: lastText, steps, finishReason, usage },
+                    context: procRun.context,
+                }, procRun.state, messages);
+            } catch (err) {
+                if (err instanceof TripWireError) {
+                    tripwire = { processorId: err.processorId, reason: err.message, metadata: err.metadata };
+                    await streamHooks?.onTripwire?.(tripwire);
+                    finishReason = 'aborted';
+                } else {
+                    throw err;
+                }
+            }
+        }
+
+        const object = structuredOut.object;
+        if (object !== undefined) streamHooks?.onObject?.(object);
+        const legacyStructured: unknown = structuredOut.legacy !== undefined
+            ? structuredOut.legacy
+            : runConfig.responseModel
+              ? this._validateStructuredOutput(runConfig, lastText)
+              : undefined;
 
         let finalResult: AgenticRunResult = {
             text: lastText,
@@ -440,7 +777,10 @@ export class AgenticRunner {
             usage,
             ...(runConfig.runId    && { runId:    runConfig.runId }),
             ...(runConfig.traceId  && { traceId:  runConfig.traceId }),
-            ...(structuredOutput !== undefined && { structuredOutput }),
+            ...(object !== undefined && { object }),
+            ...(legacyStructured !== undefined && { structuredOutput: legacyStructured }),
+            ...(tripwire && { tripwire }),
+            ...(suspendPayload && { suspendPayload }),
         } as AgenticRunResult;
 
         if (lifecycle.afterRun) {
@@ -569,6 +909,18 @@ export class AgenticRunner {
         if (runConfig.responseModel) {
             prompt += `\n\n${buildStructuredOutputPrompt({ schema: runConfig.responseModel })}`;
         }
+        if (runConfig.structuredOutput) {
+            const so = runConfig.structuredOutput;
+            const mode = so.jsonPromptInjection ?? 'auto';
+            if (mode === 'system' || mode === true) {
+                prompt += `\n\n${buildStructuredOutputPrompt({ schema: so.schema, description: so.description, strict: true, maxRetries: so.maxRetries })}`;
+            } else if (mode === 'auto') {
+                // Native-capable providers get the schema via response_format; the
+                // runner-level path always injects for portability across providers.
+                prompt += `\n\n${buildStructuredOutputPrompt({ schema: so.schema, description: so.description, strict: true, maxRetries: so.maxRetries })}`;
+            }
+            // 'inline' or false → no system injection (schema appended to the user turn).
+        }
         return prompt;
     }
 
@@ -625,47 +977,107 @@ export class AgenticRunner {
 
     // ── Private: LLM call ─────────────────────────────────────────────────────
 
-    private _invokeLlm(messages: Message[], ctx: RunContext): Promise<GenerateResult> {
-        const llmTools = this._cachedLlmTools;
-        const useStreaming = !!ctx.streamHooks?.onChunk && !!this.config.llm.streamText;
+    private async _invokeLlm(
+        messages: Message[],
+        ctx: RunContext,
+        overrides?: {
+            model?: string;
+            toolChoice?: import('../core/index.js').GenerateOptions['toolChoice'];
+            tools?: LLMToolDefinition[];
+            processorContext?: ProcRun;
+        },
+    ): Promise<{ result: GenerateResult; fromCache?: boolean }> {
+        const procRun = overrides?.processorContext;
 
-        return withSpan(
+        // ── LLM-request processors: transient prompt rewrite + response cache ──
+        let llmMessages = messages;
+        let cached: { text: string; usage?: GenerateResult['usage'] } | undefined;
+        if (procRun && procRun.input.length) {
+            const req = await runLLMRequestProcessors(procRun.input, {
+                messages,
+                model: this.config.budgetModelId ?? 'unknown',
+                stepNumber: ctx.step,
+                steps: ctx.step,
+                context: procRun.context,
+            }, procRun.state);
+            if (req.cached) cached = req.cached;
+            if (req.messages) llmMessages = req.messages;
+        }
+
+        // ── Runtime model switch (per-step overrides) ─────────────────────────
+        let provider = this.config.llm;
+        if (overrides?.model) {
+            const extra = this.config.resolveExtraLlm
+                ? this.config.resolveExtraLlm(overrides.model)
+                : createLlmProviderFromModelString(overrides.model);
+            if (extra) provider = extra;
+        }
+
+        let llmTools = overrides?.tools !== undefined ? overrides.tools : this._cachedLlmTools;
+        const toolChoice: import('../core/index.js').GenerateOptions['toolChoice'] =
+            overrides?.toolChoice ?? (llmTools.length ? 'auto' : 'none');
+
+        // ── Response cache hit: short-circuit the provider call ───────────────
+        if (cached) {
+            return {
+                result: { text: cached.text, usage: cached.usage, finishReason: 'stop' },
+                fromCache: true,
+            };
+        }
+
+        // When output-stream filter processors are configured, fall back to
+        // generateText so chunks pass through the filters in the correct order.
+        const hasStreamFilter = !!procRun?.output.some((p) => p.processOutputStream);
+        const useStreaming = !hasStreamFilter && !!ctx.streamHooks?.onChunk && !!provider.streamText;
+
+        const runLlm = () => {
+            if (useStreaming) {
+                // streamText is confirmed defined when useStreaming is true (checked by callers)
+
+                return provider.streamText!(llmMessages, {
+                    temperature: this.config.temperature ?? 0.7,
+                    maxTokens: this.config.maxTokens ?? 4096,
+                    tools: llmTools.length ? llmTools : undefined,
+                    toolChoice,
+                    ...(ctx.signal && { signal: ctx.signal }),
+                    onChunk: (chunk: string | { type: string; text: string }) => {
+                        const text = typeof chunk === 'string' ? chunk : chunk.text;
+                        ctx.streamHooks!.onChunk!(text);
+                    },
+                });
+            }
+            return provider.generateText(llmMessages, {
+                temperature: this.config.temperature ?? 0.7,
+                maxTokens: this.config.maxTokens ?? 4096,
+                tools: llmTools.length ? llmTools : undefined,
+                toolChoice,
+                ...(ctx.signal && { signal: ctx.signal }),
+            });
+        };
+
+        const result = await withSpan(
             'llm.generate',
             {
                 'agent.step': ctx.step,
                 'llm.stream': useStreaming,
                 ...genAiAttributes({ model: this.config.budgetModelId, operation: 'chat' }),
             },
-            () => guardWithRetry(
-                () => {
-                    if (useStreaming) {
-                        // streamText is confirmed defined when useStreaming is true (checked by callers)
-
-                        return this.config.llm.streamText!(messages, {
-                            temperature: this.config.temperature ?? 0.7,
-                            maxTokens: this.config.maxTokens ?? 4096,
-                            tools: llmTools.length ? llmTools : undefined,
-                            toolChoice: llmTools.length ? 'auto' : 'none',
-                            ...(ctx.signal && { signal: ctx.signal }),
-                            onChunk: (chunk: string | { type: string; text: string }) => {
-                                const text = typeof chunk === 'string' ? chunk : chunk.text;
-                                // streamHooks and onChunk are set when useStreaming is true
-
-                                ctx.streamHooks!.onChunk!(text);
-                            },
-                        });
-                    }
-                    return this.config.llm.generateText(messages, {
-                        temperature: this.config.temperature ?? 0.7,
-                        maxTokens: this.config.maxTokens ?? 4096,
-                        tools: llmTools.length ? llmTools : undefined,
-                        toolChoice: llmTools.length ? 'auto' : 'none',
-                        ...(ctx.signal && { signal: ctx.signal }),
-                    });
-                },
-                toGuardRetryPolicy(ctx.retry),
-            ),
+            () => guardWithRetry(runLlm, toGuardRetryPolicy(ctx.retry)),
         );
+
+        // ── LLM-response processors: side effects (cache write, cost) ─────────
+        if (procRun && procRun.input.length) {
+            await runLLMResponseProcessors(procRun.input, {
+                chunks: result.text ? [result.text] : [],
+                text: result.text ?? '',
+                model: this.config.budgetModelId ?? 'unknown',
+                stepNumber: ctx.step,
+                steps: ctx.step,
+                context: procRun.context,
+            }, procRun.state);
+        }
+
+        return { result };
     }
 
     // ── Private: tool dispatch ────────────────────────────────────────────────
@@ -685,6 +1097,8 @@ export class AgenticRunner {
                 try {
                     results[task.i] = await this._executeOneTool(task.tc, ctx);
                 } catch (err) {
+                    // Approval / suspend signals bubble up so the run can pause.
+                    if (isApprovalRequiredError(err) || isToolSuspendedError(err)) throw err;
                     // Ensure all results are valid messages even on error
                     results[task.i] = this._toolErrorMessage(task.tc.id, err instanceof Error ? err.message : String(err));
                 }
@@ -712,6 +1126,12 @@ export class AgenticRunner {
             agentId, sessionId, toolName: tc.name, toolArgs: tc.arguments,
         };
 
+        // ── Agent approval: pause BEFORE execute (requireApproval / requireToolApproval) ──
+        const requiresApproval = await this._requiresApproval(tc, ctx);
+        if (requiresApproval && !ctx.approvedToolCalls.includes(tc.id)) {
+            throw new ApprovalRequiredError(tc, step);
+        }
+
         if (this.guardrails) {
             const blocked = await this._checkInputGuardrails(tc, guardrailCtx);
             if (blocked) return blocked;
@@ -728,7 +1148,7 @@ export class AgenticRunner {
 
         streamHooks?.onToolCall?.(tc.name, effectiveArgs);
 
-        const toolContext = this._buildToolContext(tool, agentId, sessionId, ctx.signal);
+        const toolContext = this._buildToolContext(tool, agentId, sessionId, ctx, tc.id);
         // toolMiddleware is initialised to [] in the constructor; the ! is safe.
 
         const middleware = this.config.toolMiddleware!;
@@ -757,6 +1177,8 @@ export class AgenticRunner {
             toolResultObj = out;
             toolResult = out.success ? out.data : (out.error ? { error: out.error.message } : out);
         } catch (err) {
+            // A tool self-suspended via context.agent.suspend() — bubble up.
+            if (isToolSuspendedError(err)) throw err;
             Metrics.toolDurationMs.record(Date.now() - _toolStart, {
                 tool_name: tc.name, agent_name: agentId,
             });
@@ -846,19 +1268,290 @@ export class AgenticRunner {
 
     // ── Private: small builders ───────────────────────────────────────────────
 
+    private async _requiresApproval(tc: LLMToolCall, ctx: RunContext): Promise<boolean> {
+        const tool = this.config.tools.getByName(tc.name);
+        if (tool?.requireApproval) return true;
+
+        const policy = ctx.requireToolApproval;
+        if (!policy) return false;
+        try {
+            if (policy === true) return true;
+            if (typeof policy === 'function') {
+                return await policy({
+                    toolName: tc.name,
+                    args: tc.arguments,
+                    agentId: ctx.agentId,
+                    sessionId: ctx.sessionId,
+                });
+            }
+            return false;
+        } catch {
+            return true; // fails closed
+        }
+    }
+
+    /**
+     * Handle a processor tripwire. Returns `{ retry, feedback }` — when the
+     * tripwire requested a retry and we still have budget, replay the step.
+     */
+    private async _handleTripwireError(
+        err: TripWireError,
+        procRun: ProcRun,
+        maxRetries: number,
+        messages: Message[],
+        streamHooks: AgenticStreamHooks | undefined,
+    ): Promise<{ retry: boolean; feedback: string }> {
+        await streamHooks?.onTripwire?.({ processorId: err.processorId, reason: err.message, metadata: err.metadata });
+        void messages;
+        if (err.options?.retry && procRun.retryCount < maxRetries) {
+            procRun.retryCount++;
+            return { retry: true, feedback: err.message };
+        }
+        return { retry: false, feedback: err.message };
+    }
+
+    // ── Private: goal evaluation ───────────────────────────────────────────────
+
+    private async _evaluateGoal(
+        config: GoalRunConfig,
+        text: string,
+        procRun: ProcRun,
+        streamHooks: AgenticStreamHooks | undefined,
+    ): Promise<{ passed: boolean; feedback?: string; runsUsedReached: boolean; suppressFeedback?: boolean }> {
+        type GoalState = { runsUsed: number; judge?: import('../goals/judge.js').TaskJudge };
+        const state = (procRun.state.goal ??= { runsUsed: config.runsUsed ?? 0 }) as GoalState;
+        const maxRuns = config.maxRuns ?? 0;
+
+        if (maxRuns > 0 && state.runsUsed >= maxRuns) {
+            return { passed: false, runsUsedReached: true };
+        }
+
+        const judge = this._resolveGoalJudge(config, state);
+        if (!judge) {
+            // No judge = activation switch off — the goal step is a no-op.
+            return { passed: true, runsUsedReached: false, suppressFeedback: true };
+        }
+
+        const verdict = await judge.evaluate(text);
+        state.runsUsed += 1;
+        const runsUsedReached = maxRuns > 0 && state.runsUsed >= maxRuns;
+
+        const evaluation: GoalEvaluation = {
+            objective: config.objective,
+            iteration: state.runsUsed,
+            maxRuns,
+            passed: verdict.passed,
+            status: verdict.passed ? 'done' : runsUsedReached ? 'paused' : 'active',
+            reason: verdict.reason,
+            maxRunsReached: runsUsedReached,
+        };
+        streamHooks?.onGoal?.(evaluation);
+
+        if (this.config.goalStore && config.threadId) {
+            await this.config.goalStore.setObjective({
+                objective: config.objective,
+                threadId: config.threadId,
+                resourceId: config.resourceId,
+                maxRuns: maxRuns || undefined,
+                runsUsed: state.runsUsed,
+                status: evaluation.status,
+                updatedAt: new Date().toISOString(),
+            }).catch(() => undefined);
+        }
+
+        return {
+            passed: verdict.passed,
+            feedback:
+                verdict.passed
+                    ? undefined
+                    : `Your objective is: "${config.objective}". It is not yet complete${verdict.reason ? `: ${verdict.reason}` : '.'} Continue working toward it.`,
+            runsUsedReached,
+            suppressFeedback: config.suppressFeedback,
+        };
+    }
+
+    private _resolveGoalJudge(
+        config: GoalRunConfig,
+        state: { judge?: import('../goals/judge.js').TaskJudge },
+    ): import('../goals/judge.js').TaskJudge | undefined {
+        if (state.judge) return state.judge;
+        const judge = config.judge;
+        if (!judge) return undefined;
+        if (typeof judge === 'string') {
+            state.judge = goalJudgeFromModelString(judge);
+        } else if (typeof judge === 'function') {
+            state.judge = { evaluate: (t) => Promise.resolve(judge(t)) };
+        } else if (typeof (judge as { evaluate?: unknown }).evaluate === 'function') {
+            state.judge = judge as import('../goals/judge.js').TaskJudge;
+        }
+        return state.judge;
+    }
+
+    // ── Private: structured output (Mastra parity) ─────────────────────────────
+
+    private async _resolveStructuredObject(
+        runConfig: AgenticRunConfig,
+        text: string,
+        procRun: ProcRun,
+    ): Promise<{ object?: unknown; legacy?: unknown }> {
+        const config = runConfig.structuredOutput;
+        void procRun;
+        if (!config) return {};
+        const schema = config.schema;
+        const attempts = config.maxRetries ?? DEFAULT_STRUCTURED_RETRIES;
+        const errors: string[] = [];
+
+        if (!text) {
+            if (config.errorStrategy === 'fallback') return { object: config.fallbackValue, legacy: config.fallbackValue };
+            if (config.errorStrategy === 'strict') {
+                throw new StructuredOutputError('Structured output requested but the agent produced no text.', errors);
+            }
+            return {};
+        }
+
+        // 1. The agent's own output.
+        const first = validateStructuredOutput(text, { schema, strict: true });
+        if (first.validated) return { object: first.data, legacy: first.data };
+        errors.push(...first.errors);
+
+        // 2. Separate structuring model (extracts JSON from the natural-language output).
+        const structuringProvider =
+            typeof config.model === 'string'
+                ? (this.config.resolveExtraLlm
+                      ? this.config.resolveExtraLlm(config.model)
+                      : createLlmProviderFromModelString(config.model))
+                : (config.model as LLMProvider | undefined);
+        if (structuringProvider) {
+            const extraction = await this._extractWithProvider(structuringProvider, text, schema, config.description);
+            if (extraction.validated) return { object: extraction.data, legacy: extraction.data };
+            errors.push(...extraction.errors);
+        }
+
+        // 3. Correction loop — feed the errors back into the main LLM.
+        let current = text;
+        for (let i = 0; i < attempts; i++) {
+            const correction = await this._extractWithProvider(this.config.llm, current, schema, config.description, i);
+            if (correction.validated) return { object: correction.data, legacy: correction.data };
+            errors.push(...correction.errors);
+            current = correction.rawText ?? current;
+        }
+
+        if (config.errorStrategy === 'fallback') return { object: config.fallbackValue, legacy: config.fallbackValue };
+        if (config.errorStrategy === 'strict') {
+            throw new StructuredOutputError(
+                `Structured output validation failed after ${attempts + 1} attempts: ${errors.slice(0, 3).join('; ')}`,
+                errors,
+            );
+        }
+        console.warn('[AgenticRunner] structuredOutput validation failed:', errors.slice(0, 3));
+        return {};
+    }
+
+    private async _extractWithProvider(
+        provider: LLMProvider,
+        text: string,
+        schema: import('../validation/index.js').SchemaInput,
+        description?: string,
+        attempt?: number,
+    ): Promise<{ data?: unknown; rawText?: string; validated: boolean; errors: string[] }> {
+        const system = buildStructuredOutputPrompt({ schema, description, strict: true, maxRetries: 1 });
+        const feedback = attempt && attempt > 0
+            ? `\n\nYour previous attempt failed schema validation. Return ONLY valid JSON matching the schema.`
+            : '';
+        const result = await provider.generateText(
+            [
+                { role: 'system', content: system },
+                { role: 'user', content: `${text}${feedback}` },
+            ] as Message[],
+            { temperature: 0, maxTokens: 2048, toolChoice: 'none' },
+        );
+        const out = validateStructuredOutput(result.text ?? '', { schema, strict: true });
+        return { data: out.data, rawText: out.rawText, validated: out.validated, errors: out.errors };
+    }
+
+    // ── Private: suspension / tripwire payload builders ───────────────────────
+
+    private _suspensionPayload(err: unknown): NonNullable<AgenticRunResult['suspendPayload']> {
+        if (isApprovalRequiredError(err)) {
+            return { toolCallId: err.toolCallId, toolName: err.toolName, args: err.args, requiresApproval: true };
+        }
+        if (isToolSuspendedError(err)) {
+            return {
+                toolCallId: err.toolCallId ?? '',
+                toolName: err.toolName,
+                args: {},
+                requiresApproval: false,
+                suspendPayload: err.payload,
+            };
+        }
+        return { toolCallId: '', toolName: '', args: {}, requiresApproval: false };
+    }
+
+    private _tripwireResult(
+        runConfig: AgenticRunConfig,
+        messages: Message[],
+        tw: { processorId?: string; reason?: string; metadata?: unknown },
+        agentId: string,
+        sessionId: string,
+    ): AgenticRunResult {
+        const runName = `response-${runConfig.runId ?? Date.now()}.md`;
+        void agentId; void sessionId;
+        return {
+            text: '',
+            markdown: { name: runName, content: '', mimeType: 'text/markdown', type: 'markdown' },
+            messages,
+            steps: 0,
+            finishReason: 'aborted',
+            tripwire: { processorId: tw.processorId, reason: tw.reason, metadata: tw.metadata },
+            ...(runConfig.runId   && { runId:   runConfig.runId }),
+            ...(runConfig.traceId && { traceId: runConfig.traceId }),
+        };
+    }
+
+    private _suspendedResult(
+        runConfig: AgenticRunConfig,
+        messages: Message[],
+        sp: NonNullable<AgenticRunResult['suspendPayload']>,
+        agentId: string,
+        sessionId: string,
+    ): AgenticRunResult {
+        const runName = `response-${runConfig.runId ?? Date.now()}.md`;
+        void agentId; void sessionId;
+        return {
+            text: '',
+            markdown: { name: runName, content: '', mimeType: 'text/markdown', type: 'markdown' },
+            messages,
+            steps: 0,
+            finishReason: 'suspended',
+            suspendPayload: sp,
+            ...(runConfig.runId   && { runId:   runConfig.runId }),
+            ...(runConfig.traceId && { traceId: runConfig.traceId }),
+        };
+    }
+
+    // ── Private: small builders ───────────────────────────────────────────────
+
     private _buildToolContext(
         tool: Tool,
         agentId: string,
         sessionId: string,
-        signal?: AbortSignal,
+        ctx: RunContext,
+        toolCallId: string,
     ): ToolContext {
+        const resumeApplicable = ctx.resumeToolCallId === toolCallId;
         return {
             toolId: tool.id,
             agentId,
             sessionId,
             timeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
             permissions: tool.permissions,
-            ...(signal && { signal }),
+            ...(ctx.signal && { signal: ctx.signal }),
+            ...(resumeApplicable ? { resumeData: ctx.resumeData } : {}),
+            agent: {
+                suspend: (payload: unknown) => {
+                    throw new ToolSuspendedError(payload, { toolName: tool.name, toolCallId });
+                },
+            },
         };
     }
 

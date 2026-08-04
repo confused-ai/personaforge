@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Productivity"
-description: "Operational runbook for personaforge/tools/productivity — import, run, verify, recover. 90 public symbols."
+description: "Operational runbook for personaforge/tools/productivity — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Productivity
 
-> Auto-generated from `./dist/tools/productivity.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/productivity/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/productivity`  ·  **Public symbols:** 90  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/productivity`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/productivity` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { NotionCreatePageTool, NotionSearchTool, NotionUpdatePageTool } from 'personaforge/tools/productivity';
+import 'personaforge/tools/productivity';
 ```
 
 ## Public API surface
-- **Classes** — `NotionCreatePageTool`, `NotionSearchTool`, `NotionUpdatePageTool`, `JiraGetIssueTool`, `JiraCreateIssueTool`, `JiraSearchIssuesTool`, `JiraAddCommentTool`, `LinearCreateIssueTool`, `LinearGetIssueTool`, `LinearSearchIssuesTool`, `LinearUpdateIssueTool`, `LinearAddCommentTool`, …(+50)
-- **Constants** — `NotionToolkit`, `JiraToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `NotionResult`, `JiraResult`, …(+12)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:

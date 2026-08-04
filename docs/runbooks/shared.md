@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Shared"
-description: "Operational runbook for personaforge/shared — import, run, verify, recover. 21 public symbols."
+description: "Operational runbook for personaforge/shared — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Shared
 
-> Auto-generated from `./dist/shared.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/shared/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/shared`  ·  **Public symbols:** 21  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
+**Import path:** `personaforge/shared`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
 
 ## What it is
 `personaforge/shared` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,23 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createDebugLogger, recordFrameworkStartup, isTelemetryEnabled } from 'personaforge/shared';
+import 'personaforge/shared';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createDebugLogger`, `recordFrameworkStartup`, `isTelemetryEnabled`, `tryImport`
-- **Classes** — `AgentError`, `LLMError`, `ToolExecutionError`, `GuardrailError`, `TimeoutError`, `CancellationError`, `ConfigError`, `SessionError`, `PermissionError`, `ToolNotAuthorizedError`, `DebugLogger`
-- **Constants** — `ErrorCode`, `VERSION`
-- **Interfaces** — `LogContext`, `Logger`, `DebugLoggerConfig`
-- **Types** — `ErrorCodeType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createDebugLogger, recordFrameworkStartup, isTelemetryEnabled } from 'personaforge/shared';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createDebugLogger` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createDebugLogger(/* opts */);
+```ts
+import 'personaforge/shared';
 ```
 
 ## Verify it works

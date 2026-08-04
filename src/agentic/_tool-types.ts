@@ -44,6 +44,14 @@ export interface ToolContext {
     readonly permissions: ToolPermissions;
     /** Per-run abort signal — tools may observe it for cooperative cancellation. */
     readonly signal?: AbortSignal;
+    /** Data provided when resuming a `suspend()`-suspended tool. */
+    readonly resumeData?: unknown;
+    /** Agent-side helpers available inside `execute()` (approval / suspension). */
+    readonly agent?: {
+        readonly resumeData?: unknown;
+        /** Self-suspend the tool mid-execution to request more input. */
+        suspend(payload: unknown): never;
+    };
 }
 
 export enum ToolCategory {
@@ -66,6 +74,12 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
     readonly version: string;
     readonly author?: string;
     readonly tags?: string[];
+    /** Pause this tool's call before `execute()` for human approval. */
+    readonly requireApproval?: boolean;
+    /** Schema for the custom payload emitted when the tool self-suspends. */
+    readonly suspendSchema?: SchemaInput;
+    /** Schema for the data accepted when resuming a suspended call. */
+    readonly resumeSchema?: SchemaInput;
 
     execute(params: InferOutput<TParams & AnySchema>, context: ToolContext): Promise<ToolResult<TOutput>>;
     validate(params: unknown): params is InferOutput<TParams & AnySchema>;

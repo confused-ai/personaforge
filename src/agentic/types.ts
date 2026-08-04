@@ -6,6 +6,8 @@ import type { Message, LLMToolDefinition, LLMProvider } from '../core/index.js';
 import type { EntityId } from '../core/index.js';
 import type { ToolRegistry, ToolMiddleware } from './_tool-types.js';
 import type { SchemaInput } from '../validation/index.js';
+import type { ProcessorSet, Processor } from '../processors/types.js';
+import type { ProcessorContext } from '../processors/types.js';
 
 /** Observability: optional tracer and metrics for production monitoring */
 export interface RunObservability {
@@ -53,6 +55,85 @@ export interface AgenticRunConfig {
      * When `undefined` (default) all registered tools are permitted.
      */
     readonly allowedTools?: string[];
+    /**
+     * Structured output — schema-validated JSON returned as `result.object`.
+     * Mirrors Mastra's `structuredOutput` option: supports a separate
+     * structuring model, error strategy, and json-prompt injection.
+     */
+    readonly structuredOutput?: StructuredOutputConfig;
+    /**
+     * Durable thread-scoped goal evaluated in-loop by a judge model.
+     * The loop iterates until the judge passes, `maxRuns` is exhausted, or
+     * `maxSteps` forces a stop.
+     */
+    readonly goal?: GoalRunConfig;
+    /**
+     * Mastra-style inspired input/output/error processors for this run. When provided,
+     * per-call arrays REPLACE the agent-level arrays for this run only.
+     */
+    readonly processors?: ProcessorSet;
+    /**
+     * Require human approval for tool calls. Boolean → every tool call;
+     * function → per-call decision (fails closed). Mirrors Mastra's
+     * `requireToolApproval`.
+     */
+    readonly requireToolApproval?: boolean | ((input: { toolName: string; args: Record<string, unknown>; agentId?: string; sessionId?: string }) => boolean | Promise<boolean>);
+    /** Automatically resume suspended tools from message history on the next message. */
+    readonly autoResumeSuspendedTools?: boolean;
+    /** Tool calls already approved for this run (by toolCallId). */
+    readonly approvedToolCalls?: string[];
+    /** Resume data passed to a `suspend()`-suspended tool. */
+    readonly resumeData?: unknown;
+    /** Pending tool call to execute first on resume (from a durable snapshot). */
+    readonly resumePendingTool?: {
+        readonly toolCall: import('../core/index.js').ToolCall;
+        readonly approved: boolean;
+        readonly resumeData?: unknown;
+        readonly step: number;
+        readonly threadId?: string;
+        readonly resourceId?: string;
+    };
+    /** Thread identifier (for memory/approval/goal scoping). */
+    readonly threadId?: string;
+    /** Resource (user) identifier (for memory/approval/goal scoping). */
+    readonly resourceId?: string;
+    /** Arbitrary request-scoped values exposed to processors. */
+    readonly requestContext?: Record<string, unknown>;
+}
+
+/** Structured output config for an agent/run (Mastra parity). */
+export interface StructuredOutputConfig {
+    /** Output schema (Standard Schema — Zod/Valibot/ArkType — or JSON Schema). */
+    readonly schema: SchemaInput;
+    /**
+     * Use a separate model to structure the main agent's natural-language
+     * output. `provider/model` string or a ready LLMProvider.
+     */
+    readonly model?: string | LLMProvider;
+    /** 'strict' throws on final failure; 'warn' logs + continues; 'fallback' returns fallbackValue. */
+    readonly errorStrategy?: 'strict' | 'warn' | 'fallback';
+    /** Value returned by 'fallback' when validation fails. */
+    readonly fallbackValue?: unknown;
+    /** 'auto' → native where supported else inline prompt; 'inline'|'system'|true|false → explicit. */
+    readonly jsonPromptInjection?: 'auto' | 'inline' | 'system' | boolean;
+    /** Max correction iterations feeding errors back to the model. Default 3. */
+    readonly maxRetries?: number;
+    /** Optional schema description shown to the model. */
+    readonly description?: string;
+}
+
+/** In-loop goal evaluation config (Mastra `goal` parity). */
+export interface GoalRunConfig {
+    readonly objective: string;
+    /** Judge: `provider/model`, a TaskJudge, or an evaluate fn. Required to score. */
+    readonly judge?: string | import('../goals/judge.js').TaskJudge | ((text: string) => Promise<import('../goals/judge.js').JudgeVerdict> | import('../goals/judge.js').JudgeVerdict);
+    readonly maxRuns?: number;
+    readonly runsUsed?: number;
+    readonly threadId?: string;
+    readonly resourceId?: string;
+    /** Extra step budget beyond the configured maxRuns before pausing. */
+    readonly budget?: number;
+    readonly suppressFeedback?: boolean;
 }
 
 /** AbortSignal-compatible (subset for cancellation) */
@@ -76,12 +157,24 @@ export interface AgenticRunResult {
     };
     /** Parsed structured output if responseModel was provided */
     readonly structuredOutput?: unknown;
+    /** Object form of structured output (Mastra parity — from `structuredOutput`). */
+    readonly object?: unknown;
+    /** Tripwire info when a processor blocked the request. */
+    readonly tripwire?: { processorId?: string; reason?: string; metadata?: unknown };
+    /** Suspension info when a tool call requires approval or self-suspended. */
+    readonly suspendPayload?: {
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly args: Record<string, unknown>;
+        readonly requiresApproval?: boolean;
+        readonly suspendPayload?: unknown;
+    };
     /** All messages in the conversation (including tool calls/results) */
     readonly messages: Message[];
     /** Number of steps taken */
     readonly steps: number;
     /** Finish reason */
-    readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted';
+    readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted' | 'suspended' | 'max_runs';
     /** Optional usage stats */
     readonly usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
     /** Run ID when provided in config */
@@ -103,6 +196,16 @@ export interface AgenticStreamHooks {
     onToolCall?: (name: string, args: Record<string, unknown>) => void;
     onToolResult?: (name: string, result: unknown) => void;
     onStep?: (step: number) => void;
+    /** Emitted after each goal evaluation with the verdict/status. */
+    onGoal?: (evaluation: import('../goals/store.js').GoalEvaluation) => void;
+    /** Emitted when a tool call requires human approval. */
+    onApproval?: (req: { toolCallId: string; toolName: string; args: Record<string, unknown>; requiresApproval: boolean }) => void;
+    /** Emitted when a tool self-suspends during execute(). */
+    onSuspended?: (req: { toolCallId?: string; toolName: string; args: Record<string, unknown>; suspendPayload: unknown }) => void;
+    /** Emitted when a processor blocks the request (tripwire). */
+    onTripwire?: (info: { processorId?: string; reason?: string; metadata?: unknown }) => void;
+    /** Emitted with the final structured output object (object-result). */
+    onObject?: (obj: unknown) => void;
 }
 
 export interface AgenticLifecycleHooks {
@@ -224,6 +327,25 @@ export interface AgenticRunnerConfig {
      * Example: 128_000 for gpt-4o, 200_000 for claude-3.5.
      */
     readonly contextWindowSize?: number;
+    /**
+     * Mastra-style inspired input/output/error processors (agent-level defaults).
+     */
+    readonly processors?: ProcessorSet;
+    /**
+     * Max processor-driven retries per request. When output/error processors
+     * request a retry (`abort(..., { retry: true })`), the step is replayed up
+     * to this many times. Default 0 (disabled unless error processors set).
+     */
+    readonly maxProcessorRetries?: number;
+    /** Durable goal store for in-loop objective evaluation. */
+    readonly goalStore?: import('../goals/index.js').GoalStore;
+    /** Durable suspended-run store for approval/suspend recovery. */
+    readonly suspendedRunStore?: import('../approval/index.js').SuspendedRunStore;
+    /**
+     * Resolve `provider/model` strings to providers at runtime
+     * (per-step model switches, structuring models, goal judges).
+     */
+    readonly resolveExtraLlm?: (model: string) => LLMProvider | undefined;
 }
 
 /** Convert a framework Tool to LLM tool definition (name, description, parameters as JSON Schema) */

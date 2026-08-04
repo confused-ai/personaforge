@@ -170,6 +170,12 @@ export default defineConfig({
             // extensions
             '@personaforge/voice': new URL('./src/voice/index.ts', import.meta.url).pathname,
             '@personaforge/video': new URL('./src/video/index.ts', import.meta.url).pathname,
+            // Mastra-parity layers
+            '@personaforge/processors': new URL('./src/processors/index.ts', import.meta.url).pathname,
+            '@personaforge/durable': new URL('./src/durable/index.ts', import.meta.url).pathname,
+            '@personaforge/goals': new URL('./src/goals/index.ts', import.meta.url).pathname,
+            '@personaforge/code-mode': new URL('./src/code-mode/index.ts', import.meta.url).pathname,
+            '@personaforge/approval': new URL('./src/approval/index.ts', import.meta.url).pathname,
         },
     },
 

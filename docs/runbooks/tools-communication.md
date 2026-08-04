@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Communication"
-description: "Operational runbook for personaforge/tools/communication — import, run, verify, recover. 67 public symbols."
+description: "Operational runbook for personaforge/tools/communication — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Communication
 
-> Auto-generated from `./dist/tools/communication.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/communication/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/communication`  ·  **Public symbols:** 67  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/communication`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/communication` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { SlackSendMessageTool, SlackListChannelsTool, SlackGetChannelHistoryTool } from 'personaforge/tools/communication';
+import 'personaforge/tools/communication';
 ```
 
 ## Public API surface
-- **Classes** — `SlackSendMessageTool`, `SlackListChannelsTool`, `SlackGetChannelHistoryTool`, `DiscordSendMessageTool`, `DiscordGetMessagesTool`, `DiscordCreateChannelTool`, `DiscordDeleteMessageTool`, `DiscordListMembersTool`, `DiscordToolkit`, `TelegramTool`, `SmtpEmailTool`, `SendGridEmailTool`, …(+28)
-- **Constants** — `SlackToolkit`, `TelegramToolkit`
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `SlackResult`, `DiscordToolConfig`, …(+10)
-- **Types** — `EntityId`, `ToolParameters`, `EmailResult`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the tools guide:

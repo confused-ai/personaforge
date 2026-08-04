@@ -1,6 +1,9 @@
 import type { DefinedAgent } from './defined-agent.js';
 import type { WorkflowResult } from './types.js';
 import { newId } from '../contracts/index.js';
+import { workflowAsTool } from '../tools/core/workflow-as-tool.js';
+import type { WorkflowAsToolOptions } from '../tools/core/workflow-as-tool.js';
+import type { LightweightTool, ToolObjectSchemaLike } from '../tools/core/tool-helper.js';
 
 /**
  * Create a multi-step workflow builder (task / parallel / sequential / suspend).
@@ -108,6 +111,19 @@ export class WorkflowBuilder {
         const workflow = this.build();
         return workflow.execute(context);
     }
+
+    /**
+     * Expose this workflow as a tool so an agent can trigger it via
+     * function calling (workflow-as-tool).
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<WorkflowAsToolOptions<unknown, TOutput>, 'workflow'>,
+    ): LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput> {
+        return workflowAsTool({
+            ...options,
+            workflow: this,
+        });
+    }
 }
 
 /**
@@ -193,6 +209,19 @@ export class Workflow {
         await flushParallel();
 
         return { status: 'completed', results };
+    }
+
+    /**
+     * Expose this workflow as a tool so an agent can trigger it via
+     * function calling (workflow-as-tool).
+     */
+    asTool<TOutput = unknown>(
+        options: Omit<WorkflowAsToolOptions<unknown, TOutput>, 'workflow'>,
+    ): LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput> {
+        return workflowAsTool({
+            ...options,
+            workflow: this,
+        });
     }
 
     /**

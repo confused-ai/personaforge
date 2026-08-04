@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Skills"
-description: "Operational runbook for personaforge/skills — import, run, verify, recover. 8 public symbols."
+description: "Operational runbook for personaforge/skills — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Skills
 
-> Auto-generated from `./dist/skills.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/skills/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/skills`  ·  **Public symbols:** 8  ·  **Guide:** [/guide/skills](../guide/skills.md)
+**Import path:** `personaforge/skills`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/skills](../guide/skills.md)
 
 ## What it is
 `personaforge/skills` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,13 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createDeepAgent } from 'personaforge/skills';
+import 'personaforge/skills';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createDeepAgent`
-- **Constants** — `webResearchSkill`, `pdfSummarizerSkill`, `codeReviewerSkill`
-- **Interfaces** — `Skill`, `DeepAgentConfig`, `DeepResearchResult`, `DeepStep`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the skills guide:

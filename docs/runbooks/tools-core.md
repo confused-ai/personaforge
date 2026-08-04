@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Core"
-description: "Operational runbook for personaforge/tools/core — import, run, verify, recover. 55 public symbols."
+description: "Operational runbook for personaforge/tools/core — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Core
 
-> Auto-generated from `./dist/tools/core.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/core/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/core`  ·  **Public symbols:** 55  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/core`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/core` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,38 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createTools, toToolRegistry, tool } from 'personaforge/tools/core';
+import 'personaforge/tools/core';
 ```
 
 ## Public API surface
-- **Factories / functions** — `toToolRegistry`, `tool`, `createTools`, `isLightweightTool`, `defineTool`, `extendTool`, `wrapTool`, `pipeTools`, `versionTool`, `handleToolGatewayRequest`, `withCache`, `withCompression`
-- **Classes** — `ToolRegistryImpl`, `BaseTool`, `ToolBuilder`, `ToolCache`, `ToolCompressor`
-- **Constants** — `createTool`
-- **Enums** — `ToolCategory`
-- **Interfaces** — `Tool`, `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `ToolRegistry`, `ToolSandboxConfig`, `ToolMiddleware`, `ToolFactory`, `ToolSchema`, `ParameterSchema`, …(+17)
-- **Types** — `EntityId`, `ToolParameters`, `ToolProvider`, `SafeParseResult`, `InferToolSchema`, `ToolWrapMiddleware`, `CompressionStrategy`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the tools guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createTools } from 'personaforge/tool';
-import { z } from 'zod';
-
-const tools = createTools({
-  search_orders: {
-    description: 'Find a customer order by id.',
-    parameters: z.object({ orderId: z.string() }),
-    execute: async ({ orderId }) => ({ orderId, status: 'shipped', eta: '2026-05-14' }),
-  },
-  cancel_order: {
-    description: 'Cancel an order. Only use if the customer explicitly requests cancellation.',
-    parameters: z.object({ orderId: z.string(), reason: z.string() }),
-    execute: async ({ orderId, reason }) => ({ cancelled: true, orderId, reason }),
-  },
-});
-
-const agent = createAgent({ name: 'support', instructions: '...', model: 'gpt-4o-mini', apiKey: process.env.OPENAI_API_KEY!, tools: Object.values(tools) });
+import 'personaforge/tools/core';
 ```
 
 ## Verify it works

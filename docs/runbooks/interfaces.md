@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Interfaces"
-description: "Operational runbook for personaforge/interfaces — import, run, verify, recover. 94 public symbols."
+description: "Operational runbook for personaforge/interfaces — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Interfaces
 
-> Auto-generated from `./dist/interfaces.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/interfaces/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/interfaces`  ·  **Public symbols:** 94  ·  **Guide:** [/guide/concepts](../guide/concepts.md)
+**Import path:** `personaforge/interfaces`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/concepts](../guide/concepts.md)
 
 ## What it is
 `personaforge/interfaces` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { BaseInterface, SlackInterface, TelegramInterface } from 'personaforge/interfaces';
+import 'personaforge/interfaces';
 ```
 
 ## Public API surface
-- **Classes** — `BaseInterface`, `SlackInterface`, `TelegramInterface`, `A2AInterface`, `AGUIInterface`
-- **Interfaces** — `TextContent`, `ImageContent`, `OpenAIToolCall`, `Message`, `MultiModalInput`, `AdapterMeta`, `Adapter`, `AdapterHealth`, `SqlQueryOptions`, `SqlTransaction`, `SqlAdapter`, `NoSqlProjection`, …(+70)
-- **Types** — `MessageContent`, `ContentPart`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `CompressionAlgorithm`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { BaseInterface, SlackInterface, TelegramInterface } from 'personaforge/interfaces';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `BaseInterface` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new BaseInterface(/* opts */);
+```ts
+import 'personaforge/interfaces';
 ```
 
 ## Verify it works

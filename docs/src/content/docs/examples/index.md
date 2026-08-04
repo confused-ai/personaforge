@@ -44,11 +44,11 @@ Runnable counterparts in the repo:
 | 08 | [Multi-Agent Team](./08-team) | 🔴 | Specialized agents working together |
 | 09 | [Supervisor Workflow](./09-supervisor) | 🔴 | One agent delegates to many |
 | 10 | [Database Analyst](./10-database) | 🔴 | Query a SQL database with natural language |
-| 11 | [Customer Support Bot](./11-support-bot) | 🔴 | Full bot: sessions + guardrails + handoff |
-| 12 | [Observability & Hooks](./12-observability) | 🟡 | Log, trace, and measure every agent step |
-| 13 | [Production Resilience](./13-production) | 🔴 | Circuit breakers, retries, fallbacks |
-| 14 | [MCP Filesystem Agent](./14-mcp) | 🔴 | Use Model Context Protocol tools |
-| 15 | [Full-Stack App](./15-full-stack) | 🔴 | Complete app: HTTP API + agent + RAG + storage |
+| 11 | [Customer Support Bot](/examples/11-support-bot) | 🔴 | Full bot: sessions + guardrails + handoff |
+| 12 | [Observability & Hooks](/examples/12-observability) | 🟡 | Log, trace, and measure every agent step |
+| 13 | [Production Resilience](/examples/13-production) | 🔴 | Circuit breakers, retries, fallbacks |
+| 14 | [MCP Filesystem Agent](/examples/14-mcp) | 🔴 | Use Model Context Protocol tools |
+| 15 | [Full-Stack App](/examples/15-full-stack) | 🔴 | Complete app: HTTP API + agent + RAG + storage |
 | 16 | [Intelligent LLM Router](./16-llm-router) | 🟡 | Auto-route requests to the right model by task, cost & speed |
 | 17 | [Full framework showcase](./17-full-framework-showcase) | 🔴 | **Coverage map:** one real-world story + every module / import path + links to 01–16 |
 | 18 | [Meridian — Role Intelligence Platform](./18-meridian-platform) | 🔴 | **Full platform demo:** 6 role personas, triage handoff, router, supervisor, consensus, compose/pipe, workflows, RAG, guardrails, resilience, health, HTTP runtime |

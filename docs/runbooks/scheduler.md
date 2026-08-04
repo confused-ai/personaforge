@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Scheduler"
-description: "Operational runbook for personaforge/scheduler — import, run, verify, recover. 33 public symbols."
+description: "Operational runbook for personaforge/scheduler — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Scheduler
 
-> Auto-generated from `./dist/scheduler.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/scheduler/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/scheduler`  ·  **Public symbols:** 33  ·  **Guide:** [/guide/scheduler](../guide/scheduler.md)
+**Import path:** `personaforge/scheduler`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/scheduler](../guide/scheduler.md)
 
 ## What it is
 `personaforge/scheduler` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,27 +22,50 @@ npm i personaforge
 
 ## Import
 ```ts
-import { validateCronExpr, computeNextRun, InMemoryScheduleStore } from 'personaforge/scheduler';
+import 'personaforge/scheduler';
 ```
 
 ## Public API surface
-- **Factories / functions** — `validateCronExpr`, `computeNextRun`
-- **Classes** — `InMemoryScheduleStore`, `InMemoryScheduleRunStore`, `ScheduleManager`, `DbScheduleStore`, `SchedulerTools`
-- **Interfaces** — `Schedule`, `ScheduleRun`, `ScheduleStore`, `ScheduleRunStore`, `ScheduleManagerConfig`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, `TraceRow`, `ScheduleRow`, `SessionQuery`, …(+9)
-- **Types** — `HttpMethod`, `ScheduleStatus`, `CreateScheduleInput`, `UpdateScheduleInput`, `LearningType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the scheduler guide:
 
 ```ts
-import {
-  ScheduleManager,
-  InMemoryScheduleStore,
-  InMemoryScheduleRunStore,
-  DbScheduleStore,
-  validateCronExpr,
-  computeNextRun,
-} from 'personaforge/scheduler';
+import { createAgent } from 'personaforge';
+import { ScheduleManager } from 'personaforge/scheduler';
+
+const agent = createAgent({
+  name: 'daily-reporter',
+  instructions: 'Generate a concise daily business summary.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const scheduler = new ScheduleManager();
+
+// Register a handler function by key
+scheduler.register('daily-report', async () => {
+  const result = await agent.run('Generate the daily business summary for today.');
+  await saveReport(result.text);
+  console.log('Daily report saved.');
+});
+
+// Create a schedule — create() returns the new schedule's id (a string).
+const id = await scheduler.create({
+  name: 'Daily Business Report',
+  cronExpr: '0 8 * * *',        // 08:00 every day (evaluated in UTC)
+  endpoint: 'daily-report',     // matches the registered handler key
+  enabled: true,
+  maxRetries: 3,
+  retryDelaySeconds: 300,
+});
+
+// Start the schedule runner (poll-based)
+scheduler.start();
+
+// Later, stop cleanly
+process.on('SIGTERM', () => scheduler.stop());
 ```
 
 ## Verify it works

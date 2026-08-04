@@ -310,3 +310,14 @@ describe('validation/zodToJsonSchema branches', () => {
         });
     });
 });
+
+describe('validation to-json-schema additional edges', () => {
+    it('Standard schema without jsonSchema falls through to duck-typed converters', () => {
+        const schema = {
+            '~standard': { version: 1 as const, vendor: 't', validate: () => ({ value: 1 }) },
+            toJSONSchema: () => ({ type: 'number', $id: 'x' }),
+        } as never;
+        // line 68: jsonSchema is undefined → skip, then toJSONSchema() → stripMeta removes $id
+        expect(schemaToJsonSchema(schema)).toEqual({ type: 'number' });
+    });
+});

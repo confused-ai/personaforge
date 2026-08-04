@@ -106,4 +106,4 @@ console.log(result.output);
 ## What's next?
 
 - [09 · Supervisor Workflow](./09-supervisor)
-- [11 · Customer Support Bot](./11-support-bot)
+- [Customer Support Bot](/examples/11-support-bot)

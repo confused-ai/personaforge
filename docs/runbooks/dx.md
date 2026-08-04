@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Dx"
-description: "Operational runbook for personaforge/dx — import, run, verify, recover. 153 public symbols."
+description: "Operational runbook for personaforge/dx — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Dx
 
-> Auto-generated from `./dist/dx.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/dx/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/dx`  ·  **Public symbols:** 153  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
+**Import path:** `personaforge/dx`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
 
 ## What it is
 `personaforge/dx` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { defineAgent, agent, bare } from 'personaforge/dx';
+import 'personaforge/dx';
 ```
 
 ## Public API surface
-- **Factories / functions** — `agent`, `bare`, `defineAgent`, `compose`, `pipe`, `buildPersonaInstructions`, `definePersona`, `createDevLogger`, `createDevToolMiddleware`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `EventRecorder`, `MultiModalInput`, …(+117)
-- **Types** — `EntityId`, `MessageContent`, `ContentPart`, `ToolParameters`, `SafeParseResult`, `InferToolSchema`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `AnyAdapter`, `BudgetExceededAction`, …(+3)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { defineAgent, agent, bare } from 'personaforge/dx';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `defineAgent` is the primary entry for this feature.
-// See the type signature for full options.
-const result = defineAgent(/* opts */);
+```ts
+import 'personaforge/dx';
 ```
 
 ## Verify it works

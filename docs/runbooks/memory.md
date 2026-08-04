@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Memory"
-description: "Operational runbook for personaforge/memory — import, run, verify, recover. 77 public symbols."
+description: "Operational runbook for personaforge/memory — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Memory
 
-> Auto-generated from `./dist/memory.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/memory/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/memory`  ·  **Public symbols:** 77  ·  **Guide:** [/guide/memory](../guide/memory.md)
+**Import path:** `personaforge/memory`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/memory](../guide/memory.md)
 
 ## What it is
 `personaforge/memory` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,27 +22,39 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createDbMemoryStore, summariseMemories, summariseConversation } from 'personaforge/memory';
+import 'personaforge/memory';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createDbMemoryStore`, `summariseMemories`, `summariseConversation`, `createAgentMemoryTools`, `createTieredMemoryTools`, `createGraphMemoryTools`, `createSummaryBufferHook`
-- **Classes** — `InMemoryStore`, `VectorMemoryStore`, `OpenAIEmbeddingProvider`, `InMemoryVectorStore`, `PineconeVectorStore`, `QdrantVectorStore`, `PgVectorStore`, `DbMemoryStore`, `MemoryDistiller`, `TieredMemory`, `GraphMemory`
-- **Constants** — `DEFAULT_BLOCK_LIMIT`
-- **Enums** — `MemoryType`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, `TraceRow`, `ScheduleRow`, …(+41)
-- **Types** — `LearningType`, `EntityId`, `MessageContent`, `SummaryBeforeStepHook`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the memory guide:
 
 ```ts
-import { createDbMemoryStore } from 'personaforge/memory';
-import { SqliteAgentDb } from 'personaforge/db';
+import { MemoryDistiller, summariseMemories, summariseConversation } from 'personaforge/memory';
+import { InMemoryStore } from 'personaforge';
+import { OpenAIProvider } from 'personaforge';
 
-// Pass an AgentDb instance positionally; options are optional.
-const db = new SqliteAgentDb({ path: './agent.db' });
-const memoryStore = createDbMemoryStore(db, { agentId: 'my-agent' });
+const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
+const store = new InMemoryStore();
+
+const distiller = new MemoryDistiller({
+  store,                 // the MemoryStore to read short-term entries from and write summaries to
+  llm,
+  agentId: 'agent-123',  // optional: scope distillation to one agent
+  triggerThreshold: 20,  // auto-distill once this many short-term entries accumulate (default: 20)
+  batchSize: 30,         // max entries consumed per pass (default: 30)
+  // intervalMs: 60_000, // optional background polling; omit to distill manually
+});
+
+// Run a distillation pass now. Returns DistillationResult { consumed, summary, skipped }.
+const result = await distiller.distillNow(true);  // force = true ignores the threshold
+if (result.summary) console.log(result.consumed, result.summary.content);
+
+// One-shot helpers (entries/messages first, llm second; each returns a string)
+const memorySummary = await summariseMemories(memories, llm);
+const conversationSummary = await summariseConversation(messages, llm);
 ```
 
 ## Verify it works

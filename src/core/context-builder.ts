@@ -81,8 +81,8 @@ export class AgentContextBuilder {
      * Build the AgentContext.
      *
      * Defaults:
-     * - memory → InMemoryStore (auto-created if not set)
-     * - tools  → empty ToolRegistryImpl (auto-created if not set)
+     * - memory → InMemoryStore (overridable via `.withMemory()`)
+     * - tools  → empty ToolRegistryImpl (overridable via `.withTools()`)
      * - planner → undefined (optional; omit for reactive/agentic agents)
      */
     build(): TypedAgentContext {

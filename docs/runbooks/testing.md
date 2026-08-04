@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Testing"
-description: "Operational runbook for personaforge/testing — import, run, verify, recover. 256 public symbols."
+description: "Operational runbook for personaforge/testing — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Testing
 
-> Auto-generated from `./dist/testing.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/testing/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/testing`  ·  **Public symbols:** 256
+**Import path:** `personaforge/testing`  ·  **Public symbols:** 0
 
 ## What it is
 `personaforge/testing` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createTestInstructions, createTestUserId, createTestSessionId } from 'personaforge/testing';
+import 'personaforge/testing';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createTestInstructions`, `createTestUserId`, `createTestSessionId`, `waitFor`, `createMockToolResponse`, `sleep`, `assertEqual`, `assertNotNull`, `createTestMetadata`, `createTestAgent`, `createTestHttpService`, `createMockLLMProvider`, …(+5)
-- **Classes** — `MockLLMProvider`, `MockSessionStore`, `MockMemoryStore`, `MockToolRegistry`, `ScenarioRunner`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, `TraceRow`, …(+191)
-- **Types** — `LearningType`, `EntityId`, `MessageContent`, `ContentPart`, `SessionId`, `ToolParameters`, `SafeParseResult`, `InferToolSchema`, `EmbeddingFn`, `BudgetExceededAction`, `IdempotencyState`, `ApprovalStatus`, …(+19)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createTestInstructions, createTestUserId, createTestSessionId } from 'personaforge/testing';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createTestInstructions` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createTestInstructions(/* opts */);
+```ts
+import 'personaforge/testing';
 ```
 
 ## Verify it works

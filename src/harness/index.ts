@@ -33,3 +33,23 @@ export {
     type Orchestrator,
     type OrchestratorSpecialist,
 } from './orchestrator.js';
+
+// ── Evaluation harness (the "best harness engine" single command) ──────────
+export { evaluate, formatHarnessReport } from './evaluate.js';
+export type {
+    EvaluateOptions,
+    HarnessVariant,
+    HarnessUsageSummary,
+    HarnessVariantResult,
+    HarnessMetricComparison,
+    HarnessReport,
+    HarnessReportJson,
+} from './evaluate.js';
+export {
+    toHarnessRunner,
+    fromAgent,
+    fromTask,
+    fromWorkflow,
+    fromFn,
+} from './subject.js';
+export type { HarnessSubject, HarnessRunnerOptions, RunOutcome } from './subject.js';

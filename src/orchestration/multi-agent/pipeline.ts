@@ -17,6 +17,8 @@ export interface PipelineConfig {
     readonly description?: string;
     /** Agents in execution order; output of step N is passed as input to step N+1 */
     readonly agents: OrchestrableAgent[];
+    /** Memory store for the shared pipeline context (defaults to InMemoryStore). */
+    readonly memoryStore?: import('../../memory/index.js').MemoryStore;
 }
 
 /**
@@ -29,7 +31,7 @@ export function createPipeline(config: PipelineConfig): OrchestrableAgent {
         let currentPrompt = input.prompt;
         const sharedContext = new AgentContextBuilder()
             .withAgentId(`pipeline-${config.name}`)
-            .withMemory(new InMemoryStore())
+            .withMemory(config.memoryStore ?? new InMemoryStore())
             .withTools(new ToolRegistryImpl())
             .withPlanner(new ClassicalPlanner({ algorithm: PlanningAlgorithm.HIERARCHICAL }))
             .build();

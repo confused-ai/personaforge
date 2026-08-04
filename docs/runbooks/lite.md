@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Lite"
-description: "Operational runbook for personaforge/lite — import, run, verify, recover. 149 public symbols."
+description: "Operational runbook for personaforge/lite — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Lite
 
-> Auto-generated from `./dist/lite.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/lite.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/lite`  ·  **Public symbols:** 149  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
+**Import path:** `personaforge/lite`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
 
 ## What it is
 `personaforge/lite` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,28 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createAgent, agent, bare } from 'personaforge/lite';
+import 'personaforge/lite';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createAgent`, `agent`, `bare`, `defineAgent`, `compose`, `pipe`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `EventRecorder`, `MultiModalInput`, …(+116)
-- **Types** — `EntityId`, `MessageContent`, `ContentPart`, `ToolParameters`, `SafeParseResult`, `InferToolSchema`, `AdapterCategory`, `SqlRow`, `VectorMetric`, `AnalyticsExportFormat`, `AnyAdapter`, `BudgetExceededAction`, …(+3)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the getting-started guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createAgent } from 'personaforge';
-
-const assistant = createAgent({
-	name: 'hello-agent',
-	model: 'gpt-4o-mini',
-	instructions: 'You are a concise and helpful assistant.',
-});
-
-const result = await assistant.run('What is the capital of France?');
-console.log(result.text);
+import 'personaforge/lite';
 ```
 
 ## Verify it works

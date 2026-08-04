@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Agentic"
-description: "Operational runbook for personaforge/agentic — import, run, verify, recover. 54 public symbols."
+description: "Operational runbook for personaforge/agentic — import, run, verify, recover. 1 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Agentic
 
-> Auto-generated from `./dist/agentic.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/agentic/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/agentic`  ·  **Public symbols:** 54  ·  **Guide:** [/guide/agents](../guide/agents.md)
+**Import path:** `personaforge/agentic`  ·  **Public symbols:** 1  ·  **Guide:** [/guide/agents](../guide/agents.md)
 
 ## What it is
 `personaforge/agentic` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,23 +22,34 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createStructuredAgent, toToolRegistry, background } from 'personaforge/agentic';
+import { createAgenticAgent } from 'personaforge/agentic';
 ```
 
 ## Public API surface
-- **Factories / functions** — `toToolRegistry`, `background`, `toolToLLMDefinition`, `createStructuredAgent`, `createAgenticAgent`
-- **Classes** — `AgenticRunner`, `StructuredOutputError`
-- **Enums** — `ToolCategory`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `EventRecorder`, `ToolPermissions`, `ToolError`, …(+29)
-- **Types** — `EntityId`, `MessageContent`, `ToolParameters`, `ToolProvider`, `BudgetExceededAction`
+- **Factories / functions** — `createAgenticAgent`
 
 ## Minimal use
-```ts
-import { createStructuredAgent, toToolRegistry, background } from 'personaforge/agentic';
+Real example from the agents guide:
 
-// `createStructuredAgent` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createStructuredAgent(/* opts */);
+```ts
+import { AgenticRunner, createAgenticAgent } from 'personaforge';
+import { OpenAIProvider } from 'personaforge';
+
+const runner = new AgenticRunner({
+  llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! }),
+  tools: myToolRegistry,
+  maxSteps: 10,
+  timeoutMs: 60_000,
+});
+
+runner.setGuardrails(myGuardrailEngine);
+runner.setHumanInTheLoop(myHITLHooks);
+
+const result = await runner.run({
+  name: 'my-agent',
+  instructions: 'Process the request.',
+  prompt: 'Analyse the latest sales data.',
+});
 ```
 
 ## Verify it works

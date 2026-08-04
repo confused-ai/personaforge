@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Guardrails"
-description: "Operational runbook for personaforge/guardrails — import, run, verify, recover. 45 public symbols."
+description: "Operational runbook for personaforge/guardrails — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Guardrails
 
-> Auto-generated from `./dist/guardrails.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/guardrails/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/guardrails`  ·  **Public symbols:** 45  ·  **Guide:** [/guide/guardrails](../guide/guardrails.md)
+**Import path:** `personaforge/guardrails`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/guardrails](../guide/guardrails.md)
 
 ## What it is
 `personaforge/guardrails` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,47 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createContentRule, createToolAllowlistRule, createMaxLengthRule } from 'personaforge/guardrails';
+import 'personaforge/guardrails';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createContentRule`, `createToolAllowlistRule`, `createMaxLengthRule`, `createAllowlistRule`, `createSensitiveDataRule`, `createUrlValidationRule`, `detectPii`, `createPiiDetectionRule`, `callOpenAiModeration`, `createOpenAiModerationRule`, `createForbiddenTopicsRule`, `detectPromptInjection`, …(+2)
-- **Classes** — `GuardrailValidator`
-- **Constants** — `SENSITIVE_DATA_PATTERNS`, `PII_PATTERNS`
-- **Interfaces** — `GuardrailResult`, `GuardrailViolation`, `GuardrailContext`, `GuardrailRule`, `SchemaValidationRule`, `AllowlistConfig`, `GuardrailsConfig`, `GuardrailEngine`, `HumanInTheLoopHooks`, `ApprovalRequest`, `ApprovalResponse`, `PiiDetectionResult`, …(+15)
-- **Types** — `PiiType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the guardrails guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import {
-  createContentRule,
-  createMaxLengthRule,
-  createAllowlistRule,
-  createSensitiveDataRule,
-  createUrlValidationRule,
-} from 'personaforge';
-
-const rules = [
-  // Block responses that contain specific patterns.
-  // Signature: createContentRule(name, description, pattern, severity?)
-  createContentRule(
-    'no-credentials',
-    'Blocks responses containing credential patterns.',
-    /\b(password|secret|token)\s*[:=]/i,
-    'error',
-  ),
-
-  // Limit output length.
-  // Signature: createMaxLengthRule(name, maxLength, severity?)
-  createMaxLengthRule('max-length', 10_000, 'error'),
-
-  // Enforce an allowlist over tools, hosts, paths, outputs, and blocked patterns.
-  createAllowlistRule({
-    allowedTools: ['search', 'get_order'],
-    allowedHosts: ['api.company.com', 'docs.company.com'],
-// …see full example in the guide
+import 'personaforge/guardrails';
 ```
 
 ## Verify it works

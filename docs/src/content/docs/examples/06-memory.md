@@ -55,4 +55,4 @@ console.log(result.text);
 ## What's next?
 
 - [07 · Storage Patterns](./07-storage)
-- [11 · Customer Support Bot](./11-support-bot)
+- [Customer Support Bot](/examples/11-support-bot)

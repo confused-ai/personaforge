@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Voice"
-description: "Operational runbook for personaforge/voice — import, run, verify, recover. 12 public symbols."
+description: "Operational runbook for personaforge/voice — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Voice
 
-> Auto-generated from `./dist/voice.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/voice/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/voice`  ·  **Public symbols:** 12  ·  **Guide:** [/guide/voice](../guide/voice.md)
+**Import path:** `personaforge/voice`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/voice](../guide/voice.md)
 
 ## What it is
 `personaforge/voice` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,27 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createVoiceProvider, OpenAIVoiceProvider, ElevenLabsVoiceProvider } from 'personaforge/voice';
+import 'personaforge/voice';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createVoiceProvider`
-- **Classes** — `OpenAIVoiceProvider`, `ElevenLabsVoiceProvider`, `VoiceStreamSession`
-- **Interfaces** — `VoiceConfig`, `TTSResult`, `STTResult`, `VoiceProvider`, `VoiceStreamConfig`, `VoiceStreamEvent`
-- **Types** — `OpenAIVoice`, `VoiceStreamEventType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the voice guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createVoiceProvider } from 'personaforge';
-
-const voice = createVoiceProvider({
-  provider: process.env.VOICE_PROVIDER as 'openai' | 'elevenlabs',
-  apiKey: process.env.VOICE_API_KEY!,
-  voiceId: 'nova',
-  model: 'tts-1',
-});
+import 'personaforge/voice';
 ```
 
 ## Verify it works

@@ -7,7 +7,7 @@ generated: true
 
 # Runbook: Cli
 
-> Auto-generated from `./dist/cli.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/cli/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
 **Import path:** `personaforge/cli`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/admin-api](../guide/admin-api.md)
 

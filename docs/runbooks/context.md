@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Context"
-description: "Operational runbook for personaforge/context — import, run, verify, recover. 10 public symbols."
+description: "Operational runbook for personaforge/context — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Context
 
-> Auto-generated from `./dist/context.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/context/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/context`  ·  **Public symbols:** 10  ·  **Guide:** [/guide/context-provider](../guide/context-provider.md)
+**Import path:** `personaforge/context`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/context-provider](../guide/context-provider.md)
 
 ## What it is
 `personaforge/context` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { ContextBackend, ContextProvider } from 'personaforge/context';
+import 'personaforge/context';
 ```
 
 ## Public API surface
-- **Classes** — `ContextBackend`, `ContextProvider`
-- **Enums** — `ContextMode`
-- **Interfaces** — `Status`, `Document`, `Answer`, `QueryOptions`, `UpdateOptions`, `BackendTool`, `ProviderConfig`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { ContextBackend, ContextProvider } from 'personaforge/context';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `ContextBackend` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new ContextBackend(/* opts */);
+```ts
+import 'personaforge/context';
 ```
 
 ## Verify it works

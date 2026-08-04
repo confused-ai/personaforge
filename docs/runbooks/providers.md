@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Providers"
-description: "Operational runbook for personaforge/providers — import, run, verify, recover. 278 public symbols."
+description: "Operational runbook for personaforge/providers — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Providers
 
-> Auto-generated from `./dist/providers.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/providers/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/providers`  ·  **Public symbols:** 278  ·  **Guide:** [/guide/providers](../guide/providers.md)
+**Import path:** `personaforge/providers`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/providers](../guide/providers.md)
 
 ## What it is
 `personaforge/providers` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,27 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createOpenRouterProvider, normalizeFinishReason, createGroqProvider } from 'personaforge/providers';
+import 'personaforge/providers';
 ```
 
 ## Public API surface
-- **Factories / functions** — `normalizeFinishReason`, `createOpenRouterProvider`, `createGroqProvider`, `createXAIProvider`, `createTogetherProvider`, `createFireworksProvider`, `createDeepSeekProvider`, `createMistralProvider`, `createCohereProvider`, `createPerplexityProvider`, `createAzureOpenAIProvider`, `createOpenAICompatibleProvider`, …(+63)
-- **Classes** — `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, `BedrockConverseProvider`, `ContextWindowManager`, `CostTracker`, `FallbackChainProvider`, `LLMCache`, `LLMRouter`
-- **Constants** — `GROQ_BASE_URL`, `XAI_BASE_URL`, `TOGETHER_BASE_URL`, `FIREWORKS_BASE_URL`, `DEEPSEEK_BASE_URL`, `MISTRAL_BASE_URL`, `COHERE_BASE_URL`, `PERPLEXITY_BASE_URL`, `CEREBRAS_BASE_URL`, `SAMBANOVA_BASE_URL`, `NVIDIA_BASE_URL`, `AI21_BASE_URL`, …(+35)
-- **Enums** — `FallbackStrategy`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `ITextGenerator`, `IStreamingProvider`, `IToolCallProvider`, …(+113)
-- **Types** — `EntityId`, `MessageContent`, `ToolCallResult`, `IFullLLMProvider`, `MessageRole`, `ContentPart`, `StreamDelta`, `OpenAIContent`, `OpenAIMessageParam`, `AnthropicContent`, `AnthropicMessageParam`, `GooglePart`, …(+9)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the providers guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createOpenRouterProvider } from 'personaforge';
-
-const llm = createOpenRouterProvider({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-  model: 'anthropic/claude-sonnet-4',  // any OpenRouter model id
-});
+import 'personaforge/providers';
 ```
 
 ## Verify it works

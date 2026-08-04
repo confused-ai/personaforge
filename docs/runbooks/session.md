@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Session"
-description: "Operational runbook for personaforge/session — import, run, verify, recover. 36 public symbols."
+description: "Operational runbook for personaforge/session — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Session
 
-> Auto-generated from `./dist/session.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/session/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/session`  ·  **Public symbols:** 36  ·  **Guide:** [/guide/session](../guide/session.md)
+**Import path:** `personaforge/session`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/session](../guide/session.md)
 
 ## What it is
 `personaforge/session` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,38 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createInMemoryStore, createSqliteStore, createRedisStore } from 'personaforge/session';
+import 'personaforge/session';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createInMemoryStore`, `createSqliteStore`, `createRedisStore`, `createFallbackSessionStore`, `createDbSessionStore`
-- **Classes** — `InMemorySessionStore`, `FallbackSessionStore`, `DbSessionStore`
-- **Enums** — `SessionState`
-- **Interfaces** — `SessionData`, `SessionMessage`, `SessionStore`, `SessionMetadata`, `Session`, `SessionRun`, `SessionQuery`, `InMemorySessionStoreOptions`, `SqliteSessionStoreOptions`, `RedisClient`, `RedisSessionStoreOptions`, `FallbackSessionStoreOptions`, …(+13)
-- **Types** — `SessionId`, `LearningType`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-Real example from the session guide:
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
 ```ts
-import { createAgent, createInMemoryStore } from 'personaforge';
-
-const sessionStore = createInMemoryStore();
-
-const agent = createAgent({
-  name: 'chat',
-  instructions: 'You are a helpful assistant.',
-  model: 'gpt-4o-mini',
-  apiKey: process.env.OPENAI_API_KEY!,
-  sessionStore,
-});
-
-// Turn 1
-await agent.run('My name is Alice.', { sessionId: 'session-1' });
-
-// Turn 2 — agent remembers the name
-const result = await agent.run('What is my name?', { sessionId: 'session-1' });
-console.log(result.text); // "Your name is Alice."
+import 'personaforge/session';
 ```
 
 ## Verify it works

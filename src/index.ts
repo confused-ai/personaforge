@@ -42,6 +42,25 @@
 export { agent, bare, compose, pipe, definePersona, buildPersonaInstructions, createDevLogger, createDevToolMiddleware } from './dx/index.js';
 export type { AgentMinimalOptions, BareAgentOptions, ComposeOptions, ComposedAgent, AgentPersona } from './dx/index.js';
 
+// ── DX primitives: pipeline / task / guard / model / router ───────────────────
+export { pipeline, task, guard, GuardError, model, router } from './dx/index.js';
+export type {
+    TaskOptions, TaskHandle,
+    Guard, GuardOptions, GuardResult, GuardPredicate, GuardedRunnable,
+    RouterOptions,
+} from './dx/index.js';
+
+// ── Typed event bus + core event vocabulary ───────────────────────────────────
+export { eventBus, createAgentEventBus, AGENT_EVENT, AgentEventBusTimeoutError } from './events/index.js';
+export type {
+    CoreEventMap, EventMap, EventHandler, WildcardHandler, EventSubscription,
+    AgentEventBus, AgentEventBusMetrics, AgentEventBusOptions,
+} from './events/index.js';
+
+// ── Agent registry — registration, discovery, and delegation tools ────────────
+export { AgentRegistry, createAgentRegistry } from './registry/index.js';
+export type { AgentRecord, AgentRegistryEntry } from './registry/index.js';
+
 // ── Agent (new DX) — zero-config, fluent, progressively powerful ──────────────
 // `Agent` is the only class-based entry point. Legacy and fluent APIs unified.
 export { Agent } from './agent.js';
@@ -93,6 +112,72 @@ export type { OptimizeExample, Demo, OptimizeScorer, GenerateFn, BootstrapConfig
 export { InMemoryStore, VectorMemoryStore, InMemoryVectorStore, OpenAIEmbeddingProvider, MemoryType, TieredMemory, createTieredMemoryTools, DEFAULT_BLOCK_LIMIT, GraphMemory, createGraphMemoryTools } from './memory/index.js';
 export type { VectorMemoryStoreConfig, EmbeddingProvider, MemoryStore, MemoryEntry, MemoryQuery, MemoryBlock, TieredMemoryConfig, TieredMemoryTools, GraphEntity, GraphRelation, GraphMemoryTools } from './memory/index.js';
 
+// ── Mastra-style inspired memory layer ───────────────────────────────────────────────────
+export {
+    Memory,
+    Mem0Memory,
+    InMemoryMem0Store,
+    createMem0MemoryTools,
+    Extractor,
+    ObservationalMemoryManager,
+    WorkingMemoryManager,
+    resolveWorkingMemory,
+    DEFAULT_WORKING_MEMORY_TEMPLATE,
+    deepMerge,
+    mergeWorkingMemory,
+    createThreadStore,
+    InMemoryThreadStore,
+    LibSqlThreadStore,
+    SHARED_MEMORY_URL,
+    SqliteThreadStore,
+    MessageHistoryProcessor,
+    SemanticRecallProcessor,
+    WorkingMemoryProcessor,
+    TokenLimiterProcessor,
+    ObservationalMemoryProcessor,
+    Mem0ExtractionProcessor,
+    messageToStorage,
+    storageToMessage,
+    newMessagesFromRun,
+    insertBeforeLastUser,
+    injectSystemBlock,
+    estimateMessageTokens,
+    estimateConversationTokens,
+    HashingEmbedder,
+    isHashingEmbedder,
+    textOfContent,
+    textOfMessage,
+    mergeMessagesByTimestamp,
+    dedupeMessages,
+    filterSystemMessages,
+} from './memory/index.js';
+export type {
+    MemoryConfig,
+    MemoryOptions,
+    SemanticRecallConfig,
+    Mem0MemoryOption,
+    Thread,
+    ThreadState,
+    ThreadMetadata,
+    StorageMessage,
+    ThreadStore,
+    ListThreadsOptions,
+    GetMessagesOptions,
+    CreateThreadStoreConfig,
+    LibSqlThreadStoreConfig,
+    SqliteThreadStoreConfig,
+    WorkingMemoryConfig,
+    WorkingMemoryScope,
+    WorkingMemoryKind,
+    ObservationalMemoryConfig,
+    ObservationalObservationConfig,
+    ObservationalReflectionConfig,
+    ObservationEvent,
+    ReflectionEvent,
+    ExtractorConfig,
+    TokenEstimator,
+} from './memory/index.js';
+
 // ── Tools ─────────────────────────────────────────────────────────────────────
 // Note: Tool, ToolRegistry already exported from ./core/index.js
 export { ToolNameTrie, NGramIndex, BaseTool, ToolRegistryImpl, tool, wrapTool,
@@ -114,16 +199,29 @@ export * from './tools/utils/calculator.js';
 export {
     agentAsTool, multiAgentTool, toRunnableAgent, getAgentToolDepth,
     workflowAsTool, pipelineAsTool,
+    memoryAsTool, knowledgeAsTool, promptAsTool,
+    asTool, toTool,
 } from './tools/index.js';
 export type {
     AgentAsToolOptions, RunnableAgent, MultiAgentToolOptions,
     WorkflowAsToolOptions, RunnableWorkflow, WorkflowToolResult,
     PipelineAsToolOptions, RunnablePipeline,
+    MemoryAsToolOptions, MemoryStoreLike,
+    KnowledgeAsToolOptions, KnowledgeBaseLike,
+    PromptAsToolOptions, PromptRegistryLike,
+    AsToolConfig, AsToolKind, ToolTarget,
 } from './tools/index.js';
 export { createHarness, createOrchestrator } from './harness/index.js';
+export {
+    evaluate, formatHarnessReport,
+    toHarnessRunner, fromAgent, fromTask, fromWorkflow, fromFn,
+} from './harness/index.js';
 export type {
     AgentHarness, HarnessConfig, HarnessAsToolOptions,
     Orchestrator, OrchestratorConfig, OrchestratorSpecialist,
+    EvaluateOptions, HarnessVariant, HarnessUsageSummary, HarnessVariantResult,
+    HarnessMetricComparison, HarnessReport, HarnessReportJson,
+    HarnessSubject, HarnessRunnerOptions, RunOutcome,
 } from './harness/index.js';
 export {
     createLifecycleHooks, mergeHooks, createHookChain, toAgenticHooks, fromAgenticHooks,
@@ -277,7 +375,8 @@ export * from './learning/index.js';
 export * from './knowledge/index.js';
 
 // ── Shared utilities ──────────────────────────────────────────────────────────
-export { VERSION, isTelemetryEnabled, recordFrameworkStartup } from './shared/index.js';
+export { VERSION, isTelemetryEnabled, recordFrameworkStartup, checkVersion } from './shared/index.js';
+export type { CheckVersionOptions, CheckVersionResult } from './shared/index.js';
 
 // ── Redis Adapter ──────────────────────────────────────────────────────────────
 export { RedisEventStore } from './adapter-redis/event-store.js';
@@ -318,3 +417,35 @@ export type {
     VoiceStreamEventType,
 } from './voice/index.js';
 export { VideoOrchestrator } from './video/index.js';
+
+// ── Processors (Mastra-style input/output/error pipeline + guardrails) ────────
+export * from './processors/index.js';
+
+// ── Durable agents — long-running, resumable streams with approval ────────────
+export {
+    createDurableAgent,
+    createEventedAgent,
+    DurableAgent,
+    DurableRunRegistry,
+    InMemoryServerCache,
+    durableRunId,
+    registryOutput,
+} from './durable/index.js';
+export type {
+    DurableAgentConfig,
+    DurableAgentOutput,
+    DurableRunEvent,
+    DurableStreamResult,
+    DurableAgentExecution,
+    DurableRunHandle,
+} from './durable/index.js';
+
+// ── Goals — durable, thread-scoped objectives with LLM judges ─────────────────
+export * from './goals/index.js';
+
+// ── Code mode — sandboxed multi-tool computation ───────────────────────────────
+export { createCodeMode, LocalSandbox, VMSandbox, createSandbox } from './code-mode/index.js';
+export type { CodeModeOptions, CodeModeResult, Sandbox, SandboxRunResult, ExternalCall } from './code-mode/index.js';
+
+// ── Agent approval — human-in-the-loop tool approval / suspension ─────────────
+export * from './approval/index.js';

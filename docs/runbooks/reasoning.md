@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Reasoning"
-description: "Operational runbook for personaforge/reasoning — import, run, verify, recover. 16 public symbols."
+description: "Operational runbook for personaforge/reasoning — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Reasoning
 
-> Auto-generated from `./dist/reasoning.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/reasoning/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/reasoning`  ·  **Public symbols:** 16  ·  **Guide:** [/guide/reasoning](../guide/reasoning.md)
+**Import path:** `personaforge/reasoning`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/reasoning](../guide/reasoning.md)
 
 ## What it is
 `personaforge/reasoning` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,22 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createReasoningTools, ReasoningManager, TreeOfThoughtEngine } from 'personaforge/reasoning';
+import 'personaforge/reasoning';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createReasoningTools`
-- **Classes** — `ReasoningManager`, `TreeOfThoughtEngine`, `ReasoningScratchpad`
-- **Enums** — `NextAction`, `ReasoningEventType`
-- **Interfaces** — `ReasoningStep`, `ReasoningSteps`, `ReasoningEvent`, `ReasoningConfig`, `ReasoningResult`, `TotConfig`, `TotNode`, `TotResult`, `Tool`, `ReasoningToolset`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createReasoningTools, ReasoningManager, TreeOfThoughtEngine } from 'personaforge/reasoning';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createReasoningTools` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createReasoningTools(/* opts */);
+```ts
+import 'personaforge/reasoning';
 ```
 
 ## Verify it works

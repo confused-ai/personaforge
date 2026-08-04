@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Sdk"
-description: "Operational runbook for personaforge/sdk — import, run, verify, recover. 458 public symbols."
+description: "Operational runbook for personaforge/sdk — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Sdk
 
-> Auto-generated from `./dist/sdk.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/sdk/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/sdk`  ·  **Public symbols:** 458  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
+**Import path:** `personaforge/sdk`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/getting-started](../guide/getting-started.md)
 
 ## What it is
 `personaforge/sdk` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,24 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createDbMemoryStore, generateEntityId, summariseMemories } from 'personaforge/sdk';
+import 'personaforge/sdk';
 ```
 
 ## Public API surface
-- **Factories / functions** — `generateEntityId`, `createDbMemoryStore`, `summariseMemories`, `summariseConversation`, `createAgentMemoryTools`, `createTieredMemoryTools`, `createGraphMemoryTools`, `createSummaryBufferHook`, `toToolRegistry`, `tool`, `createTools`, `isLightweightTool`, …(+32)
-- **Classes** — `InMemoryStore`, `VectorMemoryStore`, `OpenAIEmbeddingProvider`, `InMemoryVectorStore`, `PineconeVectorStore`, `QdrantVectorStore`, `PgVectorStore`, `DbMemoryStore`, `MemoryDistiller`, `TieredMemory`, `GraphMemory`, `BaseTool`, …(+53)
-- **Constants** — `DEFAULT_BLOCK_LIMIT`, `createTool`, `httpClient`, `fileSystem`, `browserTool`, `ShellToolkit`, `CalculatorToolkit`, `EngineEvent`
-- **Enums** — `AgentState`, `MemoryType`, `ToolCategory`, `TaskPriority`, `TaskStatus`, `PlanExecutionStatus`, `PlanningAlgorithm`, `BackoffStrategy`, `ExecutionNodeStatus`, `ExecutionState`, `NodeType`, `TransitionType`, …(+2)
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `Skill`, `SessionRow`, `MemoryRow`, `LearningRow`, `KnowledgeRow`, …(+274)
-- **Types** — `LearningType`, `EntityId`, `MessageContent`, `StreamChunk`, `IFullLLMProvider`, `ContentPart`, `SummaryBeforeStepHook`, `ToolParameters`, `ToolProvider`, `SafeParseResult`, `InferToolSchema`, `ToolWrapMiddleware`, …(+29)
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createDbMemoryStore, generateEntityId, summariseMemories } from 'personaforge/sdk';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createDbMemoryStore` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createDbMemoryStore(/* opts */);
+```ts
+import 'personaforge/sdk';
 ```
 
 ## Verify it works

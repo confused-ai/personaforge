@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Production"
-description: "Operational runbook for personaforge/production — import, run, verify, recover. 151 public symbols."
+description: "Operational runbook for personaforge/production — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Production
 
-> Auto-generated from `./dist/production.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/production/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/production`  ·  **Public symbols:** 151  ·  **Guide:** [/guide/production](../guide/production.md)
+**Import path:** `personaforge/production`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/production](../guide/production.md)
 
 ## What it is
 `personaforge/production` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,40 +22,43 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createLLMCircuitBreaker, createOpenAIRateLimiter, createLLMHealthCheck } from 'personaforge/production';
+import 'personaforge/production';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createLLMCircuitBreaker`, `createOpenAIRateLimiter`, `createLLMHealthCheck`, `createSessionStoreHealthCheck`, `createCustomHealthCheck`, `createHttpHealthCheck`, `createGracefulShutdown`, `withShutdownGuard`, `formatSSE`, `createResumableStream`, `estimateCostUsd`, `createSqliteCheckpointStore`, …(+10)
-- **Classes** — `CircuitOpenError`, `CircuitBreaker`, `RateLimitError`, `RateLimiter`, `RedisRateLimiter`, `HealthCheckManager`, `GracefulShutdown`, `ResumableStreamManager`, `BudgetExceededError`, `InMemoryBudgetStore`, `BudgetEnforcer`, `InMemoryCheckpointStore`, …(+15)
-- **Constants** — `FeedbackEntrySchema`, `defaultComponentRegistry`
-- **Enums** — `CircuitState`, `HealthStatus`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `TextContent`, `ImageContent`, `OpenAIToolCall`, `AgentRunOptions`, `AgentRunResult`, …(+74)
-- **Types** — `EntityId`, `MessageContent`, `ErrorCodeType`, `CleanupHandler`, `BudgetExceededAction`, `IdempotencyState`, `FeedbackEntry`, `SafeParseResult`, `InferToolSchema`, `ApprovalStatus`, `ComponentType`, `ComponentStatus`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the production guide:
 
 ```ts
-import { CircuitBreaker, CircuitState, createLLMCircuitBreaker } from 'personaforge/production';
+import { createAgent } from 'personaforge';
+import { withResilience } from 'personaforge/production';
 
-// Factory for LLM circuit breakers (pre-configured sensible defaults)
-const cb = createLLMCircuitBreaker('openai', {
-  failureThreshold: 5,
-  resetTimeoutMs: 30_000,
-  onStateChange: (from, to) => {
-    console.log(`Circuit: ${from} → ${to}`);
-    if (to === CircuitState.OPEN) alert('OpenAI circuit opened!');
+const agent = createAgent({
+  name: 'production-agent',
+  instructions: 'You are a customer service assistant.',
+  model: 'gpt-4o-mini',
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const resilientAgent = withResilience(agent, {
+  circuitBreaker: {
+    failureThreshold: 5,      // open after 5 failures
+    resetTimeoutMs: 30_000,   // retry after 30s
   },
+  rateLimit: { maxRpm: 60 },  // max requests per minute
+  healthCheck: true,
+  gracefulShutdown: true,
+  retry: { maxRetries: 2, backoffMs: 500 },
 });
 
-// Wrap any async operation
-const result = await cb.execute(async () => {
-  return await openai.chat(messages);
+// Use exactly like a regular agent
+const result = await resilientAgent.run('Help me with my order.', {
+  sessionId: 'session-1',
+  userId: 'user-42',
+  runId: 'run-abc',       // used for idempotency
 });
-
-console.log(cb.getState());  // CLOSED | OPEN | HALF_OPEN
-console.log(cb.getMetrics()); // { totalCalls, failures, successes, lastFailure }
 ```
 
 ## Verify it works

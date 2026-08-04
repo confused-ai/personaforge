@@ -37,9 +37,16 @@ import { InMemorySessionStore } from './in-memory.js';
 export interface FallbackSessionStoreOptions {
   /**
    * Strategy to use on primary failure.
-   * Currently only `'in-memory'` is supported.
+   * `'in-memory'` creates a default `InMemorySessionStore`.
+   * Pass `fallbackStore` to bring your own fallback backend.
    */
-  readonly fallback: 'in-memory';
+  readonly fallback?: 'in-memory';
+  /**
+   * A pre-built `SessionStore` to use as fallback. When set, `fallback` is
+   * ignored — this store is used directly.  Useful for Redis→SQLite or other
+   * cross-backend degradation.
+   */
+  readonly fallbackStore?: SessionStore;
   /**
    * Called once when the store first enters degraded mode.
    * Use this to emit metrics, log warnings, or page on-call.
@@ -57,14 +64,14 @@ export interface FallbackSessionStoreOptions {
  */
 export class FallbackSessionStore implements SessionStore {
   private _degraded = false;
-  private readonly _fallback: InMemorySessionStore;
+  private readonly _fallback: SessionStore;
   private _onFallbackFired = false;
 
   constructor(
     private readonly _primary: SessionStore,
     private readonly _opts: FallbackSessionStoreOptions,
   ) {
-    this._fallback = new InMemorySessionStore();
+    this._fallback = _opts.fallbackStore ?? new InMemorySessionStore();
   }
 
   /** Whether the store is currently using the fallback. */

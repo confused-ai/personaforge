@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Tools: Social"
-description: "Operational runbook for personaforge/tools/social — import, run, verify, recover. 36 public symbols."
+description: "Operational runbook for personaforge/tools/social — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Tools: Social
 
-> Auto-generated from `./dist/tools/social.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/tools/social/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/tools/social`  ·  **Public symbols:** 36  ·  **Guide:** [/guide/tools](../guide/tools.md)
+**Import path:** `personaforge/tools/social`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/tools](../guide/tools.md)
 
 ## What it is
 `personaforge/tools/social` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,21 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { TwitterSearchTweetsTool, TwitterGetTweetTool, TwitterPostTweetTool } from 'personaforge/tools/social';
+import 'personaforge/tools/social';
 ```
 
 ## Public API surface
-- **Classes** — `TwitterSearchTweetsTool`, `TwitterGetTweetTool`, `TwitterPostTweetTool`, `TwitterGetUserTool`, `TwitterGetUserTimelineTool`, `TwitterToolkit`, `XquikSearchPostsTool`, `XquikSearchUsersTool`, `XquikTrendsTool`, `XquikToolkit`, `SpotifySearchTool`, `SpotifyGetTrackTool`, …(+8)
-- **Interfaces** — `ToolContext`, `ToolPermissions`, `ToolResult`, `ToolError`, `ToolExecutionMetadata`, `Tool`, `LogContext`, `Logger`, `DebugLoggerConfig`, `BaseToolConfig`, `TwitterToolConfig`, `XquikToolConfig`, …(+2)
-- **Types** — `EntityId`, `ToolParameters`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { TwitterSearchTweetsTool, TwitterGetTweetTool, TwitterPostTweetTool } from 'personaforge/tools/social';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `TwitterSearchTweetsTool` is the primary entry for this feature.
-// See the type signature for full options.
-const instance = new TwitterSearchTweetsTool(/* opts */);
+```ts
+import 'personaforge/tools/social';
 ```
 
 ## Verify it works

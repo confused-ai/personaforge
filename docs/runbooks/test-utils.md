@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Test Utils"
-description: "Operational runbook for personaforge/test-utils — import, run, verify, recover. 21 public symbols."
+description: "Operational runbook for personaforge/test-utils — import, run, verify, recover. 15 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Test Utils
 
-> Auto-generated from `./dist/test-utils.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/test-utils/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/test-utils`  ·  **Public symbols:** 21  ·  **Guide:** [/guide/eval](../guide/eval.md)
+**Import path:** `personaforge/test-utils`  ·  **Public symbols:** 15  ·  **Guide:** [/guide/eval](../guide/eval.md)
 
 ## What it is
 `personaforge/test-utils` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -28,7 +28,7 @@ import { createMockLLM, createMockAgent, runScenario } from 'personaforge/test-u
 ## Public API surface
 - **Factories / functions** — `createMockLLM`, `createMockAgent`, `runScenario`
 - **Classes** — `MockLLMProvider`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `AgentRunResult`, `MockableAgent`, `MockLLMCall`, `MockLLMOptions`, `MockLLMHandle`, `MockAgentRun`, …(+5)
+- **Interfaces** — `AgentRunResult`, `MockableAgent`, `MockLLMCall`, `MockLLMOptions`, `MockLLMHandle`, `MockAgentRun`, `MockAgentOptions`, `MockAgentHandle`, `ScenarioStep`, `ScenarioStepResult`, `ScenarioResult`
 
 ## Minimal use
 ```ts

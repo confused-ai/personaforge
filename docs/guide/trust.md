@@ -144,11 +144,11 @@ See [Observability & OTLP](./observability) and [Control Plane](./control-plane)
 | Resource | Link |
 |---|---|
 | Source code | [github.com/confused-ai/personaforge](https://github.com/confused-ai/personaforge) |
-| Changelog | [Changelog](/changelog) |
+| Changelog | [Changelog](../changelog) |
 | Contributing | [CONTRIBUTING.md](https://github.com/confused-ai/personaforge/blob/main/CONTRIBUTING.md) |
 | Security policy | [SECURITY.md](https://github.com/confused-ai/personaforge/blob/main/SECURITY.md) |
 | License | [MIT](https://github.com/confused-ai/personaforge/blob/main/LICENSE) |
-| npm package | [confused-ai](https://www.npmjs.com/package/confused-ai) |
+| npm package | [personaforge](https://www.npmjs.com/package/personaforge) |
 
 ### Supported versions
 

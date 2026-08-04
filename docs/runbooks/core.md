@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Core"
-description: "Operational runbook for personaforge/core — import, run, verify, recover. 74 public symbols."
+description: "Operational runbook for personaforge/core — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Core
 
-> Auto-generated from `./dist/core.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/core/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/core`  ·  **Public symbols:** 74  ·  **Guide:** [/guide/concepts](../guide/concepts.md)
+**Import path:** `personaforge/core`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/concepts](../guide/concepts.md)
 
 ## What it is
 `personaforge/core` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,23 +22,17 @@ npm i personaforge
 
 ## Import
 ```ts
-import { createToolRegistry, generateEntityId, AgentDb } from 'personaforge/core';
+import 'personaforge/core';
 ```
 
 ## Public API surface
-- **Factories / functions** — `createToolRegistry`, `generateEntityId`
-- **Classes** — `AgentDb`, `MapToolRegistry`, `PersonaForgeError`, `ConfigError`, `LLMError`, `BudgetExceededError`, `AgentRunner`
-- **Enums** — `AgentState`
-- **Interfaces** — `Message`, `LLMToolDefinition`, `GenerateOptions`, `ToolCall`, `GenerateResult`, `LLMProvider`, `Tool`, `ToolRegistry`, `SessionMessage`, `SessionData`, `SessionStore`, `SessionRow`, …(+43)
-- **Types** — `LearningType`, `EntityId`, `MessageContent`, `StreamChunk`, `ToolCallResult`, `IFullLLMProvider`, `MessageRole`, `ContentPart`, `StreamDelta`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
-```ts
-import { createToolRegistry, generateEntityId, AgentDb } from 'personaforge/core';
+This entry exposes types/interfaces only. Import the symbols you need for typing:
 
-// `createToolRegistry` is the primary entry for this feature.
-// See the type signature for full options.
-const result = createToolRegistry(/* opts */);
+```ts
+import 'personaforge/core';
 ```
 
 ## Verify it works

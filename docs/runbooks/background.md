@@ -1,15 +1,15 @@
 ---
 title: "Runbook: Background"
-description: "Operational runbook for personaforge/background — import, run, verify, recover. 20 public symbols."
+description: "Operational runbook for personaforge/background — import, run, verify, recover. 0 public symbols."
 outline: [2, 3]
 generated: true
 ---
 
 # Runbook: Background
 
-> Auto-generated from `./dist/background.d.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
+> Auto-generated from `./src/background/index.ts`. Do not edit by hand — run `node scripts/gen-runbooks.mjs`.
 
-**Import path:** `personaforge/background`  ·  **Public symbols:** 20  ·  **Guide:** [/guide/background-queues](../guide/background-queues.md)
+**Import path:** `personaforge/background`  ·  **Public symbols:** 0  ·  **Guide:** [/guide/background-queues](../guide/background-queues.md)
 
 ## What it is
 `personaforge/background` is a public entry point of personaforge. Import it directly; you only pull in this feature's code (subpath exports are tree-shakeable and optional native deps load lazily).
@@ -22,14 +22,11 @@ npm i personaforge
 
 ## Import
 ```ts
-import { queueHook, generateTaskId, InMemoryBackgroundQueue } from 'personaforge/background';
+import 'personaforge/background';
 ```
 
 ## Public API surface
-- **Factories / functions** — `queueHook`, `generateTaskId`
-- **Classes** — `InMemoryBackgroundQueue`, `BullMQBackgroundQueue`, `RedisPubSubBackgroundQueue`, `KafkaBackgroundQueue`, `RabbitMQBackgroundQueue`, `SQSBackgroundQueue`
-- **Interfaces** — `BackgroundTask`, `EnqueueOptions`, `BackgroundQueue`, `BullMQBackgroundQueueOptions`, `RedisPublisher`, `RedisSubscriber`, `RedisPubSubBackgroundQueueOptions`, `KafkaBackgroundQueueOptions`, `RabbitMQBackgroundQueueOptions`, `SQSBackgroundQueueOptions`
-- **Types** — `BackgroundTaskHandler`, `QueuedHook`
+- _No named runtime exports; import for side effects or types._
 
 ## Minimal use
 Real example from the background-queues guide:
@@ -61,7 +58,8 @@ await queue.consume('analytics', async (task) => {
   await analyticsService.track('agent.run', task.payload);
 });
 
-// …see full example in the guide
+const result = await agent.run('Help me track my order.');
+// The afterRun hook fires the task to the queue and returns immediately
 ```
 
 ## Verify it works

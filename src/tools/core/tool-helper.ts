@@ -78,6 +78,12 @@ export interface ToolHelperConfig<TSchema extends SchemaInput = SchemaInput, TOu
     readonly execute: (params: InferToolSchema<TSchema>, context: SimpleToolContext) => Promise<TOutput> | TOutput;
     /** Require human approval before execution. Default: false. */
     readonly needsApproval?: boolean | ((params: InferToolSchema<TSchema>) => boolean | Promise<boolean>);
+    /** Alias for `needsApproval` (Mastra naming). Pause before `execute()` for approval. */
+    readonly requireApproval?: boolean;
+    /** Schema for the custom payload emitted when the tool self-suspends via `context.agent.suspend()`. */
+    readonly suspendSchema?: SchemaInput;
+    /** Schema for the data accepted when resuming a suspended call. */
+    readonly resumeSchema?: SchemaInput;
     /** Category for organization. Default: 'custom'. */
     readonly category?: ToolCategory;
     /** Tags for discoverability. */
@@ -107,6 +113,14 @@ export interface SimpleToolContext {
     readonly agentId: string;
     readonly sessionId: string;
     readonly abortSignal?: AbortSignal;
+    /** Data provided when resuming a `suspend()`-suspended tool. */
+    readonly resumeData?: unknown;
+    /** Agent-side helpers available inside `execute()` (approval / suspension). */
+    readonly agent?: {
+        readonly resumeData?: unknown;
+        /** Self-suspend the tool mid-execution to request more input. */
+        suspend(payload: unknown): never;
+    };
 }
 
 /** A lightweight tool created by the `tool()` helper. */
@@ -122,6 +136,8 @@ export interface LightweightTool<
     readonly tags: string[];
     readonly needsApproval: boolean | ((params: InferToolSchema<TSchema>) => boolean | Promise<boolean>);
     readonly strict: boolean;
+    readonly suspendSchema?: SchemaInput;
+    readonly resumeSchema?: SchemaInput;
     /** Execute with full validation. */
     execute(params: InferToolSchema<TSchema>, context?: Partial<SimpleToolContext>): Promise<ToolResult<TOutput>>;
     /** Validate params without executing. */
@@ -160,6 +176,9 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
         outputSchema,
         execute,
         needsApproval = false,
+        requireApproval = false,
+        suspendSchema,
+        resumeSchema,
         category = ToolCategory.CUSTOM,
         tags = [],
         timeoutMs = 30_000,
@@ -173,6 +192,8 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
         onError,
     } = config;
 
+    const effectiveApproval = needsApproval || requireApproval;
+
     const lightweight: LightweightTool<TSchema, TOutput> = {
         name,
         description,
@@ -180,8 +201,10 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
         ...(outputSchema !== undefined ? { outputSchema } : {}),
         category,
         tags,
-        needsApproval,
+        needsApproval: effectiveApproval,
         strict,
+        ...(suspendSchema !== undefined ? { suspendSchema } : {}),
+        ...(resumeSchema !== undefined ? { resumeSchema } : {}),
 
         async execute(params, context) {
             const t0 = performance.now();
@@ -332,10 +355,20 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
                 category,
                 version: '1.0.0',
                 tags,
-                execute: async (input: Record<string, unknown>) => {
+                ...(effectiveApproval ? { requireApproval: effectiveApproval === true } : {}),
+                ...(suspendSchema !== undefined ? { suspendSchema } : {}),
+                ...(resumeSchema !== undefined ? { resumeSchema } : {}),
+                execute: async (input: Record<string, unknown>, context?: unknown) => {
+                    const canonicalCtx = context as {
+                        agentId?: string; sessionId?: string; signal?: AbortSignal;
+                        resumeData?: unknown; agent?: { resumeData?: unknown; suspend(payload: unknown): never };
+                    } | undefined;
                     return lightweight.execute(input as InferToolSchema<TSchema>, {
-                        agentId: (input['agentId'] as string | undefined) ?? 'unknown',
-                        sessionId: (input['sessionId'] as string | undefined) ?? 'unknown',
+                        agentId: canonicalCtx?.agentId ?? (input['agentId'] as string | undefined) ?? 'unknown',
+                        sessionId: canonicalCtx?.sessionId ?? (input['sessionId'] as string | undefined) ?? 'unknown',
+                        ...(canonicalCtx?.signal ? { abortSignal: canonicalCtx.signal } : {}),
+                        ...(canonicalCtx?.resumeData !== undefined ? { resumeData: canonicalCtx.resumeData } : {}),
+                        ...(canonicalCtx?.agent ? { agent: canonicalCtx.agent } : {}),
                     });
                 },
                 validate: (params: unknown): params is InferToolSchema<TSchema> => {

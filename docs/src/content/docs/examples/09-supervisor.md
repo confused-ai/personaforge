@@ -74,4 +74,4 @@ console.log(result.result);
 ## What's next?
 
 - [10 · Database Analyst](./10-database)
-- [15 · Full-Stack App](./15-full-stack)
+- [Full-Stack App](/examples/15-full-stack)
