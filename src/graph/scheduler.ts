@@ -66,6 +66,7 @@ export class InMemoryTaskQueue implements TaskQueue {
     this.handler = handler;
     // Start polling for tasks
     this.pollInterval = setInterval(() => this._processNext(), 10);
+    this.pollInterval.unref?.();
     // Process any existing tasks
     this._processNext();
   }

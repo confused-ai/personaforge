@@ -1,5 +1,14 @@
 /**
- * Execution engine implementation
+ * Task-plan execution engine.
+ *
+ * Models work as a *plan of tasks* compiled into a DAG, then executes nodes
+ * with dependency resolution, concurrency limits, retry/backoff, and abort
+ * support. Reach for this when you have a planner emitting discrete tasks
+ * with dependencies between them.
+ *
+ * Sibling engine: `step-pipeline-engine.ts` executes an ordered *pipeline of
+ * steps* with backpressure and pause/resume. The two are complementary, not
+ * versions of each other — see `./index.ts` for the full comparison.
  */
 
 import {

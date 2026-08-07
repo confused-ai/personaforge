@@ -1,5 +1,5 @@
 /**
- * Hermetic coverage for src/execution/engine-v2.ts — StepExecutor,
+ * Hermetic coverage for src/execution/step-pipeline-engine.ts — StepExecutor,
  * PipelineBuilder, executeParallel, BackpressureQueue.
  * No network. Callers: vitest only.
  */
@@ -12,12 +12,12 @@ import {
     BackpressureQueue,
     EngineEvent,
     StepPriority,
-} from '../src/execution/engine-v2.js';
-import type { StepConfig, StepContext, StepResult } from '../src/execution/engine-v2.js';
+} from '../src/execution/step-pipeline-engine.js';
+import type { StepConfig, StepContext, StepResult } from '../src/execution/step-pipeline-engine.js';
 
 const ok = (output?: unknown): StepResult => ({ success: true, output });
 
-describe('engine-v2 StepExecutor', () => {
+describe('step-pipeline-engine StepExecutor', () => {
     it('executes steps in dependency order and returns outputs', async () => {
         const ex = new StepExecutor({ maxConcurrency: 2, maxQueueSize: 10, defaultTimeoutMs: 1000, enableBackpressure: true });
         const order: string[] = [];
@@ -117,7 +117,7 @@ describe('engine-v2 StepExecutor', () => {
     });
 });
 
-describe('engine-v2 PipelineBuilder', () => {
+describe('step-pipeline-engine PipelineBuilder', () => {
     it('builds steps with retry/timeout/dependency options', async () => {
         const steps = new PipelineBuilder()
             .step('one', async () => 1)
@@ -154,7 +154,7 @@ describe('engine-v2 PipelineBuilder', () => {
     });
 });
 
-describe('engine-v2 executeParallel', () => {
+describe('step-pipeline-engine executeParallel', () => {
     it('runs independent steps concurrently (dependent steps have a known gap)', async () => {
         const steps: StepConfig[] = [
             { id: 'a', name: 'A', execute: async () => ok('a') },
@@ -172,7 +172,7 @@ describe('engine-v2 executeParallel', () => {
     });
 });
 
-describe('engine-v2 BackpressureQueue', () => {
+describe('step-pipeline-engine BackpressureQueue', () => {
     it('enqueue/dequeue/peek/size/full/pause/resume/clear', () => {
         const q = new BackpressureQueue<number>(2);
         expect(q.enqueue(1)).toBe(true);

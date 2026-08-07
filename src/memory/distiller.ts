@@ -130,6 +130,7 @@ export class MemoryDistiller {
         this._timer = setInterval(() => {
             this.distillNow().catch(this._onError);
         }, this._intervalMs);
+        this._timer.unref?.();
         return this;
     }
 
