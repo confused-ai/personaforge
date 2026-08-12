@@ -1,7 +1,17 @@
 /**
  * Worker Pool for Parallel Task Execution
  *
- * Manages a pool of workers for executing tasks concurrently
+ * Manages a pool of workers for executing tasks concurrently.
+ *
+ * `WorkerPool` is a logical (Promise-based) scheduler: it multiplexes async
+ * tasks onto in-process "workers" that share the event loop. It is the right
+ * primitive for I/O-bound orchestration (LLM calls, HTTP, DB) where a real
+ * OS-thread pool (`ThreadPool`) would add no benefit.
+ *
+ * Each task is dispatched through a `TaskExecutor` (default: a no-op executor
+ * that produces a failed result — wire a real executor via the constructor or
+ * `registerExecutor()`). The pool enforces `minWorkers`/`maxWorkers` scaling,
+ * per-task timeouts, idle cleanup, and graceful shutdown.
  */
 
 import {
@@ -9,6 +19,7 @@ import {
     WorkerPoolStatus,
     ParallelExecutor,
     ExecutionContext,
+    TaskExecutor,
 } from './types.js';
 import {
     Task,
@@ -48,18 +59,28 @@ export class WorkerPool implements ParallelExecutor {
     private completedTasks = 0;
     private shutdown = false;
     private idleTimeoutId?: ReturnType<typeof setTimeout>;
+    private executor: TaskExecutor;
 
-    constructor(config: WorkerPoolConfig) {
+    constructor(config: WorkerPoolConfig, executor?: TaskExecutor) {
         this.config = {
             minWorkers: config.minWorkers ?? 2,
             maxWorkers: config.maxWorkers ?? 8,
             idleTimeoutMs: config.idleTimeoutMs ?? 60000,
             taskTimeoutMs: config.taskTimeoutMs ?? 30000,
         };
+        this.executor = executor ?? createNoopExecutor();
 
         // Initialize minimum workers
         this.ensureMinWorkers();
         this.startIdleCleanup();
+    }
+
+    /**
+     * Set the executor used to run tasks. Replaces any previously registered
+     * executor. Useful when wiring a real `TaskExecutor` after construction.
+     */
+    registerExecutor(executor: TaskExecutor): void {
+        this.executor = executor;
     }
 
     /**
@@ -236,24 +257,25 @@ export class WorkerPool implements ParallelExecutor {
     }
 
     /**
-     * Run a task (to be overridden by actual implementation)
+     * Run a task through the registered executor. Produces a failed result
+     * with a descriptive error if the executor throws or rejects.
      */
-    private async runTask(task: Task, _context: ExecutionContext): Promise<TaskResult> {
-        // This is a placeholder - actual task execution would be provided
-        // by the execution engine or a task executor
+    private async runTask(task: Task, context: ExecutionContext): Promise<TaskResult> {
         const startTime = Date.now();
+        const startedAt = new Date(startTime);
 
         try {
-            // Simulate task execution
-            await new Promise(resolve => setTimeout(resolve, 100));
-
+            const result = await this.executor.execute(task, context);
+            // Ensure the result carries the task id + timestamps even if the
+            // executor returns a partially-populated result.
             return {
-                taskId: task.id,
-                status: TaskStatus.COMPLETED,
-                output: { message: `Task ${task.name} completed` },
-                executionTimeMs: Date.now() - startTime,
-                startedAt: new Date(startTime),
-                completedAt: new Date(),
+                taskId: result.taskId,
+                status: result.status,
+                output: result.output,
+                error: result.error,
+                executionTimeMs: result.executionTimeMs ?? Date.now() - startTime,
+                startedAt: result.startedAt ?? startedAt,
+                completedAt: result.completedAt ?? new Date(),
             };
         } catch (error) {
             return {
@@ -265,7 +287,7 @@ export class WorkerPool implements ParallelExecutor {
                     retryable: true,
                 },
                 executionTimeMs: Date.now() - startTime,
-                startedAt: new Date(startTime),
+                startedAt,
                 completedAt: new Date(),
             };
         }
@@ -316,8 +338,36 @@ export class WorkerPool implements ParallelExecutor {
 }
 
 /**
+ * Default executor: fails any task with a clear message so callers are not
+ * silently handed fabricated results. Real deployments should pass a concrete
+ * `TaskExecutor` via the constructor or `registerExecutor()`.
+ */
+function createNoopExecutor(): TaskExecutor {
+    return {
+        canExecute(): boolean {
+            return true;
+        },
+        async execute(task: Task): Promise<TaskResult> {
+            const now = new Date();
+            return {
+                taskId: task.id,
+                status: TaskStatus.FAILED,
+                error: {
+                    code: 'NO_EXECUTOR',
+                    message: `No TaskExecutor registered for task "${task.name}" (${task.id}). Pass one to createWorkerPool(config, executor) or call registerExecutor().`,
+                    retryable: false,
+                },
+                executionTimeMs: 0,
+                startedAt: now,
+                completedAt: now,
+            };
+        },
+    };
+}
+
+/**
  * Create a new worker pool
  */
-export function createWorkerPool(config: WorkerPoolConfig): WorkerPool {
-    return new WorkerPool(config);
+export function createWorkerPool(config: WorkerPoolConfig, executor?: TaskExecutor): WorkerPool {
+    return new WorkerPool(config, executor);
 }

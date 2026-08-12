@@ -512,6 +512,7 @@ class WorkflowRuntime {
   private config: Required<WorkflowExecutorConfig>;
   private signal?: AbortSignal;
   private status: WorkflowStatus = WorkflowStatus.PENDING;
+  private _cancelled = false;
 
   constructor(
     graph: StateGraph,
@@ -525,6 +526,11 @@ class WorkflowRuntime {
     this.signal = signal;
   }
 
+  /** Compare runtime status without tripping TS literal narrowing. */
+  private _statusIs(s: WorkflowStatus): boolean {
+    return this.status === s;
+  }
+
   async execute(): Promise<WorkflowExecutorResult> {
     this.status = WorkflowStatus.RUNNING;
     const startTime = Date.now();
@@ -536,6 +542,16 @@ class WorkflowRuntime {
       }
 
       await this.executeNode(startNode.id);
+      if (this._cancelled || this._statusIs(WorkflowStatus.CANCELLED)) {
+        this.status = WorkflowStatus.CANCELLED;
+        return {
+          executionId: this.ctx.executionId,
+          status: WorkflowStatus.CANCELLED,
+          outputVariables: Object.fromEntries(this.ctx.variables),
+          history: this.ctx.history,
+          totalDurationMs: Date.now() - startTime,
+        };
+      }
       await this.executeNext();
 
     } catch (error) {
@@ -557,6 +573,16 @@ class WorkflowRuntime {
       };
     }
 
+    if (this._statusIs(WorkflowStatus.PAUSED)) {
+      // Workflow paused mid-execution; return paused state
+      return {
+        executionId: this.ctx.executionId,
+        status: WorkflowStatus.PAUSED,
+        outputVariables: Object.fromEntries(this.ctx.variables),
+        history: this.ctx.history,
+        totalDurationMs: Date.now() - startTime,
+      };
+    }
     this.status = WorkflowStatus.COMPLETED;
     return {
       executionId: this.ctx.executionId,
@@ -568,7 +594,7 @@ class WorkflowRuntime {
   }
 
   private async executeNode(nodeId: EntityId): Promise<unknown> {
-    if (this.signal?.aborted) {
+    if (this._cancelled || this.signal?.aborted) {
       throw new Error('Workflow cancelled');
     }
 
@@ -661,6 +687,13 @@ class WorkflowRuntime {
   }
 
   private async executeNext(): Promise<void> {
+    if (this._cancelled || this._statusIs(WorkflowStatus.CANCELLED)) {
+      return;
+    }
+    if (this._statusIs(WorkflowStatus.PAUSED)) {
+      // Status stays PAUSED; caller must call resume() then re-execute
+      return;
+    }
     const completedNodeId = this.ctx.currentNodeId;
     const outgoing = this.graph.getOutgoing(completedNodeId);
 
@@ -713,7 +746,7 @@ class WorkflowRuntime {
   }
 
   cancel(): boolean {
-    this.signal?.aborted;
+    this._cancelled = true;
     this.status = WorkflowStatus.CANCELLED;
     return true;
   }
