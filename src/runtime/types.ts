@@ -245,6 +245,10 @@ export interface CreateHttpServiceOptions {
      * Set to `true` in development for easier debugging.
      */
     exposeErrors?: boolean;
+    /** Maximum concurrent agent executions. Default: no limit (0 = unlimited). */
+    maxConcurrency?: number;
+    /** Persistent run store — records every agent execution metadata. */
+    runStore?: import('../production/run-store.js').RunStore;
 }
 
 export interface RequestAuditEntry {

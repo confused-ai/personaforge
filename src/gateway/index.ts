@@ -131,6 +131,7 @@ export function createEnterpriseGateway(config: EnterpriseGatewayConfig): Enterp
 
     // Per-tenant rate limiters — hard cap, no burst
     const tenantLimiters = new Map<string, RateLimiter>();
+    const concurrencyLimiter = config.maxConcurrency ? new Semaphore(config.maxConcurrency) : null;
     for (const t of tenants) {
         if (t.maxRpm) {
             tenantLimiters.set(t.id, new RateLimiter({ name: `gateway-tenant-${t.id}`, maxRequests: t.maxRpm, intervalMs: 60_000, burstCapacity: 0 }));
@@ -411,7 +412,11 @@ ${rows}
             const start = Date.now();
 
             try {
-                const result = await agent.run(body.message, { sessionId, userId: body.userId });
+                const execFn = () => agent.run(body.message, { sessionId, userId: body.userId });
+                const result = await (concurrencyLimiter
+                    ? concurrencyLimiter.withLock(execFn)
+                    : execFn()
+                );
                 const durationMs = Date.now() - start;
                 const costUsd = (result.usage?.totalTokens ?? 0) * 0.00001; // rough estimate
 
@@ -435,6 +440,16 @@ ${rows}
                 };
                 await auditStore.append(entry).catch(() => {});
 
+                if (config.runStore) {
+                    trackRun(config.runStore, {
+                        runId: rid,
+                        agentId: agentName,
+                        tenantId: body.tenantId ?? tenantId,
+                        userId: body.userId,
+                        sessionId,
+                        model: result.model,
+                    }, () => Promise.resolve(result)).catch(() => {});
+                }
                 sendJson(res, 200, {
                     id: rid,
                     agent: agentName,
@@ -459,6 +474,20 @@ ${rows}
                     ip: getClientIp(req, trustProxy),
                 };
                 await auditStore.append(entry).catch(() => {});
+                if (config.runStore) {
+                    config.runStore.save({
+                        runId: rid,
+                        agentId: agentName,
+                        tenantId: body.tenantId ?? tenantId,
+                        userId: body.userId,
+                        sessionId,
+                        status: 'failed',
+                        startTime: new Date(start).toISOString(),
+                        endTime: new Date().toISOString(),
+                        durationMs: Date.now() - start,
+                        error: e instanceof Error ? e.message : String(e),
+                    }).catch(() => {});
+                }
                 sendJson(res, 500, { error: exposeErrors ? (e instanceof Error ? e.message : String(e)) : 'Agent run failed' }, cors);
             }
             return;

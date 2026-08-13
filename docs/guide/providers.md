@@ -441,6 +441,68 @@ const llm = new FallbackChainProvider({
 
 ---
 
+## AI SDK Provider — 300+ models via `@ai-sdk/*`
+
+> **Add-on for the long tail.** The 30 native providers above are the recommended
+> default — smaller bundle, zero extra dependencies, tighter integration with
+> PF's guardrails/cost/HITL. Use the AI SDK adapter only when you need a model
+> that isn't in the native list.
+
+Wraps any `@ai-sdk/provider` `LanguageModelV1` into personaforge's `LLMProvider`
+interface — unlocking the entire AI SDK provider ecosystem (~300 model packages)
+without per-provider maintenance.
+
+```ts
+import { createAiSdkProvider } from 'personaforge/providers';
+import { createOpenAI } from '@ai-sdk/openai';    // npm install @ai-sdk/openai
+import { createAnthropic } from '@ai-sdk/anthropic'; // npm install @ai-sdk/anthropic
+import { createGoogle } from '@ai-sdk/google';      // npm install @ai-sdk/google
+import { createGroq } from '@ai-sdk/groq';
+import { createMistral } from '@ai-sdk/mistral';
+import { createCohere } from '@ai-sdk/cohere';
+// ... and 300+ more provider packages
+
+const model = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })('gpt-4o');
+
+const agent = createAgent({
+  name: 'ai-sdk-agent',
+  instructions: 'You are helpful.',
+  model: createAiSdkProvider(model),
+});
+```
+
+**Why this matters:**
+- **300+ providers** — any model that ships an `@ai-sdk/provider` adapter works immediately. New models land in the AI SDK ecosystem weeks before PF's native adapter list.
+- **Same tool loop** — the step/tool loop remains personaforge's own (guardrails, cost tracking, HITL at every step). The provider protocol layer is delegated to the battle-tested AI SDK.
+- **Zero additional deps** — `@ai-sdk/provider` is NOT bundled. Install only the provider packages you need.
+
+### Options
+
+```ts
+const provider = createAiSdkProvider(model, {
+  modelId: 'gpt-4o-custom',   // override model name returned in results
+});
+```
+
+### How it works
+
+1. PF Messages → AI SDK messages (roles: system/user/assistant/tool, content parts: text/image/tool-call/tool-result)
+2. PF GenerateOptions → AI SDK call options (tools, toolChoice, maxTokens, temperature, stop)
+3. AI SDK `doGenerate()` / `doStream()` → PF `GenerateResult` (text, toolCalls, finishReason, usage)
+4. Finish reason mapping: `stop → stop`, `length → max_tokens`, `tool-calls → tool_calls`, `error → error`, `content-filter → error`
+
+### Supported finish reasons
+
+| AI SDK | personaforge | Meaning |
+|--------|-------------|---------|
+| `stop` | `stop` | Model completed naturally |
+| `length` | `max_tokens` | Hit token limit |
+| `tool-calls` | `tool_calls` | Model requested tool use |
+| `content-filter` | `error` | Content policy blocked |
+| `error` | `error` | Provider error |
+
+---
+
 ## Bring your own provider
 
 Any object that satisfies this interface works:

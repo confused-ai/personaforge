@@ -277,6 +277,28 @@ const agent = createAgent({
 
 ---
 
+## Runner integration — enforcement points
+
+Guardrails are enforced at two points in the core agent runner:
+
+1. **Before tool execution** — `checkToolCall(toolName, args, context)` validates that the tool call is safe. If any rule with severity `'error'` fails, the tool is blocked and a structured error is pushed into the message history.
+
+2. **After LLM output** — `validateOutput(text, context)` validates the generated text. If any rule fails, the output is blocked with `finishReason: 'error'` and the caller receives an empty response with a guardrail violation message.
+
+```ts
+const result = await agent.run('Send an email to ceo@competitor.com');
+// If PII detection is enabled, the tool call is blocked:
+console.log(result.finishReason); // 'error'
+```
+
+This applies to both the high-level `createAgent()` flow (which uses the agentic runner) and the low-level `AgentRunner` class (core runner).
+
+### In the gateway
+
+When the gateway receives a request, guardrails run within the agent execution — same enforcement points, no additional configuration needed beyond passing `guardrails` to `createAgent()`.
+
+---
+
 ## Where to go next
 
 - [HITL](./hitl) — escalate violations to a human instead of auto-blocking.

@@ -20,7 +20,7 @@ export interface SearchResult {
  */
 export interface VectorStore {
   add(documents: Document[]): Promise<void>;
-  search(query: string, topK: number): Promise<SearchResult[]>;
+  search(query: string, topK: number, filter?: Record<string, unknown>): Promise<SearchResult[]>;
 }
 
 /** EmbeddingFn — converts text → float vector. */

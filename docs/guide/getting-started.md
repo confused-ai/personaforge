@@ -87,7 +87,9 @@ Both APIs produce identical agents. Use whichever reads better to you.
 
 ## 5. Model providers
 
-personaforge supports 40+ providers. Set the model string and the framework resolves the correct provider from environment variables.
+personaforge supports 30+ native providers (OpenAI, Anthropic, Google, Bedrock, OpenRouter, Ollama, and more) plus 300+ more via the AI SDK adapter. Set the model string and the framework resolves the correct provider from environment variables.
+
+For models not in the native list, use the [AI SDK adapter](./providers.md#ai-sdk-provider--300-models-via-ai-sdk).
 
 ### OpenAI
 

@@ -148,6 +148,16 @@ export {
     createTenantContext,
 } from './tenant.js';
 export type { TenantConfig, TenantContext, TenantContextOptions } from './tenant.js';
+export {
+    RunStore,
+    InMemoryRunStore,
+    SqliteRunStore,
+    RunRecord,
+    RunStatus,
+    RunFilter,
+} from './run-store.js';
+export { createSqliteRunStore } from './run-store.js';
+export { PostgresRunStore, createPostgresRunStore } from './postgres-stores.js';
 
 // ── Component versioning ─────────────────────────────────────────────────────
 export {
@@ -155,3 +165,29 @@ export {
     defaultComponentRegistry,
 } from './component-registry.js';
 export type { Component, ComponentVersion, ComponentType, ComponentStatus, RegisterComponentInput } from './component-registry.js';
+
+// -- Concurrency ----------------------------------------------------------------
+export { Semaphore, ConcurrencyLimiter } from './concurrency.js';
+
+// -- Run tracking ---------------------------------------------------------------
+export { trackRun, toRunStatus } from './run-tracking.js';
+export type { TrackRunContext, TrackRunResult } from './run-tracking.js';
+
+export {
+    FrameworkError,
+    TransientError,
+    PermanentError,
+    TimeoutError,
+    NetworkError,
+    AuthError,
+    ValidationError,
+    NotFoundError,
+    ConfigError,
+    TenantError,
+    TenantQuotaExceededError,
+    TenantBudgetExceededError,
+    GuardrailError,
+    InternalError,
+    ErrorCode,
+} from './errors.js';
+export type { ErrorSeverity } from './errors.js';

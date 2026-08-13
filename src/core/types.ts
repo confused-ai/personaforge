@@ -63,6 +63,10 @@ export interface Message {
 // ── Run config & result ──────────────────────────────────────────────────────
 
 export interface AgentRunOptions {
+    /** Tenant owning this run — used for isolation, quotas, and billing */
+    tenantId?: string;
+    /** Distributed tracing ID — correlates this run across components */
+    traceId?: string;
     /** Resume an existing session by ID */
     sessionId?: string;
     /** Override or inject conversation history */
@@ -101,6 +105,12 @@ export interface AgentRunResult {
     readonly steps: number;
     readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted';
     readonly usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+    /** Estimated USD cost of the run (from provider pricing tables) */
+    readonly costUsd?: number;
+    /** Model used for the run */
+    readonly model?: string;
+    /** Structured error code if the run failed */
+    readonly errorCode?: string;
     readonly runId?: string;
 }
 

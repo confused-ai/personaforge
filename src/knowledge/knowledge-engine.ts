@@ -69,9 +69,15 @@ class InMemoryVectorStore implements VectorStore {
    * O(n log k) — compute all similarities, partial sort to get top-k.
    * Heap not used here for simplicity; native sort on k<<n is fast enough.
    */
-  async search(query: string, topK: number): Promise<SearchResult[]> {
+  async search(query: string, topK: number, filter?: Record<string, unknown>): Promise<SearchResult[]> {
     const qEmbed = await this._embed(query);
-    return this._docs
+    let docs = this._docs;
+    // Apply tenant filter if present
+    const tenantId = filter?.tenantId as string | undefined;
+    if (tenantId) {
+      docs = docs.filter((d) => d.document.metadata?.tenantId === tenantId);
+    }
+    return docs
       .map((d) => ({ document: d.document, score: cosineSimilarity(qEmbed, d.embedding) }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
@@ -167,6 +173,8 @@ export interface KnowledgeEngineOptions {
   topK?: number;
   /** Max chars of context to inject. Default: 4000. */
   maxContextChars?: number;
+  /** Optional tenant ID — limits knowledge to documents belonging to this tenant. */
+  tenantId?: string;
   /**
    * Maximum number of embedding results to cache in memory (LRU cache).
    * Set to `0` to disable caching.
@@ -183,6 +191,8 @@ export class KnowledgeEngine implements RAGEngine {
   private readonly _topK:           number;
   private readonly _maxContextChars: number;
 
+  private readonly _tenantId?: string;
+
   constructor(opts: KnowledgeEngineOptions = {}) {
     const rawEmbed = opts.embed ?? tfidfEmbed;
     const cacheSize = opts.embeddingCacheSize ?? 500;
@@ -190,13 +200,15 @@ export class KnowledgeEngine implements RAGEngine {
     this._store   = opts.store ?? new InMemoryVectorStore(embed);
     this._topK    = opts.topK  ?? 5;
     this._maxContextChars = opts.maxContextChars ?? 4_000;
+    this._tenantId = opts.tenantId;
   }
 
-  async addDocuments(docs: Document[]): Promise<void> {
-    // Assign IDs where missing
+  async addDocuments(docs: Document[], tenantId?: string): Promise<void> {
+    const effectiveTenantId = tenantId ?? this._tenantId;
     const stamped = docs.map((d) => ({
       ...d,
       id: d.id || crypto.randomUUID(),
+      ...(effectiveTenantId ? { metadata: { ...d.metadata, tenantId: effectiveTenantId } } : {}),
     }));
     await this._store.add(stamped);
   }
@@ -205,9 +217,10 @@ export class KnowledgeEngine implements RAGEngine {
    * Build RAG context string for injection into the system prompt.
    * O(n log k) for in-memory store; O(1) network call for remote stores.
    */
-  async buildContext(query: string, topK?: number): Promise<string> {
+  async buildContext(query: string, topK?: number, tenantId?: string): Promise<string> {
     const k       = topK ?? this._topK;
-    const results = await this._store.search(query, k);
+    const effectiveTenantId = tenantId ?? this._tenantId;
+    const results = await this._store.search(query, k, effectiveTenantId ? { tenantId: effectiveTenantId } : undefined);
 
     if (results.length === 0) return '';
 

@@ -32,6 +32,9 @@ export type { OpenAIEmbeddingProviderConfig } from './openai-embedding-provider.
 export { createOpenRouterProvider } from './openrouter-provider.js';
 export type { OpenRouterProviderConfig } from './openrouter-provider.js';
 
+export { createAiSdkProvider } from './ai-sdk-provider.js';
+export type { AiSdkProviderOptions } from './ai-sdk-provider.js';
+
 // OpenAI-compatible provider factories
 export {
     // Existing
