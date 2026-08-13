@@ -8,6 +8,7 @@ import type { MCPClient, MCPToolDescriptor } from './_mcp-types.js';
 import { BaseTool, type BaseToolConfig } from '../core/base-tool.js';
 import type { Tool, ToolParameters } from '../core/types.js';
 import { ToolCategory } from '../core/types.js';
+import { detectPromptInjection } from '../../guardrails/injection.js';
 
 const JsonRpcRequestSchema = z.object({
     jsonrpc: z.literal('2.0'),
@@ -140,10 +141,12 @@ class McpBridgeTool extends BaseTool<ToolParameters, string> {
      * a malicious or compromised MCP server can return tool-poisoning / indirect
      * prompt-injection payloads (OWASP LLM01). Do NOT assume it is safe to act on.
      *
-     * TODO(security): route this text through an output guardrail before it
-     * reaches the model. Entry point: wrap the `return text` below with the
-     * framework guardrail runner (see `src/guardrails`/`runOptions.guardrails`)
-     * once a server-side output-scanning hook is available here.
+     * Mitigation: every tool result is scanned with `detectPromptInjection()`
+     * before it reaches the model. Suspicious payloads are surfaced with an
+     * explicit UNTRUSTED tag so the model is warned rather than silently
+     * following injected instructions. For stronger guarantees, configure the
+     * framework guardrail engine (`src/guardrails`) with an output rule
+     * (`createPromptInjectionRule`) and a fail-closed severity.
      */
     protected async performExecute(params: McpOpenArgs): Promise<string> {
         const args = params as Record<string, unknown>;
@@ -152,7 +155,20 @@ class McpBridgeTool extends BaseTool<ToolParameters, string> {
         const text = (out.content ?? [])
             .map((c) => (c.type === 'text' && c.text ? c.text : JSON.stringify(c)))
             .join('\n');
-        return text;
+        return this._scanUntrustedOutput(text);
+    }
+
+    /**
+     * Scan untrusted MCP tool output for prompt-injection patterns.
+     * Returns the original text, prefixed with a warning tag when a payload is
+     * detected so the model treats the content as untrusted instructions.
+     */
+    private _scanUntrustedOutput(text: string): string {
+        if (!text) return text;
+        const result = detectPromptInjection(text, { threshold: 0.6 });
+        if (!result.detected) return text;
+        const signals = result.signals.map((s) => `${s.pattern}(${s.match.slice(0, 60)})`).join(', ');
+        return `[UNTRUSTED: possible prompt injection (score ${result.score.toFixed(2)}; ${signals})]\n${text}`;
     }
 }
 
