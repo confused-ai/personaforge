@@ -149,13 +149,10 @@ export {
 } from './tenant.js';
 export type { TenantConfig, TenantContext, TenantContextOptions } from './tenant.js';
 export {
-    RunStore,
     InMemoryRunStore,
     SqliteRunStore,
-    RunRecord,
-    RunStatus,
-    RunFilter,
 } from './run-store.js';
+export type { RunStore, RunRecord, RunStatus, RunFilter } from './run-store.js';
 export { createSqliteRunStore } from './run-store.js';
 export { PostgresRunStore, createPostgresRunStore } from './postgres-stores.js';
 

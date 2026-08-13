@@ -1,6 +1,6 @@
 {
   "name": "personaforge",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "Fast TypeScript AI agent framework — per-request agents, 30+ model providers, 100+ integrations, 20+ vector DBs, 10+ databases, sessions, memory, knowledge, tracing, evals, HITL, teams, and workflows.",
   "type": "module",
   "packageManager": "bun@1.3.11",

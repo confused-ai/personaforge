@@ -28,9 +28,7 @@
  * ```
  */
 
-import type { LLMProvider } from '../core/types.js';
-import type { GenerateResult, GenerateOptions as PFGenerateOptions } from '../core/types.js';
-import type { Message as PFMessage } from '../core/types.js';
+import type { LLMProvider, GenerateResult, GenerateOptions, Message as PFMessage } from '../core/index.js';
 
 // ── Type-only imports from @ai-sdk/provider (not bundled) ─────────────────
 
@@ -136,7 +134,7 @@ export function createAiSdkProvider(
 
     const generateText = async (
         pfMessages: PFMessage[],
-        pfOpts?: PFGenerateOptions,
+        pfOpts?: GenerateOptions,
     ): Promise<GenerateResult> => {
         const messages = pfToAiMessages(pfMessages);
         const tools = pfToAiTools(pfOpts?.tools);
@@ -174,7 +172,7 @@ export function createAiSdkProvider(
 
     const streamText = async (
         pfMessages: PFMessage[],
-        pfOpts?: PFGenerateOptions,
+        pfOpts?: GenerateOptions,
     ): Promise<GenerateResult> => {
         const messages = pfToAiMessages(pfMessages);
         const tools = pfToAiTools(pfOpts?.tools);
@@ -232,7 +230,7 @@ function pfToAiMessages(pf: PFMessage[]): AiSdkMessage[] {
                 role: 'tool',
                 content: [{
                     type: 'tool-result',
-                    toolCallId: msg.toolCallId ?? 'unknown',
+                    toolCallId: msg.tool_call_id ?? 'unknown',
                     toolName: msg.name ?? 'unknown',
                     result: msg.content,
                 }],
@@ -281,7 +279,7 @@ function contentToParts(content: string | unknown[] | undefined): AiSdkMessagePa
 // ── Tool conversion ─────────────────────────────────────────────────────────
 
 function pfToAiTools(
-    tools: PFGenerateOptions['tools'],
+    tools: GenerateOptions['tools'],
 ): Record<string, AiSdkToolDefinition> | undefined {
     if (!tools || tools.length === 0) return undefined;
     const result: Record<string, AiSdkToolDefinition> = {};
@@ -295,7 +293,7 @@ function pfToAiTools(
 }
 
 function pfToAiToolChoice(
-    tc: PFGenerateOptions['toolChoice'],
+    tc: GenerateOptions['toolChoice'],
 ): AiSdkToolChoice | undefined {
     if (!tc || tc === 'auto' || tc === 'none' || tc === 'required') return tc;
     if (typeof tc === 'object' && 'name' in tc) {
@@ -354,7 +352,7 @@ async function collectStreamToResult(
                 case 'tool-call-delta':
                     // Accumulate partial args — AI SDK sends deltas for long args
                     const existing = toolCalls.find(
-                        (tc) => tc.id === value.toolCallId,
+                        (tc: { id: string }) => tc.id === value.toolCallId,
                     );
                     if (existing) {
                         existing.arguments = {

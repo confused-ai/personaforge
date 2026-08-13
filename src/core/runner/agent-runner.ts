@@ -292,7 +292,7 @@ export class AgentRunner {
                     result.text,
                     { agentId: this.config.name }
                 ) ?? [];
-                const hardBlocks = outputViolations.filter((v) => !v.passed && v.severity === 'error');
+                const hardBlocks = outputViolations.filter((v) => !v.passed);
                 if (hardBlocks.length > 0) {
                     finalText = `[blocked] ${hardBlocks[0]!.message ?? hardBlocks[0]!.rule}`;
                     finishReason = 'error';
@@ -437,7 +437,7 @@ export class AgentRunner {
                     toolName: tc.name,
                     toolArgs: args,
                 });
-                const errors = violations.filter((v) => !v.passed && v.severity === 'error');
+                const errors = violations.filter((v) => !v.passed);
                 if (errors.length > 0) {
                     messages.push({
                         role: 'tool',
@@ -445,7 +445,7 @@ export class AgentRunner {
                         tool_call_id: tc.id,
                         name: tc.name,
                     });
-                    streamHooks?.onToolResult?.(tc.name, { blocked: true, reason: errors[0]!.message }, args);
+                    streamHooks?.onToolResult?.(tc.name, { blocked: true, reason: errors[0]!.message });
                     continue;
                 }
             }

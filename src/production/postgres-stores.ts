@@ -30,6 +30,7 @@
  */
 
 import type { AuditEntry, AuditFilter, AuditStore } from './audit-store.js';
+import type { RunStore, RunRecord, RunFilter, RunStatus } from './run-store.js';
 import type { AgentCheckpointStore, AgentRunState } from './checkpoint.js';
 
 // ── Minimal `pg`-compatible pool interface ────────────────────────────────
@@ -311,7 +312,7 @@ CREATE INDEX IF NOT EXISTS cai_runs_start    ON personaforge_runs (start_time DE
 
 // ── PostgresRunStore ──────────────────────────────────────────────────────
 
-export class PostgresRunStore implements import('./run-store.js').RunStore {
+export class PostgresRunStore implements RunStore {
   private constructor(private readonly _db: PgQueryable) {}
 
   static async create(db: PgQueryable): Promise<PostgresRunStore> {
@@ -319,7 +320,7 @@ export class PostgresRunStore implements import('./run-store.js').RunStore {
     return new PostgresRunStore(db);
   }
 
-  async save(record: import('./run-store.js').RunRecord): Promise<void> {
+  async save(record: RunRecord): Promise<void> {
     await this._db.query(
       `INSERT INTO personaforge_runs (
          run_id, tenant_id, user_id, agent_id, agent_version, session_id, parent_run_id,
@@ -351,7 +352,7 @@ export class PostgresRunStore implements import('./run-store.js').RunStore {
     );
   }
 
-  async get(runId: string): Promise<import('./run-store.js').RunRecord | null> {
+  async get(runId: string): Promise<RunRecord | null> {
     const { rows } = await this._db.query<Record<string, unknown>>(
       'SELECT * FROM personaforge_runs WHERE run_id = $1',
       [runId],
@@ -360,7 +361,7 @@ export class PostgresRunStore implements import('./run-store.js').RunStore {
     return pgRowToRunRecord(rows[0]);
   }
 
-  async list(filter?: import('./run-store.js').RunFilter): Promise<import('./run-store.js').RunRecord[]> {
+  async list(filter?: RunFilter): Promise<RunRecord[]> {
     const clauses: string[] = [];
     const params: unknown[] = [];
     let pidx = 1;
@@ -389,14 +390,14 @@ export class PostgresRunStore implements import('./run-store.js').RunStore {
     await this._db.query('DELETE FROM personaforge_runs WHERE run_id = $1', [runId]);
   }
 
-  async listIncomplete(): Promise<import('./run-store.js').RunRecord[]> {
+  async listIncomplete(): Promise<RunRecord[]> {
     const { rows } = await this._db.query<Record<string, unknown>>(
       "SELECT * FROM personaforge_runs WHERE status IN ('running', 'paused', 'awaiting_approval') ORDER BY start_time ASC",
     );
     return rows.map(pgRowToRunRecord);
   }
 
-  async count(filter?: import('./run-store.js').RunFilter): Promise<number> {
+  async count(filter?: RunFilter): Promise<number> {
     const records = await this.list(filter);
     return records.length;
   }
@@ -406,7 +407,7 @@ export class PostgresRunStore implements import('./run-store.js').RunStore {
   }
 }
 
-function pgRowToRunRecord(row: Record<string, unknown>): import('./run-store.js').RunRecord {
+function pgRowToRunRecord(row: Record<string, unknown>): RunRecord {
   return {
     runId: row['run_id'] as string,
     tenantId: (row['tenant_id'] as string | null) ?? undefined,
@@ -415,7 +416,7 @@ function pgRowToRunRecord(row: Record<string, unknown>): import('./run-store.js'
     agentVersion: (row['agent_version'] as string | null) ?? undefined,
     sessionId: (row['session_id'] as string | null) ?? undefined,
     parentRunId: (row['parent_run_id'] as string | null) ?? undefined,
-    status: row['status'] as import('./run-store.js').RunStatus,
+    status: row['status'] as RunStatus,
     input: (row['input'] as string | null) ?? undefined,
     output: (row['output'] as string | null) ?? undefined,
     startTime: row['start_time'] instanceof Date

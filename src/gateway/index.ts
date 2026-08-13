@@ -38,6 +38,8 @@ import type { CreateAgentResult } from '../create-agent.js';
 import { createAuthMiddleware, sendForbidden, type AuthContext } from '../runtime/auth.js';
 import { hasRole, type JwtPayload } from '../runtime/jwt-rbac.js';
 import { InMemoryAuditStore, type AuditEntry, type AuditStore } from '../production/audit-store.js';
+import { Semaphore } from '../production/concurrency.js';
+import { trackRun } from '../production/run-tracking.js';
 import { RateLimiter } from '../production/rate-limiter.js';
 import { generateComplianceReport } from './compliance.js';
 import type {
@@ -412,7 +414,7 @@ ${rows}
             const start = Date.now();
 
             try {
-                const execFn = () => agent.run(body.message, { sessionId, userId: body.userId });
+                const execFn = () => agent.run(body.message!, { sessionId, userId: body.userId });
                 const result = await (concurrencyLimiter
                     ? concurrencyLimiter.withLock(execFn)
                     : execFn()
@@ -444,7 +446,7 @@ ${rows}
                     trackRun(config.runStore, {
                         runId: rid,
                         agentId: agentName,
-                        tenantId: body.tenantId ?? tenantId,
+                        tenantId: (body as Record<string, string | undefined>).tenantId ?? tenantId,
                         userId: body.userId,
                         sessionId,
                         model: result.model,
@@ -478,7 +480,7 @@ ${rows}
                     config.runStore.save({
                         runId: rid,
                         agentId: agentName,
-                        tenantId: body.tenantId ?? tenantId,
+                        tenantId: (body as Record<string, string | undefined>).tenantId ?? tenantId,
                         userId: body.userId,
                         sessionId,
                         status: 'failed',
