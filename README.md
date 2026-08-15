@@ -16,7 +16,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/npm/l/personaforge?style=flat-square" alt="MIT"></a>
   <a href="https://www.npmjs.com/package/personaforge"><img src="https://img.shields.io/npm/dm/personaforge?style=flat-square" alt="downloads"></a>
   <img src="https://img.shields.io/badge/TypeScript-5.4+-blue?style=flat-square" alt="TypeScript">
-  <img src="https://img.shields.io/badge/coverage-15k+-tests-green?style=flat-square" alt="tests">
+  <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="coverage">
+  <img src="https://img.shields.io/badge/AI_SDK-supported-black?style=flat-square" alt="Vercel AI SDK">
+  <img src="https://img.shields.io/badge/tests-15k+-green?style=flat-square" alt="tests">
 </p>
 
 ---
