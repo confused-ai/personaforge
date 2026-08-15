@@ -67,6 +67,13 @@ export class Agent {
             ...rest,
         };
     }
+    /**
+     * Mastra-style static factory. Creates an Agent with declarative config.
+     */
+    static create(options: AgentOptions): Agent {
+        return new Agent(options);
+    }
+
 
     protected get delegate(): CreateAgentResult {
         if (!this._delegate) this._delegate = createAgent(this._opts);
@@ -111,7 +118,14 @@ export class Agent {
         }
         return this.invalidate();
     }
-    tools(tools: CreateAgentOptions['tools']): this { this._opts.tools = tools; return this.invalidate(); }
+    /**
+     * Set all tools. Accepts array or keyed object (Mastra-style `{ toolName: toolDef }`).
+     */
+    tools(tools: CreateAgentOptions['tools']): this {
+        this._opts.tools = tools;
+        return this.invalidate();
+    }
+
     toolMiddleware(mw: NonNullable<CreateAgentOptions['toolMiddleware']>[number]): this {
         this._opts.toolMiddleware = [...(this._opts.toolMiddleware ?? []), mw];
         return this.invalidate();
@@ -230,6 +244,11 @@ export class Agent {
     async run(prompt: string, options?: AgentRunOptions): Promise<AgenticRunResult> {
         return this.delegate.run(prompt, options);
     }
+    /** Mastra-style alias for `run()`. */
+    async generate(prompt: string, options?: AgentRunOptions): Promise<AgenticRunResult> {
+        return this.run(prompt, options);
+    }
+
     stream(prompt: string, options?: Omit<AgentRunOptions, 'onChunk'>): AsyncIterable<string> {
         return this.delegate.stream(prompt, options);
     }

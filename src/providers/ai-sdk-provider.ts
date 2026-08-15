@@ -111,10 +111,10 @@ export interface AiSdkProviderOptions {
 
 // ── Adapter ─────────────────────────────────────────────────────────────────
 
-const MISSING_PROVIDER_MSG =
-    '[personaforge] @ai-sdk/provider not found.\n' +
-    'Install it: npm install @ai-sdk/provider\n' +
-    'Then install a model package: npm install @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/google\n';
+// const MISSING_PROVIDER_MSG =
+//     '[personaforge] @ai-sdk/provider not found.\n' +
+//     'Install it: npm install @ai-sdk/provider\n' +
+//     'Then install a model package: npm install @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/google\n';
 
 /**
  * Create a personaforge LLMProvider that delegates to any `@ai-sdk/provider`
@@ -324,7 +324,7 @@ async function collectStreamToResult(
     onChunk?: (text: string) => void,
 ): Promise<GenerateResult> {
     const reader = stream.getReader();
-    const decoder = new TextDecoder();
+    // const decoder = new TextDecoder();
 
     let text = '';
     let toolCalls: GenerateResult['toolCalls'] = [];

@@ -68,7 +68,9 @@ export type { AgentOptions } from './agent.js';
 
 // ── createAgent (legacy) — use agent() instead ─────────────────────────────────
 export { createAgent } from './create-agent.js';
+export { createAiSdkProvider } from './providers/index.js';
 export type { CreateAgentOptions, AgentRunOptions, AgentRunResult, CreateAgentResult } from './create-agent.js';
+export type { AiSdkProviderOptions } from './providers/index.js';
 
 // ── Core framework ─────────────────────────────────────────────────────────────
 export * from './core/index.js';
