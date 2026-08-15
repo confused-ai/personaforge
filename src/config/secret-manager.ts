@@ -188,6 +188,7 @@ function createPollingWatcher(
     // Prime lastValue immediately (no await — fire-and-forget in background).
     void poll();
     timer = setInterval(() => { void poll(); }, intervalMs);
+    timer.unref?.();
 
     return {
         stop(): void {

@@ -68,7 +68,9 @@ export type { AgentOptions } from './agent.js';
 
 // ── createAgent (legacy) — use agent() instead ─────────────────────────────────
 export { createAgent } from './create-agent.js';
+export { createAiSdkProvider } from './providers/index.js';
 export type { CreateAgentOptions, AgentRunOptions, AgentRunResult, CreateAgentResult } from './create-agent.js';
+export type { AiSdkProviderOptions } from './providers/index.js';
 
 // ── Core framework ─────────────────────────────────────────────────────────────
 export * from './core/index.js';
@@ -449,3 +451,26 @@ export type { CodeModeOptions, CodeModeResult, Sandbox, SandboxRunResult, Extern
 
 // ── Agent approval — human-in-the-loop tool approval / suspension ─────────────
 export * from './approval/index.js';
+
+// ── Configuration type surface (root) ─────────────────────────────────────────
+// Unified root access to every framework config so consumers can import any
+// config type directly from 'personaforge' without reaching into subpaths.
+export type { EnterpriseGatewayConfig } from './gateway/index.js';
+
+export type {
+    HealthCheckConfig,
+    RateLimiterConfig,
+    ResilienceConfig,
+} from './production/index.js';
+export type { ResilienceConfig as ResilienceOptions } from './production/index.js';
+
+export type { CreateSecretManagerOptions as SecretManagerConfig } from './config/index.js';
+
+export type { DurableAgentConfig as EventedAgentConfig } from './durable/index.js';
+
+export type {
+    EvalConfig,
+    EvalSuiteConfig,
+} from './eval/index.js';
+
+export type { HttpServiceConfig } from './serve/index.js';

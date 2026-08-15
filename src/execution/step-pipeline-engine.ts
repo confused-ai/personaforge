@@ -1,5 +1,10 @@
 /**
- * Event-Driven Execution Engine v2
+ * Step-pipeline execution engine.
+ *
+ * Models work as an ordered *pipeline of steps* driven by an event loop:
+ * async-first execution, parallel step groups with backpressure, a priority
+ * queue, and dynamic pause/resume. Reach for this when you have a known
+ * sequence of stages and need flow control over throughput.
  *
  * Features:
  * - Async-first, event-driven execution
@@ -7,6 +12,10 @@
  * - Dynamic pause/resume
  * - Built-in queue with priority handling
  * - Zero-dependency core
+ *
+ * Sibling engine: `task-plan-engine.ts` executes a *plan of tasks* as a
+ * dependency DAG. The two are complementary, not versions of each other —
+ * see `./index.ts` for the full comparison.
  */
 
 import { EntityId, generateEntityId } from '../core/index.js';

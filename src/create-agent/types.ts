@@ -30,6 +30,9 @@ import type { EventRecorder } from '../core/runner/types.js';
 
 type AnyLightweightTool = LightweightTool<any, any>;
 
+/** Keyed tools object — Mastra-style `{ toolName: toolDef }`. */
+export type ToolsRecord = Record<string, Tool | AnyLightweightTool>;
+
 export interface AgentRunDebugInfo {
     enabled: true;
     historyMessages: number;
@@ -100,7 +103,7 @@ export interface CreateAgentOptions extends AgentContextOptions {
      * - Pass `'web'` for the built-in preset (HttpClientTool + BrowserTool).
      * - Pass `[]`, `false`, or omit entirely for a tool-free agent (pure text reasoning).
      */
-    tools?: (Tool | AnyLightweightTool)[] | ToolRegistry | false | 'web';
+    tools?: (Tool | AnyLightweightTool)[] | ToolsRecord | ToolRegistry | false | 'web';
     toolMiddleware?: ToolMiddleware[];
     /**
      * Session store. Pass `false` to run stateless (no session tracking).

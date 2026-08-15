@@ -176,6 +176,10 @@ export interface AgenticRunResult {
     readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted' | 'suspended' | 'max_runs';
     /** Optional usage stats */
     readonly usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+    /** Estimated USD cost of the run */
+    readonly costUsd?: number;
+    /** Model used for the run */
+    readonly model?: string;
     /** Run ID when provided in config */
     readonly runId?: string;
     /** Trace ID when provided in config */

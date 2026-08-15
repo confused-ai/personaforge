@@ -1,59 +1,56 @@
 /**
- * ResilientAgent — One-line production hardening wrapper.
+ * ResilientAgent — production hardening wrapper.
  *
- * Combines circuit breaker, rate limiter, health checks, and graceful shutdown
- * into a single composable wrapper around any Agent instance.
- *
- * @example
- * ```ts
- * import { Agent } from 'personaforge';
- * import { withResilience } from 'personaforge/production';
- *
- * const agent = new Agent({ instructions: 'You are helpful.' });
- * const resilient = withResilience(agent, {
- *   circuitBreaker: { failureThreshold: 5, resetTimeoutMs: 30_000 },
- *   rateLimit: { maxRpm: 60 },
- *   healthCheck: true,
- * });
- *
- * const result = await resilient.run('Hello');
- * console.log(resilient.health()); // { status: 'healthy', ... }
- * ```
+ * Composes shared CircuitBreaker + RateLimiter + retry policy + per-call
+ * timeout + AbortSignal propagation into a single agent facade. Delegates
+ * to the canonical implementations in `production/circuit-breaker.ts`,
+ * `production/rate-limiter.ts`, and `guard/retry.ts` (no logic duplicated
+ * here).
  */
 
-import type { AgentRunOptions } from '../core/index.js';
+import {
+    CircuitBreaker,
+    CircuitState,
+    CircuitOpenError,
+} from './circuit-breaker.js';
+import { RateLimiter, RateLimitError } from './rate-limiter.js';
+import { withRetry, isTransientLLMError, type RetryPolicy } from '../guard/retry.js';
+import { TimeoutError } from '../shared/errors.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-/** Configuration for the resilient agent wrapper. */
 export interface ResilienceConfig {
     /** Circuit breaker settings. Set `false` to disable. */
     readonly circuitBreaker?: CircuitBreakerConfig | false;
     /** Rate limiter settings. Set `false` to disable. */
     readonly rateLimit?: RateLimitConfig | false;
-    /** Enable health check tracking. Default: true. */
+    /** Enable health tracking snapshot via {@link ResilientAgent.health}. Default: true. */
     readonly healthCheck?: boolean;
-    /** Enable graceful shutdown handling. Default: true. */
+    /** Reserved. Wire graceful shutdown via {@link createGracefulShutdown}. */
     readonly gracefulShutdown?: boolean;
-    /** Retry config for transient failures. */
-    readonly retry?: { maxRetries?: number; backoffMs?: number; maxBackoffMs?: number };
+    /** Retry policy for transient failures. Set `false` to disable retries. */
+    readonly retry?: RetryConfig | false;
 }
 
-interface CircuitBreakerConfig {
-    /** Number of failures before opening. Default: 5. */
+export interface CircuitBreakerConfig {
     readonly failureThreshold?: number;
-    /** Time to wait before half-open. Default: 30000ms. */
     readonly resetTimeoutMs?: number;
-    /** Timeout for a single call. Default: 60000ms. */
+    /** Per-call timeout (aborts underlying agent via AbortController). Default: 60_000. */
     readonly callTimeoutMs?: number;
 }
 
-interface RateLimitConfig {
-    /** Max requests per minute. Default: 60. */
+export interface RateLimitConfig {
     readonly maxRpm?: number;
 }
 
-/** Health status of the resilient agent. */
+export interface RetryConfig {
+    readonly maxRetries?: number;
+    readonly backoffMs?: number;
+    readonly maxBackoffMs?: number;
+    /** Custom predicate. Defaults to `isTransientLLMError`. */
+    readonly retryOn?: (error: unknown) => boolean;
+}
+
 export interface HealthReport {
     readonly status: 'healthy' | 'degraded' | 'unhealthy';
     readonly circuitState: 'closed' | 'open' | 'half-open' | 'disabled';
@@ -65,96 +62,71 @@ export interface HealthReport {
     readonly lastRunAt?: Date;
 }
 
-/** Interface for any agent that can be wrapped with resilience. */
+/**
+ * Options the resilient agent understands.
+ *
+ * Deliberately a transparent passthrough rather than `AgentRunOptions`: the
+ * resilient wrapper only reads `signal` and forwards everything else verbatim
+ * to the wrapped agent, so callers can carry hooks/metadata of any shape
+ * without this layer needing to know about them.
+ */
+export interface ResilientRunOptions {
+    readonly signal?: AbortSignal;
+    readonly sessionId?: string;
+    readonly userId?: string;
+    readonly [key: string]: unknown;
+}
+
+/** Any agent that accepts a prompt string. */
 export interface WrappableAgent<TResult = unknown> {
     readonly name: string;
     readonly instructions: string;
-    run(prompt: string, options?: AgentRunOptions): Promise<TResult>;
+    run(prompt: string, options?: ResilientRunOptions): Promise<TResult>;
     createSession?(userId?: string): Promise<string>;
     getSessionMessages?(sessionId: string): Promise<unknown>;
 }
 
-// ── Circuit Breaker (inline, minimal) ──────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-type CBState = 'closed' | 'open' | 'half-open';
+const CB_TO_HEALTH: Record<CircuitState, 'closed' | 'open' | 'half-open'> = {
+    [CircuitState.CLOSED]: 'closed',
+    [CircuitState.OPEN]: 'open',
+    [CircuitState.HALF_OPEN]: 'half-open',
+};
 
-class InlineCircuitBreaker {
-    private state: CBState = 'closed';
-    private failures = 0;
-    private lastFailureTime = 0;
-    private readonly threshold: number;
-    private readonly resetMs: number;
-
-    constructor(threshold: number, resetMs: number) {
-        this.threshold = threshold;
-        this.resetMs = resetMs;
+/** Link an external AbortSignal into an owned AbortController. Returns detach. */
+function linkSignal(external: AbortSignal | undefined, owned: AbortController): () => void {
+    if (!external) return () => undefined;
+    if (external.aborted) {
+        owned.abort(external.reason);
+        return () => undefined;
     }
-
-    getState(): CBState {
-        if (this.state === 'open' && Date.now() - this.lastFailureTime >= this.resetMs) {
-            this.state = 'half-open';
-        }
-        return this.state;
-    }
-
-    async execute<T>(fn: () => Promise<T>): Promise<T> {
-        const state = this.getState();
-        if (state === 'open') {
-            throw new Error('Circuit breaker is OPEN — agent unavailable, retry later');
-        }
-
-        try {
-            const result = await fn();
-            this.onSuccess();
-            return result;
-        } catch (error) {
-            this.onFailure();
-            throw error;
-        }
-    }
-
-    private onSuccess(): void {
-        this.failures = 0;
-        this.state = 'closed';
-    }
-
-    private onFailure(): void {
-        this.failures++;
-        this.lastFailureTime = Date.now();
-        if (this.failures >= this.threshold) {
-            this.state = 'open';
-        }
-    }
+    const onAbort = (): void => owned.abort(external.reason);
+    external.addEventListener('abort', onAbort, { once: true });
+    return () => external.removeEventListener('abort', onAbort);
 }
 
-// ── Rate Limiter (inline, sliding window) ──────────────────────────────────
-
-class InlineRateLimiter {
-    private timestamps: number[] = [];
-    private head = 0; // head pointer — O(1) amortised eviction instead of O(n) filter()
-    private readonly maxRpm: number;
-
-    constructor(maxRpm: number) {
-        this.maxRpm = maxRpm;
-    }
-
-    check(): void {
-        const now = Date.now();
-        const cutoff = now - 60_000;
-        // Evict expired timestamps from the front (oldest-first order)
-        while (this.head < this.timestamps.length && this.timestamps[this.head] < cutoff) {
-            this.head++;
-        }
-        // Compact once the dead prefix is large enough to be worth the allocation
-        if (this.head > 128 && this.head > this.timestamps.length >> 1) {
-            this.timestamps = this.timestamps.slice(this.head);
-            this.head = 0;
-        }
-        const active = this.timestamps.length - this.head;
-        if (active >= this.maxRpm) {
-            throw new Error(`Rate limit exceeded: ${this.maxRpm} requests/minute`);
-        }
-        this.timestamps.push(now);
+/** Race `fn(signal)` against a timeout. Rejects with TimeoutError; aborts the inner signal. */
+async function withCallTimeout<T>(
+    timeoutMs: number,
+    external: AbortSignal | undefined,
+    fn: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+    const controller = new AbortController();
+    const detach = linkSignal(external, controller);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+            controller.abort(new Error(`call timed out after ${timeoutMs}ms`));
+            reject(new TimeoutError(`call timed out after ${timeoutMs}ms`, { timeoutMs }));
+        }, timeoutMs);
+        timer.unref?.();
+    });
+    try {
+        return await Promise.race([fn(controller.signal), timeout]);
+    } finally {
+        if (timer) clearTimeout(timer);
+        detach();
     }
 }
 
@@ -165,12 +137,12 @@ export class ResilientAgent<TResult = unknown> {
     readonly instructions: string;
 
     private readonly agent: WrappableAgent<TResult>;
-    private readonly circuitBreaker: InlineCircuitBreaker | null;
-    private readonly rateLimiter: InlineRateLimiter | null;
-    private readonly retryConfig: { maxRetries: number; backoffMs: number; maxBackoffMs: number };
+    private readonly circuitBreaker: CircuitBreaker | null;
+    private readonly rateLimiter: RateLimiter | null;
+    private readonly retryPolicy: Partial<RetryPolicy> | null;
+    private readonly callTimeoutMs: number;
     private readonly startTime = Date.now();
 
-    // Health tracking
     private totalRuns = 0;
     private totalFailures = 0;
     private totalLatencyMs = 0;
@@ -182,52 +154,83 @@ export class ResilientAgent<TResult = unknown> {
         this.name = agent.name;
         this.instructions = agent.instructions;
 
-        // Circuit breaker
         if (config.circuitBreaker !== false) {
             const cb = config.circuitBreaker ?? {};
-            this.circuitBreaker = new InlineCircuitBreaker(
-                cb.failureThreshold ?? 5,
-                cb.resetTimeoutMs ?? 30_000,
-            );
+            this.circuitBreaker = new CircuitBreaker({
+                name: `resilient:${agent.name || 'agent'}`,
+                failureThreshold: cb.failureThreshold ?? 5,
+                resetTimeoutMs: cb.resetTimeoutMs ?? 30_000,
+            });
+            this.callTimeoutMs = cb.callTimeoutMs ?? 60_000;
         } else {
             this.circuitBreaker = null;
+            this.callTimeoutMs = 60_000;
         }
 
-        // Rate limiter
         if (config.rateLimit !== false) {
             const rl = config.rateLimit ?? {};
-            this.rateLimiter = new InlineRateLimiter(rl.maxRpm ?? 60);
+            this.rateLimiter = new RateLimiter({
+                name: `resilient:${agent.name || 'agent'}`,
+                maxRequests: rl.maxRpm ?? 60,
+                intervalMs: 60_000,
+                // Strict RPM: no burst allowance, so `maxRpm` is a hard ceiling.
+                burstCapacity: 0,
+                overflowMode: 'reject',
+            });
         } else {
             this.rateLimiter = null;
         }
 
-        // Retry
-        this.retryConfig = {
-            maxRetries: config.retry?.maxRetries ?? 2,
-            backoffMs: config.retry?.backoffMs ?? 500,
-            maxBackoffMs: config.retry?.maxBackoffMs ?? 5_000,
-        };
+        if (config.retry !== false) {
+            const r = config.retry ?? {};
+            this.retryPolicy = {
+                maxAttempts: (r.maxRetries ?? 2) + 1,
+                initialDelayMs: r.backoffMs ?? 500,
+                maxDelayMs: r.maxBackoffMs ?? 5_000,
+                multiplier: 2,
+                jitter: true,
+                retryOn: r.retryOn ?? isTransientLLMError,
+            };
+        } else {
+            this.retryPolicy = null;
+        }
     }
 
-    /** Run with resilience: rate limit → circuit breaker → retry → execute. */
-    async run(prompt: string, options?: AgentRunOptions): Promise<TResult> {
-        // Rate limit check
-        this.rateLimiter?.check();
-
+    /** Run with resilience: rate limit → circuit breaker → retry → per-call timeout → execute. */
+    async run(prompt: string, options?: ResilientRunOptions): Promise<TResult> {
         const start = Date.now();
         this.totalRuns++;
         this.lastRunAt = new Date();
 
-        const execute = () => this.agent.run(prompt, options);
+        // Pre-flight rate limit: consume a token up-front so a rejected call
+        // never reaches the provider.
+        if (this.rateLimiter && !this.rateLimiter.tryAcquire()) {
+            this.totalFailures++;
+            const retryAfterMs = this.rateLimiter.getTimeUntilAvailable();
+            const err = new RateLimitError(this.name || 'agent', retryAfterMs);
+            this.lastError = err.message;
+            throw err;
+        }
+
+        const externalSignal = options?.signal;
+
+        const executeOnce = (): Promise<TResult> =>
+            withCallTimeout(this.callTimeoutMs, externalSignal, (signal) =>
+                this.agent.run(prompt, { ...options, signal }),
+            );
+
+        const runInner = (): Promise<TResult> =>
+            this.retryPolicy ? withRetry(executeOnce, this.retryPolicy) : executeOnce();
 
         try {
             let result: TResult;
             if (this.circuitBreaker) {
-                result = await this.circuitBreaker.execute(() => this.executeWithRetry(execute));
+                const cbResult = await this.circuitBreaker.execute(runInner);
+                if (!cbResult.success) throw cbResult.error ?? new Error('circuit breaker failed');
+                result = cbResult.value as TResult;
             } else {
-                result = await this.executeWithRetry(execute);
+                result = await runInner();
             }
-
             this.totalLatencyMs += Date.now() - start;
             return result;
         } catch (error) {
@@ -238,67 +241,44 @@ export class ResilientAgent<TResult = unknown> {
         }
     }
 
-    /** Create a new session (delegates to underlying agent). */
     async createSession(userId?: string): Promise<string> {
         if (this.agent.createSession) return this.agent.createSession(userId);
         throw new Error('Underlying agent does not support sessions');
     }
 
-    /** Get session messages (delegates to underlying agent). */
     async getSessionMessages(sessionId: string): Promise<unknown> {
         if (this.agent.getSessionMessages) return this.agent.getSessionMessages(sessionId);
         throw new Error('Underlying agent does not support sessions');
     }
 
-    /** Get current health status. */
     health(): HealthReport {
+        const cbState = this.circuitBreaker?.getState();
         return {
             status: this.getHealthStatus(),
-            circuitState: this.circuitBreaker?.getState() ?? 'disabled',
+            circuitState: cbState ? CB_TO_HEALTH[cbState] : 'disabled',
             totalRuns: this.totalRuns,
             totalFailures: this.totalFailures,
             averageLatencyMs: this.totalRuns > 0 ? Math.round(this.totalLatencyMs / this.totalRuns) : 0,
             uptime: Date.now() - this.startTime,
-            lastError: this.lastError,
-            lastRunAt: this.lastRunAt,
+            ...(this.lastError !== undefined ? { lastError: this.lastError } : {}),
+            ...(this.lastRunAt !== undefined ? { lastRunAt: this.lastRunAt } : {}),
         };
     }
 
     private getHealthStatus(): 'healthy' | 'degraded' | 'unhealthy' {
-        if (this.circuitBreaker?.getState() === 'open') return 'unhealthy';
-        if (this.circuitBreaker?.getState() === 'half-open') return 'degraded';
+        const state = this.circuitBreaker?.getState();
+        if (state === CircuitState.OPEN) return 'unhealthy';
+        if (state === CircuitState.HALF_OPEN) return 'degraded';
         if (this.totalRuns > 0 && this.totalFailures / this.totalRuns > 0.5) return 'degraded';
         return 'healthy';
     }
-
-    private async executeWithRetry(fn: () => Promise<TResult>): Promise<TResult> {
-        let lastError: Error | undefined;
-        for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
-            try {
-                return await fn();
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-                if (attempt < this.retryConfig.maxRetries) {
-                    const delay = Math.min(
-                        this.retryConfig.backoffMs * 2 ** attempt,
-                        this.retryConfig.maxBackoffMs,
-                    );
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-            }
-        }
-        throw lastError;
-    }
 }
 
-/**
- * Wrap any agent with production resilience in one line.
- *
- * @example
- * ```ts
- * const resilient = withResilience(agent, { circuitBreaker: { failureThreshold: 3 } });
- * ```
- */
-export function withResilience<TResult = unknown>(agent: WrappableAgent<TResult>, config?: ResilienceConfig): ResilientAgent<TResult> {
+export function withResilience<TResult = unknown>(
+    agent: WrappableAgent<TResult>,
+    config?: ResilienceConfig,
+): ResilientAgent<TResult> {
     return new ResilientAgent(agent, config);
 }
+
+export { CircuitOpenError, RateLimitError };

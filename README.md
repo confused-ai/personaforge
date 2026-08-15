@@ -16,7 +16,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/npm/l/personaforge?style=flat-square" alt="MIT"></a>
   <a href="https://www.npmjs.com/package/personaforge"><img src="https://img.shields.io/npm/dm/personaforge?style=flat-square" alt="downloads"></a>
   <img src="https://img.shields.io/badge/TypeScript-5.4+-blue?style=flat-square" alt="TypeScript">
-  <img src="https://img.shields.io/badge/coverage-15k+-tests-green?style=flat-square" alt="tests">
+  <img src="https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square" alt="coverage">
+  <img src="https://img.shields.io/badge/AI_SDK-supported-black?style=flat-square" alt="Vercel AI SDK">
+  <img src="https://img.shields.io/badge/tests-15k+-green?style=flat-square" alt="tests">
 </p>
 
 ---
@@ -75,10 +77,16 @@ Zero-config. Treeshakeable. No peer dependencies required for basic use.
 ### 🤖 Agents & Tools
 
 - **ReAct agent runtime** — think-act-observe loop with configurable max steps, timeout, retry, and tool error handling
-- **30+ LLM providers** — OpenAI, Anthropic, Google Gemini, AWS Bedrock, Ollama, OpenRouter, and more
+- **30+ LLM providers (native) + 300+ via AI SDK adapter** — OpenAI, Anthropic, Google Gemini, AWS Bedrock, Ollama, OpenRouter, plus any `@ai-sdk/provider` model and more
 - **120+ built-in tools** — search (Tavily, Exa, Brave, Serper, Arxiv, PubMed, Perplexity, Reddit, YouTube), web scraping (FireCrawl, Newspaper), HTTP client with SSRF protection, filesystem, shell, browser, finance (Stripe, Yahoo), CRM, media, productivity
 - **Custom tools** — define with Zod schemas, auto-JSON-schema conversion
 - **Tool composition** — `compose`, `pipe`, `parallel`, `fallback`, `retry`, `timeout`, `map`, `filter`
+- **Durable run store** — every agent execution persisted with cost, status, tenant, error. InMemory, SQLite, or Postgres.
+- **Cost tracking** — auto-estimated USD cost per LLM call in every `AgentRunResult`. Zero instrumentation.
+- **Concurrency limits** — bounded parallel execution with backpressure. Wire via gateway `maxConcurrency`.
+- **Structured error taxonomy** — 14 error classes with stable codes, HTTP mapping, and JSON serialization.
+- **Guardrail integration** — tool calls and LLM output validated in the core runner. Block policy violations.
+- **Tenant-scoped knowledge** — per-tenant document isolation in RAG queries.
 
 ### 🧠 Memory & Knowledge
 
@@ -156,7 +164,7 @@ budget enforcement, rate limiting, and durable audit — plus a board-ready
 import { createAgent } from 'personaforge';
 import { createEnterpriseGateway } from 'personaforge/gateway';
 import { apiKeyAuth } from 'personaforge/runtime';
-import { createSqliteAuditStore } from 'personaforge/production';
+import { createSqliteAuditStore, createSqliteRunStore } from 'personaforge/production';
 
 const support = createAgent({ name: 'support', instructions: 'You are a support agent.' });
 const billing = createAgent({ name: 'billing', instructions: 'You handle billing questions.' });
@@ -164,6 +172,8 @@ const billing = createAgent({ name: 'billing', instructions: 'You handle billing
 const gateway = createEnterpriseGateway({
   agents: { support, billing },
   auth: apiKeyAuth([process.env.GATEWAY_API_KEY!]),
+  runStore: createSqliteRunStore('./runs.db'),  // ← every run persisted (cost, status, tenant)
+  maxConcurrency: 25,                           // ← at most 25 concurrent agent executions
   tenants: [
     {
       id: 'acme',
@@ -251,14 +261,15 @@ Each layer is optional. Most projects only need a subset.
 
 | Metric | Count |
 |---|---|
-| Source files | 560 |
-| Lines of TypeScript | 111,000+ |
-| Test files | 88 |
-| Lines of test code | 15,300+ |
+| Source files | 570+ |
+| Lines of TypeScript | 112,000+ |
+| Test files | 92 |
+| Lines of test code | 15,800+ |
 | Built-in tools | 120+ (across 20 categories) |
-| LLM provider integrations | 30+ |
+| LLM provider integrations | 30+ native + 300+ via AI SDK adapter |
+| Production primitives | 20+ (run store, error taxonomy, concurrency, circuit breaker, rate limiter, ...) |
 | Graph DAG engine | 5,200+ lines |
-| Entry points (treeshakeable) | 70+ |
+| Entry points (treeshakeable) | 75+ |
 
 ## Adopters
 

@@ -65,6 +65,12 @@ function resolveTools(
             isLightweightTool(tool) ? tool.toFrameworkTool() : tool,
         );
         registry = toToolRegistry(normalized as ToolProvider);
+    } else if (typeof toolsOption === 'object' && !('list' in toolsOption)) {
+        // Keyed tools object: { toolName: toolDef } — convert to array
+        const tools = Object.values(toolsOption).map((tool: any) =>
+            isLightweightTool(tool) ? tool.toFrameworkTool() : tool,
+        );
+        registry = toToolRegistry(tools as ToolProvider);
     } else {
         registry = toToolRegistry(toolsOption as ToolProvider);
     }

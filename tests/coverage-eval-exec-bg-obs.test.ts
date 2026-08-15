@@ -167,6 +167,18 @@ describe('WorkerPool', () => {
             maxWorkers: 3,
             idleTimeoutMs: 50,
             taskTimeoutMs: 5000,
+        }, {
+            canExecute: () => true,
+            async execute(task) {
+                return {
+                    taskId: task.id,
+                    status: TaskStatus.COMPLETED,
+                    output: { message: `ran ${task.name}` },
+                    executionTimeMs: 1,
+                    startedAt: new Date(),
+                    completedAt: new Date(),
+                };
+            },
         });
         const ctx = { executionId: 'e1', planId: 'p1', agentId: 'a1', startedAt: new Date() } as any;
         const tasks = [makeTask('t1'), makeTask('t2'), makeTask('t3')];
@@ -181,7 +193,21 @@ describe('WorkerPool', () => {
         await expect(pool.executeParallel([makeTask('x')], ctx)).rejects.toThrow(/shutting down/);
 
         // Flood a single worker so some tasks remain queued when we shut down without waiting.
-        const pool2 = new WorkerPool({ minWorkers: 1, maxWorkers: 1, taskTimeoutMs: 5000, idleTimeoutMs: 30_000 });
+        // Use a slow executor so shutdown wins the race against task completion.
+        const pool2 = new WorkerPool({ minWorkers: 1, maxWorkers: 1, taskTimeoutMs: 5000, idleTimeoutMs: 30_000 }, {
+            canExecute: () => true,
+            async execute(task) {
+                await new Promise((r) => setTimeout(r, 200));
+                return {
+                    taskId: task.id,
+                    status: TaskStatus.COMPLETED,
+                    output: { message: `ran ${task.name}` },
+                    executionTimeMs: 1,
+                    startedAt: new Date(),
+                    completedAt: new Date(),
+                };
+            },
+        });
         const pending = pool2.executeParallel(
             Array.from({ length: 12 }, (_, i) => makeTask(`late${i}`)),
             ctx,

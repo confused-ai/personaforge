@@ -13,6 +13,14 @@
  * audit, or time-travel, use `personaforge/graph` instead. See
  * docs/superpowers/specs/2026-07-23-consolidation-and-path-to-1.md §3.2.
  *
+ * TWO COMPLEMENTARY ENGINES (not competing versions):
+ *   - `task-plan-engine.ts`     → ExecutionEngineImpl. Input is a *plan of
+ *     tasks with dependencies*; compiles to a DAG and fans out by dependency
+ *     readiness. Use when a planner emits discrete interdependent tasks.
+ *   - `step-pipeline-engine.ts` → StepExecutor / PipelineBuilder. Input is an
+ *     *ordered pipeline of steps*; adds backpressure, a priority queue, and
+ *     pause/resume. Use when you have known stages and need flow control.
+ *
  * Capabilities:
  *   - ExecutionEngineImpl: Task-based plan execution
  *   - ExecutionGraphBuilder: Build DAG execution graphs from plans
@@ -20,15 +28,16 @@
  *   - ThreadPool: Real OS-thread parallelism (node:worker_threads) for CPU-bound jobs
  *   - StepWorkflow: Fluent step-chaining DSL
  *   - StateGraph + WorkflowExecutor: State-machine graph workflows with checkpointing
- *   - StepExecutor + PipelineBuilder: Event-driven v2 engine with backpressure
+ *   - StepExecutor + PipelineBuilder: Step-pipeline engine with backpressure
  *
- * @experimental The durable execution engine and v2 pipeline are newer and not
+ * @experimental The durable execution engine and step-pipeline engine are newer and not
  * yet semver-stable — their APIs (event-store contracts, engine config) may
  * change in a minor release.
  */
 
 export * from './types.js';
-export { ExecutionEngineImpl } from './engine.js';
+// Task-plan engine — dependency DAG compiled from a planner's task list.
+export { ExecutionEngineImpl } from './task-plan-engine.js';
 export { ExecutionGraphBuilder } from './graph-builder.js';
 export { WorkerPool } from './worker-pool.js';
 
@@ -78,7 +87,7 @@ export type {
     WorkflowExecutorResult,
 } from './state-graph.js';
 
-// Event-driven execution engine v2
+// Step-pipeline engine — ordered stages, backpressure, pause/resume.
 export {
     StepExecutor,
     PipelineBuilder,
@@ -86,7 +95,7 @@ export {
     BackpressureQueue,
     EngineEvent,
     StepPriority,
-} from './engine-v2.js';
+} from './step-pipeline-engine.js';
 export type {
     StepConfig as StepExecutorStepConfig,
     StepContext,
@@ -98,7 +107,7 @@ export type {
     QueuedStep,
     EngineEventPayload,
     EngineEventType,
-} from './engine-v2.js';
+} from './step-pipeline-engine.js';
 
 // Durable Execution Engine (P0) — event-sourced workflow runtime
 export {

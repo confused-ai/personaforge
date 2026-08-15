@@ -25,7 +25,7 @@
  * ```
  */
 
-export { createHarness, type AgentHarness, type HarnessConfig, type HarnessAsToolOptions } from './create-harness.js';
+export { createHarness, type AgentHarness, type HarnessConfig, type HarnessAsToolOptions, type HarnessRunOptions } from './create-harness.js';
 export {
     createOrchestrator,
     multiAgentTool,

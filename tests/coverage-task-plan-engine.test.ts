@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { ExecutionEngineImpl } from '../src/execution/engine.js';
+import { ExecutionEngineImpl } from '../src/execution/task-plan-engine.js';
 import {
     ExecutionState,
     ExecutionNodeStatus,
@@ -53,7 +53,7 @@ const completed = (taskId: string, output?: unknown): TaskResult => ({
     completedAt: new Date(),
 });
 
-describe('execution/engine ExecutionEngineImpl', () => {
+describe('execution/task-plan-engine ExecutionEngineImpl', () => {
     it('executes a linear plan with events and options callbacks', async () => {
         const engine = new ExecutionEngineImpl({ maxConcurrency: 2, defaultTimeoutMs: 1000 });
         const events: string[] = [];

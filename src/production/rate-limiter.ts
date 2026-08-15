@@ -96,10 +96,10 @@ export class RateLimiter {
         this.lastRefill = Date.now();
     }
 
-    /** Get current available tokens */
+    /** Get current available tokens (floored to an integer count). */
     getAvailableTokens(): number {
         this.refillTokens();
-        return this.tokens;
+        return Math.floor(this.tokens);
     }
 
     /** Get current queue size */

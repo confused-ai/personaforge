@@ -247,6 +247,8 @@ export class ScheduleManager {
                 console.error('[ScheduleManager] tick error', err)
             );
         }, this.pollIntervalMs);
+        // Never keep the process alive for a background poll loop.
+        this._timer.unref?.();
         this._debug('started', { pollIntervalMs: this.pollIntervalMs });
     }
 

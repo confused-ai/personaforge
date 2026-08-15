@@ -347,6 +347,7 @@ export class ImprovementLoop {
         this._timer = setInterval(() => {
             void this.tick();
         }, this.opts.intervalMs);
+        this._timer.unref?.();
     }
 
     /** Stop the periodic loop. */

@@ -225,6 +225,7 @@ export class ResumableStreamManager {
         this.cleanupTimer = setInterval(() => {
             this.cleanup();
         }, this.config.cleanupIntervalMs);
+        this.cleanupTimer.unref?.();
     }
 
     private cleanup(): void {

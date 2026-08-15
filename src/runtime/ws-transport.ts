@@ -162,6 +162,7 @@ export function attachWebSocketTransport(
 
         // Keepalive ping every 30s
         const pingInterval = setInterval(() => send({ type: 'ping' }), 30_000);
+        pingInterval.unref?.();
 
         let buf = Buffer.alloc(0);
 

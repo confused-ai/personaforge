@@ -5,6 +5,7 @@
  */
 
 import type { Message, AgentLifecycleHooks, AgentRunResult } from '../types.js';
+import type { GuardrailEngine } from '../../guardrails/types.js';
 import type {
     LLMProvider, LLMToolDefinition, GenerateOptions, GenerateResult,
     ToolCall, Tool, ToolRegistry,
@@ -96,6 +97,8 @@ export interface RunnerConfig {
     readonly retry?: RetryPolicy;
     readonly hooks?: AgentLifecycleHooks;
     readonly toolTimeoutMs?: number;
+    /** Optional guardrail engine — validates tool calls and output. */
+    readonly guardrails?: GuardrailEngine;
     /** Optional durable event recorder. Off by default — zero cost when absent. */
     readonly recorder?: EventRecorder;
 }

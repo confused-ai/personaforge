@@ -2,7 +2,7 @@
  * `createAgent` — opinionated entry that wires LLM, tools, session, and guardrails.
  */
 
-export type { CreateAgentOptions, AgentRunOptions, AgentRunResult, CreateAgentResult, StreamChunk } from './types.js';
+export type { CreateAgentOptions, AgentRunOptions, AgentRunResult, CreateAgentResult, StreamChunk, ToolsRecord } from './types.js';
 export { createAgent } from './factory.js';
 export {
     resolveLlmForCreateAgent,

@@ -137,6 +137,7 @@ export class OTLPTraceExporter {
         this.exportTimer = setInterval(() => {
             this.export().catch(e => this.log('error', `Periodic export failed: ${e}`));
         }, this.config.exportIntervalMs);
+        this.exportTimer.unref?.();
 
         this.log('debug', `Started with interval ${this.config.exportIntervalMs}ms`);
     }
@@ -338,6 +339,7 @@ export class OTLPMetricsExporter {
         this.exportTimer = setInterval(() => {
             this.export().catch(e => console.error('[OTLPMetrics] Export failed:', e));
         }, this.config.exportIntervalMs);
+        this.exportTimer.unref?.();
     }
 
     /** Stop and flush */

@@ -54,6 +54,9 @@ export type {
     ScorerFn,
 } from './benchmark.js';
 
+// Config types (root re-export surface)
+export type { EvalConfig, EvalSuiteConfig } from './config.js';
+
 // ── Dataset <-> trace loop ────────────────────────────────────────────────────
 export { spanToSample, replayDataset, diffResults, summarizeDiff } from './trace-dataset.js';
 export type { TraceSpan, ReplayResult, DiffEntry, DiffSummary } from './trace-dataset.js';

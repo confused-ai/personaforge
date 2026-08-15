@@ -129,6 +129,10 @@ export interface EnterpriseGatewayConfig {
     adminApi?: import('../runtime/admin.js').AdminApiOptions;
     /** WebSocket transport. */
     websocket?: boolean;
+    /** Maximum concurrent agent executions. Default: no limit (0 = unlimited). */
+    maxConcurrency?: number;
+    /** Persistent run store — records every agent execution metadata. */
+    runStore?: import('../production/run-store.js').RunStore;
 }
 
 // ── Gateway runtime ─────────────────────────────────────────────────────────

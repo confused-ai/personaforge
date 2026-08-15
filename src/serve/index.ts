@@ -7,3 +7,4 @@ export * from './a2a.js';
 export * from './feedback.js';
 export * from './prometheus.js';
 export * from './data-stream.js';
+export type { HttpServiceConfig, HttpServiceRateLimit } from './config.js';

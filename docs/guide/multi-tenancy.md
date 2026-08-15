@@ -147,6 +147,81 @@ interface TenantContext {
 
 ---
 
+## `tenantId` in AgentRunOptions
+
+The `tenantId` and `traceId` fields now propagate through the entire run stack — from the request boundary to the runner, cost tracker, guardrails, and run store:
+
+```ts
+const agent = createAgent({ name: 'support', instructions: '...' });
+
+const result = await agent.run('Help me', {
+  tenantId: 'acme',
+  traceId: 'trace-abc-123',
+});
+
+console.log(result.costUsd);   // run is scoped + billed to 'acme'
+```
+
+Using `ctx.runContext` from `createTenantContext` passes both automatically:
+
+```ts
+const ctx = createTenantContext('acme', { sessionStore });
+
+const result = await agent.run('Help me', ctx.runContext);
+// ctx.runContext === { tenantId: 'acme' }
+```
+
+When combined with a `RunStore`, every run is persisted with its `tenantId` field — enabling per-tenant billing, quota reporting, and crash recovery.
+
+---
+
+## Tenant-scoped knowledge
+
+The `KnowledgeEngine` now supports per-tenant document isolation. Documents are tagged with a tenant at ingest time, and queries filter by tenant automatically:
+
+```ts
+import { createKnowledgeEngine } from 'personaforge/knowledge';
+
+const engine = createKnowledgeEngine({ tenantId: 'acme' });
+
+// Documents ingested via this engine are tagged with tenantId 'acme'
+await engine.addDocuments([{ content: 'Only Acme data.' }]);
+
+// Queries are scoped to 'acme'
+const context = await engine.buildContext('What are our policies?');
+```
+
+You can also pass a tenant at query time to override:
+
+```ts
+const context = await engine.buildContext('Search', 5, 'acme');
+```
+
+The underlying `VectorStore.search(query, topK, filter?)` accepts a `filter` parameter. Tenant isolation is enforced by the store — documents tagged with a different `tenantId` are never returned.
+
+---
+
+## Run Store — per-tenant records
+
+```ts
+import { createSqliteRunStore } from 'personaforge/production';
+
+const store = createSqliteRunStore('./runs.db');
+
+// Query runs for a specific tenant
+const acmeRuns = await store.list({ tenantId: 'acme', limit: 100 });
+
+// Count runs per tenant (billing)
+const count = await store.count({ tenantId: 'acme', status: 'completed' });
+
+// Find tenant-scoped incomplete runs for recovery
+const crashed = await store.list({ tenantId: 'acme' }).then(
+  (runs) => runs.filter((r) => r.status === 'running'),
+);
+```
+
+---
+
 ## Where to go next
 
 - [Session](./session) — underlying session stores.

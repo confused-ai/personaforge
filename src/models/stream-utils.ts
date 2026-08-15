@@ -105,6 +105,7 @@ export async function streamToSSE(
     let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
     if (keepAliveMs > 0) {
         keepAliveTimer = setInterval(() => { res.write(': keep-alive\n\n'); }, keepAliveMs);
+        keepAliveTimer.unref?.();
     }
 
     try {

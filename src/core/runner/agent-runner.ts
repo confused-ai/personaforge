@@ -28,6 +28,7 @@ import type {
     Tool,
     RetryPolicy,
 } from './types.js';
+import { estimateCost } from '../../providers/cost-tracker.js';
 import { LLMError } from '../errors.js';
 import { createRequire } from 'node:module';
 const _require = createRequire(import.meta.url);
@@ -244,6 +245,8 @@ export class AgentRunner {
         const deadline     = createDeadline(effectiveTimeout, 'agent.run');
         const usage        = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
         let steps          = 0;
+        let runCostUsd      = 0;
+        const runModels     = new Set<string>();
         let finishReason: AgentRunResult['finishReason'] = 'stop';
         let finalText      = '';
 
@@ -283,6 +286,25 @@ export class AgentRunner {
             }
 
             accumulateUsage(usage, result.usage);
+            // Guardrail: validate LLM output text before accepting it
+            if (this.config.guardrails && result.finishReason === 'stop' && result.text) {
+                const outputViolations = await this.config.guardrails.validateOutput(
+                    result.text,
+                    { agentId: this.config.name }
+                ) ?? [];
+                const hardBlocks = outputViolations.filter((v) => !v.passed);
+                if (hardBlocks.length > 0) {
+                    finalText = `[blocked] ${hardBlocks[0]!.message ?? hardBlocks[0]!.rule}`;
+                    finishReason = 'error';
+                    break;
+                }
+            }
+            const stepCost = estimateCost(this.config.name, {
+                input: result.usage?.promptTokens ?? 0,
+                output: result.usage?.completionTokens ?? 0,
+            });
+            runCostUsd += stepCost;
+            runModels.add(this.config.name);
             finalText = result.text ?? '';
 
             // Durable log: record this LLM turn (no-op without a recorder).
@@ -321,6 +343,7 @@ export class AgentRunner {
         span.setAttribute('agent.finish_reason', finishReason);
         span.setAttribute('llm.total_tokens',    usage.totalTokens);
 
+        const modelStr = runModels.size > 0 ? Array.from(runModels).join(',') : undefined;
         const runResult: AgentRunResult = {
             text:     finalText,
             markdown: {
@@ -333,6 +356,8 @@ export class AgentRunner {
             steps,
             finishReason,
             ...(usage.totalTokens > 0 && { usage }),
+            ...(runCostUsd > 0 && { costUsd: Math.round(runCostUsd * 1_000_000) / 1_000_000 }),
+            ...(modelStr ? { model: modelStr } : {}),
             ...(runConfig.runId && { runId: runConfig.runId }),
         };
 
@@ -403,6 +428,26 @@ export class AgentRunner {
             let args = tc.arguments;
             if (lifecycle.beforeToolCall) {
                 args = await lifecycle.beforeToolCall(tc.name, args, step);
+            }
+
+            // Guardrail check before tool execution
+            if (this.config.guardrails) {
+                const violations = await this.config.guardrails.checkToolCall(tc.name, args, {
+                    agentId: this.config.name,
+                    toolName: tc.name,
+                    toolArgs: args,
+                });
+                const errors = violations.filter((v) => !v.passed);
+                if (errors.length > 0) {
+                    messages.push({
+                        role: 'tool',
+                        content: `Tool "${tc.name}" blocked by guardrail: ${errors[0]!.message ?? errors[0]!.rule}`,
+                        tool_call_id: tc.id,
+                        name: tc.name,
+                    });
+                    streamHooks?.onToolResult?.(tc.name, { blocked: true, reason: errors[0]!.message });
+                    continue;
+                }
             }
 
             let output: unknown;
