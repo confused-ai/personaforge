@@ -173,7 +173,8 @@ describe('serve/auth JWKS verifier', () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // bad signature → rejected
-        const bad = `${header}.${payload}.${sig.slice(0, -2)}AA`;
+        const sigStart = token.lastIndexOf('.') + 1;
+        const bad = token.slice(0, sigStart) + (token[sigStart] === 'A' ? 'B' : 'A') + token.slice(sigStart + 1);
         await expect(v.verify(bad)).rejects.toThrow(/Invalid JWT signature/);
 
         // expired claims
