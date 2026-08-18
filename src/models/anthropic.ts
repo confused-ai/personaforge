@@ -75,13 +75,17 @@ export function anthropic(config: ModelAdapterConfig = {}): LLMProvider {
     }));
 
     const system = getSystem(messages);
-    const res = await (client as import('@anthropic-ai/sdk').default).messages.create({
+    const anthropicClient = client as import('@anthropic-ai/sdk').default;
+    type CreatedMessage = Awaited<ReturnType<typeof anthropicClient.messages.create>>;
+    const createMessage = anthropicClient.messages.create.bind(anthropicClient.messages) as
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<CreatedMessage>;
+    const res = await createMessage({
       model,
       max_tokens: opts?.maxTokens ?? config.maxTokens ?? 4096,
       messages:   toAnthropicMessages(messages),
       ...(system !== undefined && { system }),
       ...(tools?.length && { tools }),
-    } as never);
+    }, opts?.headers ? { headers: opts.headers } : undefined);
 
     const textBlock  = res.content.find((b) => b.type === 'text');
     const toolBlocks = res.content.filter((b) => b.type === 'tool_use');
@@ -113,14 +117,17 @@ export function anthropic(config: ModelAdapterConfig = {}): LLMProvider {
     }));
 
     const system = getSystem(messages);
-    const stream = (client as import('@anthropic-ai/sdk').default).messages.stream({
+    const anthropicClient = client as import('@anthropic-ai/sdk').default;
+    const streamMessage = anthropicClient.messages.stream.bind(anthropicClient.messages) as
+      (body: unknown, options?: { headers?: Record<string, string> }) => AsyncIterable<unknown>;
+    const stream = streamMessage({
       model,
       max_tokens: opts?.maxTokens ?? config.maxTokens ?? 4096,
       messages:   toAnthropicMessages(messages),
       ...(system !== undefined && { system }),
       ...(tools?.length && { tools }),
       ...(opts?.signal && { signal: opts.signal }),
-    } as never);
+    }, opts?.headers ? { headers: opts.headers } : undefined);
 
     for await (const event of stream as AsyncIterable<{
       type: string;

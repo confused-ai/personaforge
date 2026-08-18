@@ -21,9 +21,27 @@ export const COHERE_BASE_URL = 'https://api.cohere.com/compatibility/v1';
 export const PERPLEXITY_BASE_URL = 'https://api.perplexity.ai';
 export const AZURE_BASE_URL_TEMPLATE = 'https://{resource}.openai.azure.com/openai/deployments/{deployment}';
 
+/**
+ * Provider-specific capabilities for OpenAI-compatible endpoints.
+ *
+ * Every OpenAI-compatible factory accepts these to reach the long tail of
+ * provider-unique features that fall outside the shared OpenAI subset:
+ * reasoning-effort / thinking budgets (DeepSeek, Qwen, GLM, Hunyuan),
+ * JSON-mode / `response_format` (Cohere, Perplexity, Mistral structured),
+ * and non-standard auth headers (DashScope `X-DashScope-*`, Azure conventions).
+ */
+export interface OpenAICompatibleCapabilities {
+    /** Extra HTTP headers (provider-specific auth, tracing, inspection). */
+    readonly headers?: Record<string, string>;
+    /** Extra JSON merged into the request body (provider-specific params). */
+    readonly extraBody?: Record<string, unknown>;
+}
+
 // ── Groq ──────────────────────────────────────────────────────────────────
 
 export interface GroqProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Groq API key (or GROQ_API_KEY env var) */
     apiKey?: string;
     /**
@@ -42,6 +60,8 @@ export function createGroqProvider(config: GroqProviderConfig = {}): LLMProvider
         apiKey,
         baseURL: GROQ_BASE_URL,
         model: config.model ?? 'llama-3.3-70b-versatile',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -49,6 +69,8 @@ export function createGroqProvider(config: GroqProviderConfig = {}): LLMProvider
 // ── xAI (Grok) ────────────────────────────────────────────────────────────
 
 export interface XAIProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** xAI API key (or XAI_API_KEY env var) */
     apiKey?: string;
     /**
@@ -67,6 +89,8 @@ export function createXAIProvider(config: XAIProviderConfig = {}): LLMProvider {
         apiKey,
         baseURL: XAI_BASE_URL,
         model: config.model ?? 'grok-3',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -74,6 +98,8 @@ export function createXAIProvider(config: XAIProviderConfig = {}): LLMProvider {
 // ── Together AI ───────────────────────────────────────────────────────────
 
 export interface TogetherProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Together AI API key (or TOGETHER_API_KEY env var) */
     apiKey?: string;
     /**
@@ -92,6 +118,8 @@ export function createTogetherProvider(config: TogetherProviderConfig = {}): LLM
         apiKey,
         baseURL: TOGETHER_BASE_URL,
         model: config.model ?? 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -99,6 +127,8 @@ export function createTogetherProvider(config: TogetherProviderConfig = {}): LLM
 // ── Fireworks AI ──────────────────────────────────────────────────────────
 
 export interface FireworksProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Fireworks API key (or FIREWORKS_API_KEY env var) */
     apiKey?: string;
     /**
@@ -117,6 +147,8 @@ export function createFireworksProvider(config: FireworksProviderConfig = {}): L
         apiKey,
         baseURL: FIREWORKS_BASE_URL,
         model: config.model ?? 'accounts/fireworks/models/llama-v3p3-70b-instruct',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -124,6 +156,8 @@ export function createFireworksProvider(config: FireworksProviderConfig = {}): L
 // ── DeepSeek ──────────────────────────────────────────────────────────────
 
 export interface DeepSeekProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** DeepSeek API key (or DEEPSEEK_API_KEY env var) */
     apiKey?: string;
     /**
@@ -142,6 +176,8 @@ export function createDeepSeekProvider(config: DeepSeekProviderConfig = {}): LLM
         apiKey,
         baseURL: DEEPSEEK_BASE_URL,
         model: config.model ?? 'deepseek-chat',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -149,6 +185,8 @@ export function createDeepSeekProvider(config: DeepSeekProviderConfig = {}): LLM
 // ── Mistral ───────────────────────────────────────────────────────────────
 
 export interface MistralProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Mistral API key (or MISTRAL_API_KEY env var) */
     apiKey?: string;
     /**
@@ -167,6 +205,8 @@ export function createMistralProvider(config: MistralProviderConfig = {}): LLMPr
         apiKey,
         baseURL: MISTRAL_BASE_URL,
         model: config.model ?? 'mistral-large-latest',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -174,6 +214,8 @@ export function createMistralProvider(config: MistralProviderConfig = {}): LLMPr
 // ── Cohere ────────────────────────────────────────────────────────────────
 
 export interface CohereProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Cohere API key (or COHERE_API_KEY env var) */
     apiKey?: string;
     /**
@@ -192,6 +234,8 @@ export function createCohereProvider(config: CohereProviderConfig = {}): LLMProv
         apiKey,
         baseURL: COHERE_BASE_URL,
         model: config.model ?? 'command-r-plus-08-2024',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -199,6 +243,8 @@ export function createCohereProvider(config: CohereProviderConfig = {}): LLMProv
 // ── Perplexity ────────────────────────────────────────────────────────────
 
 export interface PerplexityProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Perplexity API key (or PERPLEXITY_API_KEY env var) */
     apiKey?: string;
     /**
@@ -217,6 +263,8 @@ export function createPerplexityProvider(config: PerplexityProviderConfig = {}):
         apiKey,
         baseURL: PERPLEXITY_BASE_URL,
         model: config.model ?? 'sonar-pro',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -251,6 +299,8 @@ export function createAzureOpenAIProvider(config: AzureOpenAIProviderConfig = {}
 // ── Custom / Generic OpenAI-compatible ────────────────────────────────────
 
 export interface OpenAICompatibleProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /**
      * Full base URL of any OpenAI-compatible endpoint.
      * Examples:
@@ -289,6 +339,8 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
         baseURL: config.baseURL,
         model: config.model,
         debug: config.debug,
+        headers: config.headers,
+        extraBody: config.extraBody,
     });
 }
 
@@ -465,6 +517,8 @@ export function createLambdaProvider(config: LambdaProviderConfig = {}): LLMProv
 export const MOONSHOT_BASE_URL = 'https://api.moonshot.cn/v1';
 
 export interface MoonshotProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** Moonshot API key (or MOONSHOT_API_KEY env var) */
     apiKey?: string;
     /**
@@ -483,6 +537,8 @@ export function createMoonshotProvider(config: MoonshotProviderConfig = {}): LLM
         apiKey,
         baseURL: MOONSHOT_BASE_URL,
         model: config.model ?? 'moonshot-v1-32k',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }
@@ -492,6 +548,8 @@ export function createMoonshotProvider(config: MoonshotProviderConfig = {}): LLM
 export const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
 export interface DashScopeProviderConfig {
+    readonly headers?: Record<string, string>;
+    readonly extraBody?: Record<string, unknown>;
     /** DashScope API key (or DASHSCOPE_API_KEY env var) */
     apiKey?: string;
     /**
@@ -511,6 +569,8 @@ export function createDashScopeProvider(config: DashScopeProviderConfig = {}): L
         apiKey,
         baseURL: DASHSCOPE_BASE_URL,
         model: config.model ?? 'qwen-max',
+        headers: config.headers,
+        extraBody: config.extraBody,
         debug: config.debug,
     });
 }

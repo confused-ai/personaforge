@@ -6,7 +6,7 @@
  * 2. Standard JSON Schema (`~standard.jsonSchema`)
  * 3. Zod 4 / duck-typed `toJSONSchema()` / `toJsonSchema()`
  * 4. Legacy Zod 3 `_def` walk via zodToJsonSchema
- * 5. Throw if conversion is impossible
+ * 5. Plain object fallback
  */
 
 import type { ZodType } from 'zod';
@@ -55,7 +55,8 @@ function isPlainJsonSchema(value: unknown): value is Record<string, unknown> {
         Array.isArray(obj['oneOf']) ||
         Array.isArray(obj['allOf']) ||
         typeof obj['$ref'] === 'string' ||
-        typeof obj['$schema'] === 'string'
+        typeof obj['$schema'] === 'string' ||
+        Object.keys(obj).length === 0
     );
 }
 
@@ -63,6 +64,10 @@ function isPlainJsonSchema(value: unknown): value is Record<string, unknown> {
  * Convert a schema to a JSON Schema object suitable for LLM function calling.
  */
 export function schemaToJsonSchema(schema: SchemaInput): Record<string, unknown> {
+    if (!schema) {
+        return { type: 'object', properties: {} };
+    }
+
     // 1. Already a JSON Schema object (tools that pre-convert via zodToJsonSchema)
     if (isPlainJsonSchema(schema)) {
         return stripMeta(schema);
@@ -102,6 +107,8 @@ export function schemaToJsonSchema(schema: SchemaInput): Record<string, unknown>
             // fall through
         }
     }
+
+
 
     throw new TypeError(
         'Unable to convert schema to JSON Schema. Use a library that exposes ' +

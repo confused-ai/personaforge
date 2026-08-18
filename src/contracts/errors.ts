@@ -37,6 +37,10 @@ export const ERROR_CODES = {
   // General
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   IDEMPOTENCY_CONFLICT: 'IDEMPOTENCY_CONFLICT',
+  // Admission control / backpressure
+  LOAD_SHED: 'LOAD_SHED',
+  // Agent lifecycle
+  INVALID_STATE_TRANSITION: 'INVALID_STATE_TRANSITION',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

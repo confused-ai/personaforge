@@ -52,6 +52,13 @@ export interface ToolContext {
         /** Self-suspend the tool mid-execution to request more input. */
         suspend(payload: unknown): never;
     };
+    /** Circuit breaker for fault isolation — tools can check before making external calls. */
+    readonly circuitBreaker?: {
+        readonly canExecute: () => boolean;
+        readonly recordSuccess: () => void;
+        readonly recordFailure: () => void;
+        readonly getState: () => 'closed' | 'open' | 'half_open';
+    };
 }
 
 export enum ToolCategory {
@@ -76,6 +83,13 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
     readonly tags?: string[];
     /** Pause this tool's call before `execute()` for human approval. */
     readonly requireApproval?: boolean;
+    /**
+     * When `true`, the tool is side-effect-free for a given argument set, so the
+     * runner may memoize its result within a single run: repeated identical
+     * `(name, arguments)` calls return the cached output instead of re-executing.
+     * Leave `false`/unset for tools with side effects or time-varying results.
+     */
+    readonly idempotent?: boolean;
     /** Schema for the custom payload emitted when the tool self-suspends. */
     readonly suspendSchema?: SchemaInput;
     /** Schema for the data accepted when resuming a suspended call. */
@@ -182,6 +196,7 @@ function adaptTool(raw: Partial<Tool> & { name: string; description: string; par
         validate:    raw.validate     ?? ((p: unknown): p is InferOutput<(typeof raw.parameters) & AnySchema> => safeValidate(raw.parameters, p).success),
         ...(raw.author && { author: raw.author }),
         ...(raw.tags   && { tags:   raw.tags }),
+        ...(raw.idempotent !== undefined && { idempotent: raw.idempotent }),
     };
 }
 
@@ -191,6 +206,21 @@ export function toToolRegistry(tools: ToolProvider): ToolRegistry {
         const reg = new ToolRegistryImpl();
         for (const t of tools) reg.register(adaptTool(t as Parameters<typeof adaptTool>[0]));
         return reg;
+    }
+    if (tools && typeof tools === "object") {
+        const regObj = tools as any;
+        if (typeof regObj.getByName !== "function") {
+            regObj.getByName = (name: string) => {
+                if (typeof regObj.get === "function") {
+                    const found = regObj.get(name);
+                    if (found) return found;
+                }
+                if (typeof regObj.list === "function") {
+                    return regObj.list().find((t: any) => t.name === name);
+                }
+                return undefined;
+            };
+        }
     }
     return tools;
 }

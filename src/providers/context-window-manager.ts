@@ -104,9 +104,11 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
     'grok-3': 131_072,
     'grok-3-mini': 131_072,
     'grok-2': 131_072,
+    'grok-2-mini': 131_072,
 
     // Cohere
     'command-r-plus-08-2024': 128_000,
+    'command-a-03-2025': 128_000,
     'command-r-08-2024': 128_000,
     'command-r7b-12-2024': 128_000,
 
@@ -173,10 +175,13 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
 
     // Novita AI
     'meta-llama/llama-3.3-70b-instruct': 128_000,
+    'meta-llama/meta-llama-3.1-70b-instruct': 128_000,
+    'deepseek/deepseek-v3': 64_000,
 
     // Writer (Palmyra)
     'palmyra-x5': 128_000,
     'palmyra-x4': 32_768,
+    'palmyra-x-002-128k': 128_000,
 
     // DeepInfra (key = full HF repo path)
     'meta-llama/Meta-Llama-3.1-70B-Instruct': 128_000,
@@ -185,6 +190,48 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
     'mistralai/Mistral-7B-Instruct-v0.3': 32_768,
     'Qwen/Qwen2.5-72B-Instruct': 131_072,
     'microsoft/WizardLM-2-8x22B': 65_536,
+    'meta-llama/meta-llama-3.1-70b-instruct-turbo': 128_000,
+
+    // Perplexity (Sonar)
+    'sonar': 128_000,
+    'sonar-pro': 200_000,
+    'sonar-reasoning': 128_000,
+    'sonar-reasoning-pro': 128_000,
+
+    // MiniMax
+    'minimax-text-01': 200_000,
+    'abab6.5s-chat': 32_768,
+
+    // Baichuan
+    'baichuan4-turbo': 128_000,
+    'baichuan4-air': 32_768,
+
+    // StepFun
+    'step-2-16k': 16_384,
+    'step-1-8k': 8_192,
+
+    // InternLM
+    'internlm2.5-20b-chat': 32_768,
+
+    // Tencent Hunyuan
+    'hunyuan-turbo': 32_768,
+    'hunyuan-standard': 32_768,
+    'hunyuan-lite': 4_096,
+
+    // Volcengine Doubao
+    'doubao-1.5-pro-32k': 32_768,
+    'doubao-1.5-lite-32k': 32_768,
+
+    // Snowflake
+    'snowflake-arctic-instruct': 4_096,
+
+    // OpenRouter (provider-prefixed common models)
+    'qwen/qwen3.6-plus': 131_072,
+    'anthropic/claude-sonnet-4': 200_000,
+    'openai/gpt-4o-mini': 128_000,
+
+    // Replicate
+    'meta/meta-llama-3-70b-instruct': 8_192,
 
     // vLLM / LM Studio (model-specific, use default for unknowns)
     'default': 4_096,

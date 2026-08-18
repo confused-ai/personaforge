@@ -27,7 +27,7 @@ const _require = createRequire(import.meta.url);
 // Minimal types for compile-time (runtime: peer dependency @anthropic-ai/sdk)
 interface AnthropicClient {
     messages: {
-        create(params: AnthropicCreateParams, requestOptions?: { signal?: AbortSignal }): Promise<AnthropicResponse | AsyncIterable<AnthropicStreamEvent>>;
+        create(params: AnthropicCreateParams, requestOptions?: { signal?: AbortSignal; headers?: Record<string, string> }): Promise<AnthropicResponse | AsyncIterable<AnthropicStreamEvent>>;
     };
 }
 
@@ -116,12 +116,12 @@ function toAnthropicMessages(messages: Message[]): { system?: string; messages: 
 
         // tool result → user message with tool_result block
         if (m.role === 'tool') {
-            const toolMsg = m as Message & { toolCallId?: string };
+            const toolMsg = m as Message & { toolCallId?: string; tool_call_id?: string };
             const text = typeof m.content === 'string' ? m.content
                 : Array.isArray(m.content) ? ((m.content.find((p: { type: string; text?: string }) => p.type === 'text') as { text?: string } | undefined)?.text ?? '') : '';
             anthropicMessages.push({
                 role: 'user',
-                content: [{ type: 'tool_result', tool_use_id: toolMsg.toolCallId ?? '', content: text } as unknown as { type: string; text?: string }],
+                content: [{ type: 'tool_result', tool_use_id: toolMsg.toolCallId ?? toolMsg.tool_call_id ?? '', content: text } as unknown as { type: string; text?: string }],
             });
             continue;
         }
@@ -215,7 +215,9 @@ export class AnthropicProvider implements LLMProvider {
             temperature: options?.temperature ?? 0.7,
             ...(tools && { tools }),
         } as AnthropicCreateParams;
-        const requestOpts = options?.signal ? { signal: options.signal } : undefined;
+        const requestOpts = options?.signal || options?.headers
+            ? { ...(options.signal && { signal: options.signal }), ...(options.headers && { headers: options.headers }) }
+            : undefined;
         const response = await (requestOpts
             ? this.client.messages.create(reqParams, requestOpts)
             : this.client.messages.create(reqParams)
@@ -269,7 +271,9 @@ export class AnthropicProvider implements LLMProvider {
             stream: true,
             ...(tools && { tools }),
         } as AnthropicCreateParams;
-        const requestOpts = options?.signal ? { signal: options.signal } : undefined;
+        const requestOpts = options?.signal || options?.headers
+            ? { ...(options.signal && { signal: options.signal }), ...(options.headers && { headers: options.headers }) }
+            : undefined;
         const stream = await (requestOpts
             ? this.client.messages.create(streamParams, requestOpts)
             : this.client.messages.create(streamParams)

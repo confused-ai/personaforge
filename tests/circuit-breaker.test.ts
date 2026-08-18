@@ -63,6 +63,26 @@ describe('CircuitBreaker', () => {
             expect(breaker.getState()).toBe(CircuitState.CLOSED);
         });
 
+        it('ages old failures out of the rolling window (O(1) ring)', async () => {
+            vi.useFakeTimers();
+            try {
+                const localBreaker = new CircuitBreaker({
+                    name: 'window-aging',
+                    failureThreshold: 5,
+                    resetTimeoutMs: 60_000,
+                    failureWindowMs: 5_000,
+                });
+                await localBreaker.execute(async () => { throw new Error('fail'); });
+                await localBreaker.execute(async () => { throw new Error('fail'); });
+                expect(localBreaker.getFailureCount()).toBe(2);
+                // Advance beyond the entire failure window — every bucket must age out.
+                vi.advanceTimersByTime(6_000);
+                expect(localBreaker.getFailureCount()).toBe(0);
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
         it('should open after failure threshold', async () => {
             for (let i = 0; i < 3; i++) {
                 await breaker.execute(async () => { throw new Error('fail'); });

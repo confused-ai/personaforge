@@ -28,6 +28,12 @@ export type { BedrockConverseProviderConfig } from './bedrock-provider.js';
 
 export type { OpenAIEmbeddingProviderConfig } from './openai-embedding-provider.js';
 
+export type { EmbeddingProvider } from './types-embedding.js';
+export { GoogleEmbeddingProvider } from './google-embedding-provider.js';
+export type { GoogleEmbeddingProviderConfig } from './google-embedding-provider.js';
+export { CohereEmbeddingProvider } from './cohere-embedding-provider.js';
+export type { CohereEmbeddingProviderConfig } from './cohere-embedding-provider.js';
+
 // OpenRouter (multi-model gateway)
 export { createOpenRouterProvider } from './openrouter-provider.js';
 export type { OpenRouterProviderConfig } from './openrouter-provider.js';

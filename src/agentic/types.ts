@@ -173,7 +173,7 @@ export interface AgenticRunResult {
     /** Number of steps taken */
     readonly steps: number;
     /** Finish reason */
-    readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted' | 'suspended' | 'max_runs';
+    readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted' | 'suspended' | 'max_runs' | 'loop_detected';
     /** Optional usage stats */
     readonly usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
     /** Estimated USD cost of the run */
@@ -248,6 +248,10 @@ export function background<TArgs extends unknown[]>(
 }
 
 export interface AgenticRunnerConfig {
+    /** Agent display name — used in cost reporting and spans. */
+    readonly name?: string;
+    /** Default system instructions for this agent. */
+    readonly instructions?: string;
     readonly llm: LLMProvider;
     readonly tools: ToolRegistry;
     readonly agentId?: EntityId;
@@ -297,7 +301,7 @@ export interface AgenticRunnerConfig {
         /** Enable pre-run reasoning. Default: false */
         readonly enabled: boolean;
         /** Strategy to use. Default: 'cot' */
-        readonly strategy?: 'cot' | 'tot' | 'react';
+        readonly strategy?: 'cot' | 'tot' | 'react' | 'reflexion' | 'rewoo' | 'got';
         /** Maximum reasoning steps (CoT) or tree depth (ToT). Default: 6 */
         readonly maxSteps?: number;
         /** ToT-only: number of branches to explore per level. Default: 3 */
@@ -324,6 +328,14 @@ export interface AgenticRunnerConfig {
      */
     readonly toolConcurrency?: number;
     /**
+     * Pre-flight validation of tool-call arguments before execution. When enabled
+     * (default), malformed (non-object) arguments or omitted fields declared
+     * `required` in the tool's JSON-Schema `parameters` are rejected with a
+     * precise, self-correctable tool result instead of an opaque execution error.
+     * Set `false` to opt out (full user control).
+     */
+    readonly validateToolArgs?: boolean;
+    /**
      * Context window size in tokens for the configured LLM model.
      * When set alongside LLM usage reporting, `agent.context_window.utilization`
      * metric is recorded after each LLM call.
@@ -349,6 +361,41 @@ export interface AgenticRunnerConfig {
      * (per-step model switches, structuring models, goal judges).
      */
     readonly resolveExtraLlm?: (model: string) => LLMProvider | undefined;
+    /**
+     * Sink for non-fatal ("soft") failures the runner would otherwise swallow
+     * (checkpoint saves, suspension persistence, recorder calls). Defaults to a
+     * visible stderr warning; pass a handler for full transparency and to wire
+     * these into your own logger/metrics. Never affects run success/failure.
+     */
+    readonly onSoftFailure?: (error: Error, ctx: { op: string; step?: number }) => void;
+    /**
+     * Repeated-state loop detection. When the last-N-tool-action signature
+     * repeats `threshold` consecutive steps, the loop exits with
+     * `finishReason: 'loop_detected'` instead of burning the step budget.
+     * Set `enabled: false` to opt out. Defaults to enabled, threshold 3, window 1.
+     */
+    readonly loopDetection?: {
+        /** Master switch. Default: true. */
+        readonly enabled?: boolean;
+        /** Consecutive identical signatures before bailing. Default: 3. */
+        readonly threshold?: number;
+        /** Trailing message count hashed into each signature. Default: 1. */
+        readonly window?: number;
+    };
+    /**
+     * Optional cache for non-streaming LLM responses. Identical requests
+     * (same model + tools + messages) return the cached `GenerateResult`
+     * instead of re-calling the provider; concurrent identical in-flight
+     * requests are coalesced into one provider call. Streaming turns are never
+     * cached. Any `LLMResponseCache` implementation (in-memory, Redis, …) works.
+     */
+    readonly responseCache?: import('../core/runner/types.js').LLMResponseCache;
+    /**
+     * Optional admission-control probe. Called before a run starts; when it
+     * returns `admit: false` the runner rejects the run up front (HTTP 503 +
+     * `Retry-After` at gateways) instead of queuing unbounded work.
+     */
+    readonly admissionControl?: () => import('../core/runner/types.js').LoadShedDecision | Promise<import('../core/runner/types.js').LoadShedDecision>;
 }
 
 /** Convert a framework Tool to LLM tool definition (name, description, parameters as JSON Schema) */

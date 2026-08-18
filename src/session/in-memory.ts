@@ -19,7 +19,15 @@ export interface InMemorySessionStoreOptions {
    * When `undefined` (default) sessions are kept indefinitely.
    */
   retentionDays?: number;
+  /**
+   * Suppress the "in-memory store in production" warning. Set `true` when the
+   * single-process, non-durable semantics are intentional in your deployment.
+   */
+  silenceProductionWarning?: boolean;
 }
+
+/** Emitted once per process — avoids log spam when many stores are created. */
+let warnedInMemoryInProduction = false;
 
 export class InMemorySessionStore implements SessionStore {
   /** O(1) average for all operations. */
@@ -29,6 +37,23 @@ export class InMemorySessionStore implements SessionStore {
   constructor(opts: InMemorySessionStoreOptions = {}) {
     this._retentionMs =
       opts.retentionDays !== undefined ? opts.retentionDays * 86_400_000 : undefined;
+
+    // Multi-node deployments each keep a private copy of this Map — no shared
+    // session state. Warn once so it is not silently used as the prod default.
+    if (
+      !opts.silenceProductionWarning &&
+      !warnedInMemoryInProduction &&
+      typeof process !== 'undefined' &&
+      process.env?.NODE_ENV === 'production'
+    ) {
+      warnedInMemoryInProduction = true;
+      console.warn(
+        '[personaforge] InMemorySessionStore is active with NODE_ENV=production. ' +
+        'It is process-local and non-durable — sessions are lost on restart and not shared across replicas. ' +
+        'Use a Redis/Postgres-backed SessionStore for multi-node deployments, ' +
+        'or pass { silenceProductionWarning: true } if this is intentional.',
+      );
+    }
   }
 
   get(id: string): Promise<SessionData | undefined> {

@@ -77,10 +77,8 @@ export class CircuitOpenError extends AgentError {
 }
 
 /** Failure record for sliding window */
-interface FailureRecord {
-    readonly timestamp: number;
-    readonly error: Error;
-}
+/** Number of fixed time-buckets covering the failure window. */
+const FAILURE_BUCKETS = 60;
 
 /**
  * Circuit Breaker implementation with sliding window failure tracking.
@@ -101,7 +99,13 @@ interface FailureRecord {
  */
 export class CircuitBreaker {
     private state: CircuitState = CircuitState.CLOSED;
-    private failures: FailureRecord[] = [];
+    // Fixed-size ring of failure counts — O(1) memory + O(1) amortised writes
+    // and O(FAILURE_BUCKETS) reads, regardless of failure rate.
+    // ponytail: stored `Error` objects are dropped (nothing read them); add a
+    //           parallel ring of last-N errors only when a consumer needs it.
+    private readonly failureBuckets: number[] = new Array<number>(FAILURE_BUCKETS).fill(0);
+    private bucketStart = Date.now();   // ms timestamp aligned to failureBuckets[last]
+    private bucketWidthMs = 0;          // lazily initialised from config.failureWindowMs
     private successCount = 0;
     private lastFailureTime = 0;
     private openedAt = 0;
@@ -189,7 +193,8 @@ export class CircuitBreaker {
     /** Force reset the circuit to closed state */
     reset(): void {
         this.transitionTo(CircuitState.CLOSED);
-        this.failures = [];
+        this.failureBuckets.fill(0);
+        this.bucketStart = Date.now();
         this.successCount = 0;
         this.lastFailureTime = 0;
         this.openedAt = 0;
@@ -197,8 +202,10 @@ export class CircuitBreaker {
 
     /** Get current failure count within window */
     getFailureCount(): number {
-        this.pruneOldFailures();
-        return this.failures.length;
+        this.advanceBuckets();
+        let total = 0;
+        for (let i = 0; i < FAILURE_BUCKETS; i++) total += this.failureBuckets[i]!;
+        return total;
     }
 
     /** Get circuit statistics */
@@ -237,7 +244,8 @@ export class CircuitBreaker {
             this.successCount++;
             if (this.successCount >= this.config.successThreshold) {
                 this.transitionTo(CircuitState.CLOSED);
-                this.failures = [];
+                this.failureBuckets.fill(0);
+                this.bucketStart = Date.now();
             }
         }
     }
@@ -245,26 +253,44 @@ export class CircuitBreaker {
     private recordFailure(error: Error): void {
         const now = Date.now();
         this.lastFailureTime = now;
-        this.failures.push({ timestamp: now, error });
+        this.advanceBuckets(now);
+        this.failureBuckets[FAILURE_BUCKETS - 1] = this.failureBuckets[FAILURE_BUCKETS - 1]! + 1;
+        void error;                                     // metadata only — see class comment
         this.recordMetric('circuit_failure', 1);
 
-        this.pruneOldFailures();
+        const failureCount = this.getFailureCount();
 
         if (this.state === CircuitState.HALF_OPEN) {
             // Any failure in half-open immediately opens
             this.transitionTo(CircuitState.OPEN);
             this.openedAt = now;
         } else if (this.state === CircuitState.CLOSED) {
-            if (this.failures.length >= this.config.failureThreshold) {
+            if (failureCount >= this.config.failureThreshold) {
                 this.transitionTo(CircuitState.OPEN);
                 this.openedAt = now;
             }
         }
     }
 
-    private pruneOldFailures(): void {
-        const cutoff = Date.now() - this.config.failureWindowMs;
-        this.failures = this.failures.filter(f => f.timestamp > cutoff);
+    /**
+     * Slide the ring forward so the last bucket represents "now". Elapsed
+     * buckets are zeroed. O(FAILURE_BUCKETS) worst-case (fixed → O(1)) and
+     * O(1) on the hot path when no bucket boundary was crossed.
+     */
+    private advanceBuckets(now: number = Date.now()): void {
+        if (this.bucketWidthMs === 0) {
+            this.bucketWidthMs = Math.max(1, Math.floor(this.config.failureWindowMs / FAILURE_BUCKETS));
+            this.bucketStart = now;
+        }
+        const elapsedBuckets = Math.floor((now - this.bucketStart) / this.bucketWidthMs);
+        if (elapsedBuckets <= 0) return;
+        if (elapsedBuckets >= FAILURE_BUCKETS) {
+            this.failureBuckets.fill(0);
+        } else {
+            this.failureBuckets.copyWithin(0, elapsedBuckets);
+            this.failureBuckets.fill(0, FAILURE_BUCKETS - elapsedBuckets);
+        }
+        this.bucketStart += elapsedBuckets * this.bucketWidthMs;
     }
 
     private transitionTo(newState: CircuitState): void {

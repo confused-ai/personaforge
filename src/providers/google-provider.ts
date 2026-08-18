@@ -40,13 +40,14 @@ interface GenerationConfig {
 }
 
 interface GoogleModel {
-    generateContent(request: GoogleRequest): Promise<{ response: GoogleResponse }>;
-    generateContentStream(request: GoogleRequest): Promise<{ stream: AsyncIterable<GoogleStreamChunk> }>;
+    generateContent(request: GoogleRequest, requestOptions?: { signal?: AbortSignal; headers?: Record<string, string> }): Promise<{ response: GoogleResponse }>;
+    generateContentStream(request: GoogleRequest, requestOptions?: { signal?: AbortSignal; headers?: Record<string, string> }): Promise<{ stream: AsyncIterable<GoogleStreamChunk> }>;
 }
 
 interface GoogleRequest {
     contents: GoogleContent[];
     tools?: GoogleTool[];
+    toolConfig?: { functionCallingConfig: { mode?: 'AUTO' | 'NONE' | 'ANY'; allowedFunctionNames?: string[] } };
 }
 
 interface GoogleContent {
@@ -116,14 +117,16 @@ function toGeminiContents(messages: Message[]): GoogleContent[] {
         if (m.role === 'system') continue; // handled via systemInstruction
 
         if (m.role === 'tool') {
-            const toolMsg = m as Message & { toolCallId?: string; toolName?: string };
+            const toolMsg = m as Message & { toolCallId?: string; toolCallId2?: string; toolName?: string; name?: string; tool_call_id?: string };
             const text = typeof m.content === 'string' ? m.content
                 : Array.isArray(m.content) ? (m.content.find((p: { type: string }) => p.type === 'text') as { text?: string } | undefined)?.text ?? '' : '';
             contents.push({
                 role: 'user',
                 parts: [{
                     functionResponse: {
-                        name: toolMsg.toolName ?? toolMsg.toolCallId ?? 'tool',
+                        // Gemini keys functionResponse by the FUNCTION NAME — prefer
+                        // the tool call name over the (generated) call id.
+                        name: toolMsg.toolName ?? toolMsg.name ?? toolMsg.toolCallId ?? toolMsg.tool_call_id ?? 'tool',
                         response: { output: text },
                     },
                 }],
@@ -132,14 +135,22 @@ function toGeminiContents(messages: Message[]): GoogleContent[] {
         }
 
         if (m.role === 'assistant') {
-            const asst = m as Message & { toolCalls?: ToolCall[] };
+            const asst = m as Message & { toolCalls?: ToolCall[]; tool_calls?: Array<{ id: string; type?: string; function?: { name?: string; arguments?: string } }> };
             const parts: GooglePart[] = [];
             const textContent = typeof asst.content === 'string' ? asst.content : '';
             if (textContent) parts.push({ text: textContent });
-            if (asst.toolCalls?.length) {
-                for (const tc of asst.toolCalls) {
-                    parts.push({ functionCall: { name: tc.name, args: tc.arguments } });
-                }
+            const calls = Array.isArray(asst.toolCalls)
+                ? asst.toolCalls
+                : (asst.tool_calls ?? []).map((tc) => {
+                      let args: Record<string, unknown> = {};
+                      const raw = tc.function?.arguments;
+                      if (typeof raw === 'string' && raw) {
+                          try { args = JSON.parse(raw) as Record<string, unknown>; } catch { args = {}; }
+                      }
+                      return { id: tc.id, name: tc.function?.name ?? 'unknown', arguments: args };
+                  });
+            for (const tc of calls) {
+                parts.push({ functionCall: { name: tc.name, args: tc.arguments } });
             }
             if (parts.length > 0) contents.push({ role: 'model', parts });
             continue;
@@ -183,6 +194,26 @@ function toGeminiTools(tools?: LLMToolDefinition[]): GoogleTool[] | undefined {
     }];
 }
 
+/** Map personforge toolChoice → Gemini functionCallingConfig. */
+function toGeminiToolConfig(toolChoice: GenerateOptions['toolChoice']): GoogleRequest['toolConfig'] {
+    if (!toolChoice || toolChoice === 'auto') return { functionCallingConfig: { mode: 'AUTO' } };
+    if (toolChoice === 'none') return { functionCallingConfig: { mode: 'NONE' } };
+    if (toolChoice === 'required') return { functionCallingConfig: { mode: 'ANY' } };
+    // { type: 'tool', name }
+    return {
+        functionCallingConfig: {
+            mode: 'ANY',
+            allowedFunctionNames: [toolChoice.name],
+        },
+    };
+}
+
+// Module-level monotonic counter for stable tool-call ids. Gemini responses do
+// not carry an id for `functionCall` parts — the runner needs a stable id to
+// pair tool results. A monotonic counter guarantees uniqueness even when the
+// model emits multiple parallel calls with the same name in one response.
+let toolCallSeq = 0;
+
 function extractToolCalls(candidates: GoogleResponse['candidates']): ToolCall[] {
     if (!candidates?.length) return [];
     const calls: ToolCall[] = [];
@@ -190,7 +221,7 @@ function extractToolCalls(candidates: GoogleResponse['candidates']): ToolCall[] 
         for (const part of candidate.content?.parts ?? []) {
             if ('functionCall' in part) {
                 calls.push({
-                    id: `${part.functionCall.name}-${Date.now()}`,
+                    id: `${part.functionCall.name}-${toolCallSeq++}`,
                     name: part.functionCall.name,
                     arguments: part.functionCall.args,
                 });
@@ -248,7 +279,17 @@ export class GoogleProvider implements LLMProvider {
             ...(geminiTools && { tools: geminiTools }),
         });
 
-        const result = await geminiModel.generateContent({ contents, ...(geminiTools && { tools: geminiTools }) });
+        const result = await geminiModel.generateContent(
+            {
+                contents,
+                ...(geminiTools && { tools: geminiTools }),
+                ...(geminiTools && { toolConfig: toGeminiToolConfig(options?.toolChoice) }),
+            },
+            {
+                ...(options?.signal && { signal: options.signal }),
+                ...(options?.headers && { headers: options.headers }),
+            },
+        );
         const response = result.response;
 
         const text = response.text() ?? '';
@@ -279,10 +320,22 @@ export class GoogleProvider implements LLMProvider {
             generationConfig: {
                 temperature: options?.temperature ?? 0.7,
                 ...(options?.maxTokens && { maxOutputTokens: options.maxTokens }),
+                ...(options?.stop?.length && { stopSequences: options.stop }),
             },
+            ...(geminiTools && { tools: geminiTools }),
         });
 
-        const streamResult = await geminiModel.generateContentStream({ contents, ...(geminiTools && { tools: geminiTools }) });
+        const streamResult = await geminiModel.generateContentStream(
+            {
+                contents,
+                ...(geminiTools && { tools: geminiTools }),
+                ...(geminiTools && { toolConfig: toGeminiToolConfig(options?.toolChoice) }),
+            },
+            {
+                ...(options?.signal && { signal: options.signal }),
+                ...(options?.headers && { headers: options.headers }),
+            },
+        );
 
         let fullText = '';
         const toolCalls: ToolCall[] = [];

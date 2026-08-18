@@ -103,7 +103,7 @@ export interface AgentRunResult {
     readonly messages: Message[];
     /** Number of reasoning steps taken */
     readonly steps: number;
-    readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted';
+    readonly finishReason: 'stop' | 'max_steps' | 'timeout' | 'error' | 'human_rejected' | 'aborted' | 'loop_detected' | 'max_runs' | 'suspended';
     readonly usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
     /** Estimated USD cost of the run (from provider pricing tables) */
     readonly costUsd?: number;
@@ -240,6 +240,20 @@ export interface AgentConfig {
     readonly maxIterations?: number;
     readonly timeoutMs?: number;
     readonly debug?: boolean;
+    /**
+     * When `true`, `setState` enforces a validated transition table and throws
+     * `InvalidStateTransitionError` on illegal moves (e.g. `COMPLETED→EXECUTING`).
+     * Defaults to `false` to preserve the permissive legacy behaviour.
+     */
+    readonly strictStateMachine?: boolean;
+    /**
+     * Error-contract switch for the deprecated `runWithContext` shim. When `true`,
+     * the shim re-throws the original error (after invoking `hooks.onError`) instead
+     * of swallowing it into an `AgentOutput{state: FAILED}`. The runner + HTTP
+     * boundary contract (throw typed errors) then holds even on the legacy path.
+     * Defaults to `false` to preserve the legacy swallow behaviour.
+     */
+    readonly throwOnError?: boolean;
 }
 
 // ── Agent interface ──────────────────────────────────────────────────────────
