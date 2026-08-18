@@ -76,15 +76,23 @@ export function anthropic(config: ModelAdapterConfig = {}): LLMProvider {
 
     const system = getSystem(messages);
     const anthropicClient = client as import('@anthropic-ai/sdk').default;
+    type CreatedMessage = Awaited<ReturnType<typeof anthropicClient.messages.create>>;
     const createMessage = anthropicClient.messages.create.bind(anthropicClient.messages) as
-      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('@anthropic-ai/sdk').Anthropic.Messages.Message>;
-    const res = await createMessage({
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<CreatedMessage>;
+    const res = (await createMessage({
       model,
       max_tokens: opts?.maxTokens ?? config.maxTokens ?? 4096,
       messages:   toAnthropicMessages(messages),
       ...(system !== undefined && { system }),
       ...(tools?.length && { tools }),
-    }, opts?.headers ? { headers: opts.headers } : undefined);
+    }, opts?.headers ? { headers: opts.headers } : undefined)) as {
+      content: Array<
+        | { type: 'text'; text: string }
+        | { type: 'tool_use'; id: string; name: string; input: unknown }
+      >;
+      stop_reason: string | null;
+      usage: { input_tokens: number; output_tokens: number };
+    };
 
     const textBlock  = res.content.find((b) => b.type === 'text');
     const toolBlocks = res.content.filter((b) => b.type === 'tool_use');

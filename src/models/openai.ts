@@ -65,9 +65,19 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
       ...((opts?.temperature ?? config.temperature) !== undefined && { temperature: opts?.temperature ?? config.temperature }),
     };
     const openaiClient = client as import('openai').default;
+    type ChatResponse = Awaited<ReturnType<typeof openaiClient.chat.completions.create>>;
     const createChat = openaiClient.chat.completions.create.bind(openaiClient.chat.completions) as
-      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('openai').OpenAI.Chat.ChatCompletion>;
-    const res = await createChat(request, opts?.headers ? { headers: opts.headers } : undefined);
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<ChatResponse>;
+    const res = (await createChat(request, opts?.headers ? { headers: opts.headers } : undefined)) as {
+      choices: Array<{
+        message: {
+          content?: string | null;
+          tool_calls?: Array<{ id: string; function: { name: string; arguments?: string } }>;
+        };
+        finish_reason?: string | null;
+      }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
 
     const choice = res.choices[0];
     const text   = choice?.message.content ?? '';
