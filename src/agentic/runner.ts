@@ -20,6 +20,8 @@
 import type { Message, ToolCall as LLMToolCall, LLMToolDefinition, GenerateResult, LLMProvider } from '../core/index.js';
 import { newId } from '../contracts/index.js';
 import type { Tool, ToolResult, ToolContext } from './_tool-types.js';
+import { toToolRegistry } from './_tool-types.js';
+import { z } from 'zod';
 import type {
     AgenticRunConfig,
     AgenticRunResult,
@@ -34,14 +36,16 @@ import type {
 import type { HumanInTheLoopHooks, GuardrailContext } from './_guardrail-types.js';
 import type { GuardrailEngine } from './_guardrail-types.js';
 import type { Span } from '@opentelemetry/api';
-import { LLMError, ToolNotAuthorizedError } from '../shared/index.js';
+import { LLMError, ToolNotAuthorizedError, createRepeatDetector, validateToolArgs } from '../shared/index.js';
+import { LoadShedError } from '../core/errors.js';
 import { isTransientLLMError } from '../guard/index.js';
+import { estimateCost } from '../providers/cost-tracker.js';
 import { toolToLLMDef } from './_zod-to-schema.js';
 import { validateStructuredOutput, buildStructuredOutputPrompt, extractJson } from './_structured-output.js';
 import { withRetry as guardWithRetry, runToolWithTimeout, createDeadline } from '../guard/index.js';
 import type { RetryPolicy } from '../guard/index.js';
 import { withSpan, Metrics, genAiAttributes, recordLlmUsage } from '../observe/index.js';
-import { ReasoningManager, TreeOfThoughtEngine } from '../reasoning/index.js';
+import { ReasoningManager, TreeOfThoughtEngine, ReflexionEngine, ReWooEngine, GotEngine } from '../reasoning/index.js';
 import { CompressionManager } from '../compression/index.js';
 import {
     resolveProcessorSet,
@@ -71,6 +75,176 @@ const DEFAULT_BACKOFF_MS = 1_000;
 const DEFAULT_TOOL_TIMEOUT_MS = 30_000;
 const DEFAULT_STRUCTURED_RETRIES = 3;
 
+// Circuit breaker defaults
+const DEFAULT_CIRCUIT_BREAKER_THRESHOLD = 5;
+const DEFAULT_CIRCUIT_BREAKER_RESET_MS = 30_000;
+const DEFAULT_CIRCUIT_BREAKER_HALF_OPEN_REQUESTS = 3;
+
+// ── Validation Utilities ─────────────────────────────────────────────────────
+
+/** Result of parameter validation */
+interface ValidationResult<T> {
+    success: boolean;
+    data?: T;
+    errors: string[];
+}
+
+/**
+ * Validates tool arguments against the tool's Zod schema.
+ * Returns parsed/coerced data on success, or detailed errors on failure.
+ */
+function validateToolArguments<T extends z.ZodTypeAny>(
+    schema: T,
+    args: unknown,
+    toolName: string,
+): ValidationResult<z.infer<T>> {
+    const result = schema.safeParse(args);
+    if (result.success) {
+        return { success: true, data: result.data, errors: [] };
+    }
+    const errors = result.error.issues.map((issue) => {
+        const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+        return `${toolName}.${path}: ${issue.message}`;
+    });
+    return { success: false, errors };
+}
+
+/**
+ * Pre-flight validation: checks all tool calls in a batch before execution.
+ * Fails fast on validation errors to avoid partial execution.
+ */
+function preflightValidateTools(
+    toolCalls: Array<{ id: string; name: string; arguments: unknown }>,
+    getTool: (name: string) => Tool | undefined,
+): { valid: Array<{ call: typeof toolCalls[0]; tool: Tool; parsedArgs: unknown }>; invalid: Array<{ call: typeof toolCalls[0]; errors: string[] }> } {
+    const valid: Array<{ call: typeof toolCalls[0]; tool: Tool; parsedArgs: unknown }> = [];
+    const invalid: Array<{ call: typeof toolCalls[0]; errors: string[] }> = [];
+
+    for (const call of toolCalls) {
+        const tool = getTool(call.name);
+        if (!tool) {
+            invalid.push({ call, errors: [`Unknown tool: ${call.name}`] });
+            continue;
+        }
+        // Tool schema is expected to be a Zod schema on the tool definition
+        const schema = (tool as Tool & { schema?: z.ZodTypeAny }).schema;
+        if (schema) {
+            const validation = validateToolArguments(schema, call.arguments, call.name);
+            if (validation.success) {
+                valid.push({ call, tool, parsedArgs: validation.data! });
+            } else {
+                invalid.push({ call, errors: validation.errors });
+            }
+        } else {
+            // No schema = accept as-is (backwards compatible)
+            valid.push({ call, tool, parsedArgs: call.arguments });
+        }
+    }
+
+    return { valid, invalid };
+}
+
+// ── Circuit Breaker ──────────────────────────────────────────────────────────
+
+/** Circuit breaker states */
+enum CircuitState {
+    CLOSED = 'closed',     // Normal operation
+    OPEN = 'open',         // Failing fast
+    HALF_OPEN = 'half_open', // Testing recovery
+}
+
+/** Per-tool circuit breaker */
+class CircuitBreaker {
+    private state = CircuitState.CLOSED;
+    private failureCount = 0;
+    private successCount = 0;
+    private lastFailureTime = 0;
+    private readonly threshold: number;
+    private readonly resetTimeoutMs: number;
+    private readonly halfOpenRequests: number;
+
+    constructor(
+        threshold = DEFAULT_CIRCUIT_BREAKER_THRESHOLD,
+        resetTimeoutMs = DEFAULT_CIRCUIT_BREAKER_RESET_MS,
+        halfOpenRequests = DEFAULT_CIRCUIT_BREAKER_HALF_OPEN_REQUESTS,
+    ) {
+        this.threshold = threshold;
+        this.resetTimeoutMs = resetTimeoutMs;
+        this.halfOpenRequests = halfOpenRequests;
+    }
+
+    /** Check if request should proceed */
+    canExecute(): boolean {
+        if (this.state === CircuitState.CLOSED) return true;
+        if (this.state === CircuitState.OPEN) {
+            if (Date.now() - this.lastFailureTime >= this.resetTimeoutMs) {
+                this.state = CircuitState.HALF_OPEN;
+                this.successCount = 0;
+                return true;
+            }
+            return false;
+        }
+        // HALF_OPEN: allow limited requests
+        return this.successCount < this.halfOpenRequests;
+    }
+
+    /** Record success */
+    recordSuccess(): void {
+        if (this.state === CircuitState.HALF_OPEN) {
+            this.successCount++;
+            if (this.successCount >= this.halfOpenRequests) {
+                this.state = CircuitState.CLOSED;
+                this.failureCount = 0;
+            }
+        } else if (this.state === CircuitState.CLOSED) {
+            this.failureCount = 0; // Reset on success
+        }
+    }
+
+    /** Record failure */
+    recordFailure(): void {
+        this.failureCount++;
+        this.lastFailureTime = Date.now();
+        if (this.state === CircuitState.HALF_OPEN) {
+            this.state = CircuitState.OPEN;
+        } else if (this.state === CircuitState.CLOSED && this.failureCount >= this.threshold) {
+            this.state = CircuitState.OPEN;
+        }
+    }
+
+    /** Get current state for monitoring */
+    getState(): CircuitState {
+        return this.state;
+    }
+
+    /** Get stats for observability */
+    getStats() {
+        return { state: this.state, failureCount: this.failureCount, successCount: this.successCount };
+    }
+}
+
+/** Registry of circuit breakers per tool */
+class CircuitBreakerRegistry {
+    private breakers = new Map<string, CircuitBreaker>();
+
+    get(name: string): CircuitBreaker {
+        let breaker = this.breakers.get(name);
+        if (!breaker) {
+            breaker = new CircuitBreaker();
+            this.breakers.set(name, breaker);
+        }
+        return breaker;
+    }
+
+    getAllStats(): Record<string, ReturnType<CircuitBreaker['getStats']>> {
+        const stats: Record<string, ReturnType<CircuitBreaker['getStats']>> = {};
+        for (const [name, breaker] of this.breakers) {
+            stats[name] = breaker.getStats();
+        }
+        return stats;
+    }
+}
+
 // ── Internal types ────────────────────────────────────────────────────────────
 
 /** Immutable context shared across all helper methods within a single run. */
@@ -94,6 +268,10 @@ interface RunContext {
     readonly resumeToolCallId?: string;
     /** Run-level approval policy (boolean or per-call function). */
     readonly requireToolApproval?: AgenticRunConfig['requireToolApproval'];
+    /** W3C trace id (32 hex chars) — mints a `traceparent` header into provider calls. */
+    readonly traceId?: string;
+    /** Per-run cache for `idempotent` tool results — never shared across runs. */
+    readonly memo: Map<string, unknown>;
 }
 
 /** Per-request processor pipeline context. */
@@ -108,6 +286,24 @@ interface ProcRun {
 }
 
 // ── Pure utility functions ────────────────────────────────────────────────────
+
+/**
+ * Deterministic JSON with lexicographically sorted object keys, so that
+ * `{a:1,b:2}` and `{b:2,a:1}` hash to the same key. Used only for
+ * idempotent-tool / response-cache keys; not a general-purpose serializer.
+ */
+function stableStringify(value: unknown): string {
+    return JSON.stringify(value, (_key, val: unknown) => {
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            const sorted: Record<string, unknown> = {};
+            for (const k of Object.keys(val as Record<string, unknown>).sort()) {
+                sorted[k] = (val as Record<string, unknown>)[k];
+            }
+            return sorted;
+        }
+        return val;
+    });
+}
 
 /** Translate AgenticRetryPolicy → guard RetryPolicy (adds jitter). */
 function toGuardRetryPolicy(policy: AgenticRetryPolicy): Partial<RetryPolicy> {
@@ -186,16 +382,24 @@ export class AgenticRunner {
     private _reasoningManager?: ReasoningManager;
     /** Optional ToT engine — created lazily when strategy is 'tot'. */
     private _totEngine?: TreeOfThoughtEngine;
+    private _reflexionEngine?: ReflexionEngine;
+    private _rewooEngine?: ReWooEngine;
+    private _gotEngine?: GotEngine;
     /** Optional compression manager — created lazily when compression is enabled. */
     private _compressionManager?: CompressionManager;
+    /** Circuit breaker registry for tool-level fault isolation. */
+    private readonly _circuitBreakers = new CircuitBreakerRegistry();
+    /** In-flight coalescing map: identical concurrent LLM requests share one promise. */
+    private readonly _llmInFlight = new Map<string, Promise<GenerateResult>>();
     private readonly _inputProcessors: Processor[];
     private readonly _outputProcessors: Processor[];
     private readonly _errorProcessors: Processor[];
     private readonly _maxProcessorRetries: number;
 
     constructor(config: AgenticRunnerConfig) {
-        this.config = { ...config, toolMiddleware: config.toolMiddleware ?? [] };
-        this._cachedLlmTools = config.tools.list().map((t) => toolToLLMDef(t));
+        const tools = toToolRegistry(config.tools as any);
+        this.config = { ...config, tools, toolMiddleware: config.toolMiddleware ?? [] };
+        this._cachedLlmTools = tools.list().map((t) => toolToLLMDef(t));
         if (config.guardrails) this.guardrails = config.guardrails;
         const sets = resolveProcessorSet(config.processors);
         this._inputProcessors = sets.input;
@@ -204,6 +408,20 @@ export class AgenticRunner {
         this._maxProcessorRetries =
             config.maxProcessorRetries ??
             (sets.error.length > 0 || sets.output.length > 0 ? 10 : 0);
+    }
+
+    /**
+     * Route a non-fatal ("soft") failure to the configured sink, defaulting to a
+     * visible stderr warning. Availability over strictness — never throws — but
+     * always preserves the signal instead of a silent `.catch(() => undefined)`.
+     */
+    private _softFail(error: unknown, ctx: { op: string; step?: number }): void {
+        const err = error instanceof Error ? error : new Error(String(error));
+        if (this.config.onSoftFailure) {
+            this.config.onSoftFailure(err, ctx);
+            return;
+        }
+        console.warn(`[agentic-runner] soft-failure op=${ctx.op}${ctx.step !== undefined ? ' step=' + String(ctx.step) : ''}: ${err.message}`);
     }
 
     setHumanInTheLoop(hooks: HumanInTheLoopHooks): void {
@@ -248,6 +466,20 @@ export class AgenticRunner {
         const agentId   = this.config.agentId  ?? 'agent';
         const sessionId = this.config.sessionId ?? newId('sess');
 
+        // ── Admission control / backpressure ───────────────────────────────
+        // Reject up front instead of queueing unbounded work when the process
+        // signals overload or a downstream circuit is open. Gateways can map the
+        // returned `retryAfterMs`/`reason` to `HTTP 503 + Retry-After`.
+        if (this.config.admissionControl) {
+            const decision = await this.config.admissionControl();
+            if (!decision.admit) {
+                throw new LoadShedError(decision.reason ?? 'Run rejected by admission control', {
+                    retryAfterMs: decision.retryAfterMs,
+                    context: { agent: agentId },
+                });
+            }
+        }
+
         const prompt = lifecycle.beforeRun
             ? await lifecycle.beforeRun(runConfig.prompt, runConfig)
             : runConfig.prompt;
@@ -270,7 +502,7 @@ export class AgenticRunner {
         if (!effectiveRagContext && this.config.knowledgebase) {
             effectiveRagContext = await this.config.knowledgebase
                 .buildContext(prompt, 5)
-                .catch(() => undefined);
+                .catch((e: unknown) => { this._softFail(e, { op: 'rag.buildContext' }); return undefined; });
         }
 
         // Override ragContext with auto-fetched context if needed
@@ -351,6 +583,8 @@ export class AgenticRunner {
             resumeData: runConfig.resumeData,
             resumeToolCallId,
             requireToolApproval: runConfig.requireToolApproval,
+            traceId: runConfig.traceId,
+            memo: new Map<string, unknown>(),
         };
 
         // ── Processor pipeline (input/output/error) — Mastra parity ────────
@@ -444,6 +678,22 @@ export class AgenticRunner {
         const deadline   = createDeadline(timeoutMs, 'agent.run');
         const maxProcessorRetries = this._maxProcessorRetries;
 
+        // ── Repeated-state loop detection (user-controllable, default-on) ──
+        // Flags when the agent's *action* repeats — including multi-step
+        // oscillation when `window > 1` — instead of burning the step budget.
+        const loopCfg       = this.config.loopDetection ?? {};
+        const loopEnabled   = loopCfg.enabled !== false;
+        const loopThreshold = Math.max(2, loopCfg.threshold ?? 3);
+        const actionSignature = (r: GenerateResult): string => {
+            const calls = (r.toolCalls ?? [])
+                .map((tc) => tc.name + '\x1f' + JSON.stringify(tc.arguments))
+                .join('\x1e');
+            return (r.text ?? '') + '\x1d' + calls;
+        };
+        const detectRepeat = loopEnabled
+            ? createRepeatDetector({ threshold: loopThreshold, window: Math.max(1, loopCfg.window ?? 1) })
+            : null;
+
         // Durable event log — start of run. ponytail: emitted once the loop is
         // reached; input-guardrail-blocked runs return earlier and log nothing,
         // and an LLM error mid-loop throws before agentEnd (matches core runner).
@@ -522,7 +772,19 @@ export class AgenticRunner {
 
             lastText = result.text ?? '';
             if (result.usage) {
-                usage = { ...result.usage };
+                const promptTokens = result.usage.promptTokens ?? 0;
+                const completionTokens = result.usage.completionTokens ?? 0;
+                const totalTokens = result.usage.totalTokens ?? (promptTokens + completionTokens);
+
+                if (!usage) {
+                    usage = { promptTokens, completionTokens, totalTokens };
+                } else {
+                    usage = {
+                        promptTokens: (usage.promptTokens ?? 0) + promptTokens,
+                        completionTokens: (usage.completionTokens ?? 0) + completionTokens,
+                        totalTokens: (usage.totalTokens ?? 0) + totalTokens,
+                    };
+                }
                 this.config.budgetEnforcer?.addStepCost(
                     this.config.budgetModelId ?? 'gpt-4o',
                     result.usage.promptTokens ?? 0,
@@ -536,11 +798,10 @@ export class AgenticRunner {
                     outputTokens: result.usage.completionTokens,
                 });
                 // Record context window utilization when contextWindowSize is configured.
-                const promptTokens = result.usage.promptTokens;
                 const cwSize = this.config.contextWindowSize;
-                if (promptTokens !== undefined && cwSize !== undefined && cwSize > 0) {
+                if (result.usage.promptTokens !== undefined && cwSize !== undefined && cwSize > 0) {
                     Metrics.contextWindowUtilization.record(
-                        promptTokens / cwSize,
+                        result.usage.promptTokens / cwSize,
                         { agent_name: agentId, model: this.config.budgetModelId ?? 'unknown' },
                     );
                 }
@@ -549,7 +810,7 @@ export class AgenticRunner {
             await this.config.recorder?.llmResult({
                 step: steps,
                 text: result.text ?? '',
-                toolCalls: result.toolCalls?.map((tc) => ({ name: tc.name })),
+                toolCalls: result.toolCalls,
                 finishReason: result.finishReason,
                 usage: result.usage,
             });
@@ -663,7 +924,7 @@ export class AgenticRunner {
                     // can replay from this exact point, then emit the event.
                     if (checkpointStore && runId) {
                         await this._saveCheckpoint(checkpointStore, runId, steps, messages, runConfig, startTime)
-                            .catch(() => undefined);
+                            .catch((e: unknown) => { this._softFail(e, { op: 'checkpoint.save', step: steps }); });
                     }
                     const p = this._suspensionPayload(err);
                     if (this.config.suspendedRunStore && runId) {
@@ -682,7 +943,7 @@ export class AgenticRunner {
                             }],
                             createdAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString(),
-                        }).catch(() => undefined);
+                        }).catch((e: unknown) => { this._softFail(e, { op: 'suspendedRun.persist', step: steps }); });
                     }
                     if (isApprovalRequiredError(err)) {
                         streamHooks?.onApproval?.({
@@ -700,6 +961,21 @@ export class AgenticRunner {
                 throw err;
             }
             messages.push(...toolMessages);
+
+            if (steps >= maxSteps) {
+                finishReason = 'max_steps';
+                break;
+            }
+
+            // ── Repeated-state loop detection ─────────────────────────────
+            // Break early when the agent repeats (or oscillates across a
+            // `window`-length cycle) instead of burning the whole step budget.
+            // Fully user-configurable via config.loopDetection.
+            if (detectRepeat && detectRepeat(actionSignature(result))) {
+                finishReason = 'loop_detected';
+                span.setAttribute('agent.loop_detected', true);
+                break;
+            }
 
             // Durable event log — one entry per tool call, paired to its result by id.
             if (this.config.recorder) {
@@ -764,6 +1040,11 @@ export class AgenticRunner {
               ? this._validateStructuredOutput(runConfig, lastText)
               : undefined;
 
+        const modelName = this.config.budgetModelId ?? (this.config.name !== 'Agent' ? this.config.name : undefined);
+        const costUsd = (usage && modelName)
+            ? estimateCost(modelName, { input: usage.promptTokens ?? 0, output: usage.completionTokens ?? 0 })
+            : undefined;
+
         let finalResult: AgenticRunResult = {
             text: lastText,
             markdown: {
@@ -776,6 +1057,8 @@ export class AgenticRunner {
             steps,
             finishReason,
             usage,
+            ...(costUsd !== undefined && { costUsd }),
+            ...(modelName !== undefined && { model: modelName }),
             ...(runConfig.runId    && { runId:    runConfig.runId }),
             ...(runConfig.traceId  && { traceId:  runConfig.traceId }),
             ...(object !== undefined && { object }),
@@ -793,7 +1076,8 @@ export class AgenticRunner {
         }
 
         if (checkpointStore && runId && (finishReason === 'stop' || finishReason === 'max_steps')) {
-            await checkpointStore.delete(runId).catch(() => { /* ignore cleanup errors */ });
+            await checkpointStore.delete(runId)
+                .catch((e: unknown) => { this._softFail(e, { op: 'checkpoint.delete' }); });
         }
 
         span.setAttribute('agent.steps', steps);
@@ -844,6 +1128,68 @@ export class AgenticRunner {
                 .filter((n) => n.score > 0.3)
                 .map((n, i) => `Thought ${i + 1} (score=${n.score.toFixed(2)}): ${n.thought}`)
                 .join('\n');
+        }
+
+        if (strategy === 'reflexion') {
+            if (!this._reflexionEngine) {
+                this._reflexionEngine = new ReflexionEngine({
+                    generate,
+                    maxAttempts: maxSteps,
+                });
+            }
+            const result = await this._reflexionEngine.solve(prompt, systemPrompt).catch(() => null);
+            if (!result?.attempts.length) return undefined;
+            return result.attempts
+                .map((a) => `Attempt ${a.attempt} [${a.passed ? 'PASSED' : 'FAILED'} - score=${a.score.toFixed(2)}]: ${a.response}${a.critique ? '\nCritique: ' + a.critique : ''}`)
+                .join('\n\n');
+        }
+
+        if (strategy === 'got') {
+            if (!this._gotEngine) {
+                this._gotEngine = new GotEngine({
+                    generate,
+                    numBranches: cfg.beamWidth ?? 4,
+                    maxIterations: maxSteps,
+                });
+            }
+            const result = await this._gotEngine.solve(prompt, systemPrompt).catch(() => null);
+            if (!result?.nodes.length) return undefined;
+            return result.nodes
+                .filter((n) => n.score > 0.3)
+                .map((n, i) => `Node ${n.id} [${n.operation}] (score=${n.score.toFixed(2)}): ${n.thought}`)
+                .join('\n');
+        }
+
+        if (strategy === 'rewoo') {
+            if (!this._rewooEngine) {
+                const executeTool = async (name: string, input: string): Promise<string> => {
+                    const tool = this.config.tools.getByName(name) ?? this.config.tools.get(name);
+                    if (!tool) {
+                        return `Tool ${name} not found. Available: ${this.config.tools.list().map((t) => t.name).join(', ')}`;
+                    }
+                    try {
+                        let parsedArgs: unknown = input;
+                        try { parsedArgs = JSON.parse(input); } catch { parsedArgs = { query: input, input }; }
+                        const res = await tool.execute(parsedArgs as any, {
+                            toolId: tool.id,
+                            agentId: this.config.agentId ?? 'agent',
+                            sessionId: this.config.sessionId ?? 'session',
+                            permissions: tool.permissions,
+                        } as any);
+                        return typeof res === 'string' ? res : JSON.stringify(res);
+                    } catch (e) {
+                        return `Tool execution error: ${String(e)}`;
+                    }
+                };
+
+                this._rewooEngine = new ReWooEngine({
+                    generate,
+                    executeTool,
+                });
+            }
+            const result = await this._rewooEngine.solve(prompt, systemPrompt).catch(() => null);
+            if (!result) return undefined;
+            return `ReWOO Plan & Execution Evidence:\n${result.plan.map((p) => `${p.id} (${p.tool}): ${p.result}`).join('\n')}\n\nSynthesized Solution:\n${result.solution}`;
         }
 
         // CoT (default) and 'react' both use ReasoningManager
@@ -1031,32 +1377,52 @@ export class AgenticRunner {
         const hasStreamFilter = !!procRun?.output.some((p) => p.processOutputStream);
         const useStreaming = !hasStreamFilter && !!ctx.streamHooks?.onChunk && !!provider.streamText;
 
+        // ── W3C trace-context propagation ────────────────────────────────────
+        // When the caller supplies a `traceId`, mint a `traceparent` header per
+        // the W3C spec so the provider request joins the caller's trace.
+        let traceHeaders: Record<string, string> | undefined;
+        if (ctx.traceId && /^[0-9a-f]{32}$/i.test(ctx.traceId)) {
+            const spanId = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            traceHeaders = { traceparent: `00-${ctx.traceId.toLowerCase()}-${spanId}-01` };
+        }
+
+        const baseOpts: import('../core/index.js').GenerateOptions = {
+            temperature: this.config.temperature ?? 0.7,
+            maxTokens: this.config.maxTokens ?? 4096,
+            ...(llmTools.length > 0 && { tools: llmTools }),
+            toolChoice,
+            ...(ctx.signal && { signal: ctx.signal }),
+            ...(traceHeaders && { headers: traceHeaders }),
+        };
+
         const runLlm = () => {
             if (useStreaming) {
                 // streamText is confirmed defined when useStreaming is true (checked by callers)
-
                 return provider.streamText!(llmMessages, {
-                    temperature: this.config.temperature ?? 0.7,
-                    maxTokens: this.config.maxTokens ?? 4096,
-                    tools: llmTools.length ? llmTools : undefined,
-                    toolChoice,
-                    ...(ctx.signal && { signal: ctx.signal }),
+                    ...baseOpts,
                     onChunk: (chunk: string | { type: string; text: string }) => {
                         const text = typeof chunk === 'string' ? chunk : chunk.text;
                         ctx.streamHooks!.onChunk!(text);
                     },
                 });
             }
-            return provider.generateText(llmMessages, {
-                temperature: this.config.temperature ?? 0.7,
-                maxTokens: this.config.maxTokens ?? 4096,
-                tools: llmTools.length ? llmTools : undefined,
-                toolChoice,
-                ...(ctx.signal && { signal: ctx.signal }),
-            });
+            return provider.generateText(llmMessages, baseOpts);
         };
 
-        const result = await withSpan(
+        const runResponseProcessors = (result: GenerateResult): void | Promise<void> => {
+            if (procRun && procRun.input.length) {
+                return runLLMResponseProcessors(procRun.input, {
+                    chunks: result.text ? [result.text] : [],
+                    text: result.text ?? '',
+                    model: this.config.budgetModelId ?? 'unknown',
+                    stepNumber: ctx.step,
+                    steps: ctx.step,
+                    context: procRun.context,
+                }, procRun.state);
+            }
+        };
+
+        const invoke = (): Promise<GenerateResult> => withSpan(
             'llm.generate',
             {
                 'agent.step': ctx.step,
@@ -1066,29 +1432,71 @@ export class AgenticRunner {
             () => guardWithRetry(runLlm, toGuardRetryPolicy(ctx.retry)),
         );
 
-        // ── LLM-response processors: side effects (cache write, cost) ─────────
-        if (procRun && procRun.input.length) {
-            await runLLMResponseProcessors(procRun.input, {
-                chunks: result.text ? [result.text] : [],
-                text: result.text ?? '',
-                model: this.config.budgetModelId ?? 'unknown',
-                stepNumber: ctx.step,
-                steps: ctx.step,
-                context: procRun.context,
-            }, procRun.state);
+        // ── Response cache + in-flight coalescing (non-streaming only) ────
+        // Streamed chunks cannot be replayed to `onChunk` from a cached result.
+        const cache = this.config.responseCache;
+        if (!useStreaming && cache) {
+            const key = (this.config.budgetModelId ?? (provider as { name?: string }).name ?? 'llm')
+                + '\x1f' + stableStringify(llmTools.map((t) => t.name))
+                + '\x1f' + stableStringify(llmMessages);
+
+            const hit = await cache.get(key);
+            if (hit) {
+                const result: GenerateResult = hit;
+                await runResponseProcessors(result);
+                return { result, fromCache: true };
+            }
+
+            const existing = this._llmInFlight.get(key);
+            if (existing) {
+                const result = await existing;
+                return { result, fromCache: true };
+            }
+
+            const p = invoke();
+            this._llmInFlight.set(key, p);
+            try {
+                const result = await p;
+                await Promise.resolve(cache.set(key, result));
+                await runResponseProcessors(result);
+                return { result };
+            } finally {
+                this._llmInFlight.delete(key);
+            }
         }
 
+        const result = await invoke();
+        await runResponseProcessors(result);
         return { result };
     }
 
-    // ── Private: tool dispatch ────────────────────────────────────────────────
+// ── Private: tool dispatch ────────────────────────────────────────────────
 
     private async _executeAllTools(toolCalls: LLMToolCall[], ctx: RunContext): Promise<Message[]> {
         const concurrency = Math.min(this.config.toolConcurrency ?? 8, 32); // Cap at 32 to prevent abuse
         if (toolCalls.length === 0) return [];
 
+        // ── Pre-flight validation: validate all tool calls before execution ────
+        const { valid, invalid } = preflightValidateTools(toolCalls, (name) => this.config.tools.getByName(name));
+        
+        // Return error messages for invalid calls immediately
+        const invalidResults = invalid.map(({ call, errors }) =>
+            this._toolErrorMessage(call.id, call.name, `Validation failed: ${errors.join('; ')}`),
+        );
+
+        // If all calls invalid, return early
+        if (valid.length === 0) return invalidResults;
+
         const results = new Array<Message>(toolCalls.length);
-        const queue = toolCalls.map((tc, i) => ({ tc, i }));
+        
+        // Fill in invalid results at their original positions
+        for (const { call, errors } of invalid) {
+            const idx = toolCalls.findIndex((tc) => tc.id === call.id);
+            if (idx >= 0) results[idx] = this._toolErrorMessage(call.id, call.name, `Validation failed: ${errors.join('; ')}`);
+        }
+
+        // Create queue only for valid calls
+        const queue = valid.map(({ call }) => ({ call, originalIndex: toolCalls.findIndex((tc) => tc.id === call.id) }));
 
         // Semaphore pattern: spawn N workers that consume tasks from the queue
         const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
@@ -1096,12 +1504,20 @@ export class AgenticRunner {
                 const task = queue.shift();
                 if (!task) break;
                 try {
-                    results[task.i] = await this._executeOneTool(task.tc, ctx);
+                    // Use pre-validated parsed arguments. preflightValidateTools only
+                    // admits object args (schema.safeParse of a Zod object schema, or
+                    // the raw call.arguments which is already Record<string, unknown>).
+                    const parsed = valid.find((v) => v.call.id === task.call.id)?.parsedArgs;
+                    const validatedCall: LLMToolCall = {
+                        ...task.call,
+                        arguments: (parsed ?? task.call.arguments) as Record<string, unknown>,
+                    };
+                    results[task.originalIndex] = await this._executeOneTool(validatedCall, ctx);
                 } catch (err) {
                     // Approval / suspend signals bubble up so the run can pause.
                     if (isApprovalRequiredError(err) || isToolSuspendedError(err)) throw err;
                     // Ensure all results are valid messages even on error
-                    results[task.i] = this._toolErrorMessage(task.tc.id, err instanceof Error ? err.message : String(err));
+                    results[task.originalIndex] = this._toolErrorMessage(task.call.id, task.call.name, err instanceof Error ? err.message : String(err));
                 }
             }
         });
@@ -1115,7 +1531,7 @@ export class AgenticRunner {
 
         const tool = this.config.tools.getByName(tc.name);
         if (!tool) {
-            return this._toolErrorMessage(tc.id, `Unknown tool: ${tc.name}`);
+            return this._toolErrorMessage(tc.id, tc.name, `Unknown tool: ${tc.name}`);
         }
 
         // Tool authorization: if allowedTools is set, reject tools not in the list.
@@ -1140,12 +1556,31 @@ export class AgenticRunner {
 
         if (this.humanInTheLoop?.beforeToolCall) {
             const approved = await this.humanInTheLoop.beforeToolCall(tc.name, tc.arguments, guardrailCtx);
-            if (!approved) return this._toolErrorMessage(tc.id, 'Tool call rejected by human');
+            if (!approved) return this._toolErrorMessage(tc.id, tc.name, 'Tool call rejected by human');
         }
 
         const effectiveArgs = lifecycle.beforeToolCall
             ? await lifecycle.beforeToolCall(tc.name, tc.arguments, step)
             : tc.arguments;
+
+        // ── Pre-flight argument validation (precision) ─────────────────────
+        // Reject malformed / missing-required arguments with a precise,
+        // self-correctable message instead of failing opaquely mid-execution.
+        // Matches the legacy core-runner contract; user-controllable.
+        if (this.config.validateToolArgs !== false) {
+            const argError = validateToolArgs(
+                effectiveArgs,
+                (tool.parameters as unknown as Record<string, unknown> | undefined),
+            );
+            if (argError) {
+                streamHooks?.onToolResult?.(tc.name, { validationError: argError });
+                return this._toolErrorMessage(
+                    tc.id,
+                    tc.name,
+                    `Tool "${tc.name}" rejected invalid arguments: ${argError}`,
+                );
+            }
+        }
 
         streamHooks?.onToolCall?.(tc.name, effectiveArgs);
 
@@ -1156,6 +1591,32 @@ export class AgenticRunner {
 
         for (const m of middleware) {
             if (m.beforeExecute) await m.beforeExecute(tool, effectiveArgs, toolContext);
+        }
+
+        // ── Circuit breaker check before execution ──────────────────────────
+        const circuitBreaker = toolContext.circuitBreaker;
+        if (circuitBreaker && !circuitBreaker.canExecute()) {
+            const state = circuitBreaker.getState();
+            return this._toolErrorMessage(tc.id, tc.name, `Tool ${tc.name} circuit breaker is ${state} — failing fast`);
+        }
+
+        // ── Idempotent tool memoization (per-run cache) ────────────────────
+        // Only side-effect-free tools opt in via `tool.idempotent`. The cache is
+        // keyed by (tool name + canonical args) and scoped to this run (never
+        // shared across runs, so no cross-run staleness without invalidation).
+        const memoKey = tool.idempotent
+            ? tc.name + '\x1f' + stableStringify(effectiveArgs)
+            : undefined;
+        if (memoKey !== undefined && ctx.memo.has(memoKey)) {
+            const cached = ctx.memo.get(memoKey);
+            streamHooks?.onToolResult?.(tc.name, cached);
+            return {
+                role: 'tool',
+                content: typeof cached === 'string' ? cached : JSON.stringify(cached),
+                toolCallId: tc.id,
+                tool_call_id: tc.id,
+                name: tc.name,
+            } as Message & { toolCallId: string; name: string };
         }
 
         let toolResult: unknown;
@@ -1177,18 +1638,25 @@ export class AgenticRunner {
             });
             toolResultObj = out;
             toolResult = out.success ? out.data : (out.error ? { error: out.error.message } : out);
+            
+            // ── Record circuit breaker success ──────────────────────────────
+            circuitBreaker?.recordSuccess();
         } catch (err) {
             // A tool self-suspended via context.agent.suspend() — bubble up.
             if (isToolSuspendedError(err)) throw err;
             Metrics.toolDurationMs.record(Date.now() - _toolStart, {
                 tool_name: tc.name, agent_name: agentId,
             });
+            
+            // ── Record circuit breaker failure ──────────────────────────────
+            circuitBreaker?.recordFailure();
+            
             const error = err instanceof Error ? err : new Error(String(err));
             for (const m of middleware) {
                 if (m.onError) await m.onError(tool, error, toolContext);
             }
             await lifecycle.onError?.(error, step);
-            return this._toolErrorMessage(tc.id, error.message);
+            return this._toolErrorMessage(tc.id, tc.name, error.message);
         }
 
 
@@ -1206,10 +1674,13 @@ export class AgenticRunner {
             toolResult = await this._checkOutputGuardrails(toolResult, guardrailCtx);
         }
 
+        // Memoize the successful output for later identical calls in this run.
+        if (memoKey !== undefined) ctx.memo.set(memoKey, toolResult);
+
         streamHooks?.onToolResult?.(tc.name, toolResult);
 
         const content = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult);
-        return { role: 'tool', content, toolCallId: tc.id } as Message & { toolCallId: string };
+        return { role: 'tool', content, toolCallId: tc.id, tool_call_id: tc.id, name: tc.name } as Message & { toolCallId: string; name: string };
     }
 
     // ── Private: guardrail helpers ────────────────────────────────────────────
@@ -1229,7 +1700,7 @@ export class AgenticRunner {
         if (this.humanInTheLoop?.onViolation) {
             for (const v of violations) await this.humanInTheLoop.onViolation(v, ctx);
         }
-        return this._toolErrorMessage(tc.id, msg);
+        return this._toolErrorMessage(tc.id, tc.name, msg);
     }
 
     private async _checkOutputGuardrails(result: unknown, ctx: GuardrailContext): Promise<unknown> {
@@ -1357,7 +1828,7 @@ export class AgenticRunner {
                 runsUsed: state.runsUsed,
                 status: evaluation.status,
                 updatedAt: new Date().toISOString(),
-            }).catch(() => undefined);
+            }).catch((e: unknown) => { this._softFail(e, { op: 'suspendedRun.update' }); });
         }
 
         return {
@@ -1543,6 +2014,7 @@ export class AgenticRunner {
 
     // ── Private: small builders ───────────────────────────────────────────────
 
+    /** Builds the tool context with circuit breaker reference */
     private _buildToolContext(
         tool: Tool,
         agentId: string,
@@ -1564,14 +2036,18 @@ export class AgenticRunner {
                     throw new ToolSuspendedError(payload, { toolName: tool.name, toolCallId });
                 },
             },
+            /** Circuit breaker for this specific tool */
+            circuitBreaker: this._circuitBreakers.get(tool.name),
         };
     }
 
-    private _toolErrorMessage(toolCallId: string, message: string): Message & { toolCallId: string } {
+    private _toolErrorMessage(toolCallId: string, toolName: string, message: string): Message & { toolCallId: string; name: string } {
         return {
             role: 'tool',
             content: JSON.stringify({ error: message }),
             toolCallId,
+            tool_call_id: toolCallId,
+            name: toolName,
         };
     }
 

@@ -47,3 +47,14 @@ export class BudgetExceededError extends PersonaForgeError {
         this.name = 'BudgetExceededError';
     }
 }
+
+/** Load shed — thrown when admission control rejects a run (map to HTTP 503). */
+export class LoadShedError extends PersonaForgeError {
+    /** Suggested client back-off in milliseconds (feeds `Retry-After`). */
+    readonly retryAfterMs?: number;
+    constructor(message: string, opts?: { context?: Record<string, unknown>; retryAfterMs?: number }) {
+        super(message, errorOptions('LOAD_SHED', { ...opts?.context, ...(opts?.retryAfterMs !== undefined && { retryAfterMs: opts.retryAfterMs }) }));
+        this.name = 'LoadShedError';
+        if (opts?.retryAfterMs !== undefined) this.retryAfterMs = opts.retryAfterMs;
+    }
+}

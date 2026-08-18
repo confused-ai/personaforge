@@ -64,7 +64,11 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
       ...((opts?.maxTokens ?? config.maxTokens) !== undefined && { max_tokens: opts?.maxTokens ?? config.maxTokens }),
       ...((opts?.temperature ?? config.temperature) !== undefined && { temperature: opts?.temperature ?? config.temperature }),
     };
-    const res = await (client as import('openai').default).chat.completions.create(request as never);
+    const openaiClient = client as import('openai').default;
+    type ChatResponse = Awaited<ReturnType<typeof openaiClient.chat.completions.create>>;
+    const createChat = openaiClient.chat.completions.create.bind(openaiClient.chat.completions) as
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<ChatResponse>;
+    const res = await createChat(request, opts?.headers ? { headers: opts.headers } : undefined);
 
     const choice = res.choices[0];
     const text   = choice?.message.content ?? '';
@@ -101,7 +105,10 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
       stream:      true,
       ...(tools?.length && { tools }),
     };
-    const stream = await (client as import('openai').default).chat.completions.create(request as never) as unknown as AsyncIterable<{
+    const openaiClient = client as import('openai').default;
+    const createChatStream = openaiClient.chat.completions.create.bind(openaiClient.chat.completions) as
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<unknown>;
+    const stream = await createChatStream(request, opts?.headers ? { headers: opts.headers } : undefined) as unknown as AsyncIterable<{
       choices: Array<{
         delta?: {
           content?: string | null;

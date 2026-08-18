@@ -51,6 +51,8 @@ export function toRunStatus(finishReason?: string, error?: unknown): RunStatus {
         case 'human_rejected':
         case 'aborted':
             return 'cancelled';
+        case 'loop_detected':
+            return 'failed';
         case 'error':
             return 'failed';
         default:

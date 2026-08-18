@@ -53,6 +53,11 @@ export interface GenerateOptions {
   onChunk?: (chunk: string) => void;
   /** Abort signal forwarded to the provider SDK so in-flight calls cancel on run abort/timeout. */
   signal?: AbortSignal;
+  /**
+   * Extra HTTP headers for the provider request. Used to propagate W3C
+   * `traceparent`/`tracestate` for distributed tracing across the provider call.
+   */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -101,6 +106,13 @@ export interface Tool {
      * being returned to the caller or fed back to the LLM.
      */
     outputSchema?: Record<string, unknown>;
+    /**
+     * When `true`, the tool is side-effect-free for a given argument set, so the
+     * runner may memoize its result within a single run: repeated identical
+     * `(name, arguments)` calls return the cached output instead of re-executing.
+     * Leave `false`/unset for tools with side effects or time-varying results.
+     */
+    idempotent?: boolean;
     execute(input: Record<string, unknown>, ctx?: Record<string, unknown>): Promise<unknown>;
 }
 

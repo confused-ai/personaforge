@@ -5,7 +5,7 @@
  * Requires: npm install openai
  */
 
-import type { EmbeddingProvider } from '../memory/index.js';
+import type { EmbeddingProvider } from './types-embedding.js';
 import { DebugLogger, createDebugLogger } from '../shared/index.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that

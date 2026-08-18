@@ -7,6 +7,28 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased] — production-hardening audit sweep (items 1–24)
+
+### Added
+- **`AgenticRunner` resilience parity** — repeated-state loop detection (`finishReason: 'loop_detected'`, configurable via `loopDetection`), admission control (`admissionControl` → `LoadShedError`), idempotent-tool memoization (`tool.idempotent` per-run cache), response cache + in-flight request coalescing (configurable `responseCache`), W3C `traceparent` header injection into provider calls, and `validateToolArgs` precision pre-flight.
+- **Provider capability matrix** — `OpenAIProvider` (and the OpenAI-compatible factories) now accept `headers` + `extraBody` for provider-specific parameters (reasoning-effort, JSON-mode, thinking, non-standard auth), closing the "URL-shim" gap.
+- **`personaforge/providers` embedding abstraction** — `EmbeddingProvider` interface satisfied by `OpenAIEmbeddingProvider`, new `GoogleEmbeddingProvider` and `CohereEmbeddingProvider`.
+- **Long-tail cost/context metadata** — 23 new `MODEL_PRICING` entries and 27 `MODEL_CONTEXT_LIMITS` entries (Groq, xAI, Mistral, Cohere, Perplexity, MiniMax, Baichuan, Hunyuan, Doubao, Stepfun, OpenRouter, and more).
+
+### Fixed
+- **`core/runner/AgentRunner` is now a thin facade over `AgenticRunner`** — one canonical loop engine for the whole framework (no semantic divergence between runners).
+- **AI SDK adapter** — assistant tool-call history is replayed as `tool-call` parts, tool-results pair by `toolCallId`/`tool_call_id`, stream tool-call args are accumulated raw and parsed once (no per-fragment JSON crash), `other`/`unknown` finish reasons map to `error`, and `headers` are forwarded.
+- **OpenAI/Anthropic** — tool-result id read from both runner conventions (`toolCallId` + `tool_call_id`), headers forwarded, and an OpenAI streaming tool-call arg-drop bug fixed.
+- **Bedrock** — full `toolUse`/`toolResult` mapping, abort-signal forwarding, and stream usage/stop capture (previously text-only).
+- **Gemini** — stable monotonic tool-call ids, `toolChoice` → `functionCallingConfig`, abort-signal + headers forwarding.
+- **`BaseAgent.runWithContext`** — opt-in `throwOnError` error contract (runners throw; adapters convert), preserving the legacy swallow-by-default.
+
+### Tests
+- New suites: `tests/agentic-hardening.test.ts` (loop detection, memoization, cache/coalescing, admission, traceparent, tool-message identity), `tests/provider-adapter-hardening.test.ts` (AI SDK tool replay/stream/finish/headers, OpenAI headers+extraBody, Gemini ids/toolChoice/abort, Bedrock tools/abort/usage, throwOnError), `tests/embeddings-providers.test.ts`, `tests/cost-metadata-longtail.test.ts`.
+- Full suite: **196 files / 3088 tests passing** (4 skipped); `tsc --noEmit` and `eslint src --max-warnings 0` clean.
+
+---
+
 ## [Unreleased] — parity-with-langchain-and-agno
 
 ### Added — 14 new feature areas closing the LangChain / LangGraph / Agno gap

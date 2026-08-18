@@ -55,6 +55,8 @@ interface AiSdkCallOptions {
     temperature?: number;
     stopSequences?: string[];
     abortSignal?: AbortSignal;
+    /** Extra HTTP headers (e.g. W3C `traceparent` for distributed tracing). */
+    headers?: Record<string, string>;
 }
 
 type AiSdkToolChoice = 'auto' | 'none' | 'required' | { type: 'tool'; name: string };
@@ -152,6 +154,7 @@ export function createAiSdkProvider(
             temperature: pfOpts?.temperature,
             stopSequences: pfOpts?.stop,
             abortSignal: pfOpts?.signal,
+            ...(pfOpts?.headers && { headers: pfOpts.headers }),
         });
 
         return {
@@ -190,6 +193,7 @@ export function createAiSdkProvider(
             temperature: pfOpts?.temperature,
             stopSequences: pfOpts?.stop,
             abortSignal: pfOpts?.signal,
+            ...(pfOpts?.headers && { headers: pfOpts.headers }),
         });
 
         return collectStreamToResult(stream, pfOpts?.onChunk);
@@ -207,38 +211,93 @@ export function createAiSdkProvider(
 function pfToAiMessages(pf: PFMessage[]): AiSdkMessage[] {
     const result: AiSdkMessage[] = [];
 
+    // Multiple system messages are merged into one — most providers accept a
+    // single system prompt and reject repeated `role: 'system'` entries.
+    const systemTexts: string[] = [];
+
     for (const msg of pf) {
         if (msg.role === 'system') {
-            result.push({
-                role: 'system',
-                content: [{ type: 'text', text: contentToString(msg.content) }],
-            });
-        } else if (msg.role === 'user') {
+            const text = contentToString(msg.content);
+            if (text) systemTexts.push(text);
+            continue;
+        }
+        if (msg.role === 'user') {
             result.push({
                 role: 'user',
                 content: contentToParts(msg.content),
             });
         } else if (msg.role === 'assistant') {
             const parts: AiSdkMessagePart[] = [];
-            // If the assistant message has text content
+            // Assistant text content (if any).
             const text = contentToString(msg.content);
             if (text) parts.push({ type: 'text', text });
-            // If there's a tool call in conversation history, it's in metadata or content
+            // Assistant tool calls in conversation history MUST be replayed as
+            // `tool-call` parts, otherwise the tool messages that follow have no
+            // matching declaration and providers reject the round.
+            const calls = extractAssistantToolCalls(msg);
+            for (const call of calls) {
+                parts.push({
+                    type: 'tool-call',
+                    toolCallId: call.id,
+                    toolName: call.name,
+                    args: call.arguments,
+                });
+            }
             result.push({ role: 'assistant', content: parts });
         } else if (msg.role === 'tool') {
+            const toolMsg = msg as PFMessage & { toolCallId?: string; tool_call_id?: string };
             result.push({
                 role: 'tool',
                 content: [{
                     type: 'tool-result',
-                    toolCallId: msg.tool_call_id ?? 'unknown',
-                    toolName: msg.name ?? 'unknown',
+                    // Accept both runner conventions (camelCase from the agentic
+                    // runner, snake_case from the core runner).
+                    toolCallId: toolMsg.toolCallId ?? toolMsg.tool_call_id ?? 'unknown',
+                    toolName: toolMsg.name ?? 'unknown',
                     result: msg.content,
                 }],
             });
         }
     }
 
+    if (systemTexts.length > 0) {
+        result.unshift({ role: 'system', content: [{ type: 'text', text: systemTexts.join('\n\n') }] });
+    }
+
     return result;
+}
+
+/**
+ * Extract assistant tool calls from a personforge assistant `Message`, handling
+ * both conventions: the flat `{ id, name, arguments }` shape used by the agentic
+ * runner and the OpenAI-style `{ id, type, function: { name, arguments } }` shape
+ * (with JSON-string args) used by the core runner and legacy messages.
+ */
+function extractAssistantToolCalls(msg: PFMessage): Array<{ id: string; name: string; arguments: Record<string, unknown> }> {
+    const m = msg as PFMessage & {
+        toolCalls?: Array<{ id: string; name: string; arguments: unknown }>;
+        tool_calls?: Array<{ id: string; type?: string; function?: { name?: string; arguments?: string } }>;
+    };
+    const flat = m.toolCalls;
+    if (Array.isArray(flat) && flat.length > 0) {
+        return flat.map((tc) => ({
+            id: tc.id,
+            name: tc.name,
+            arguments: (tc.arguments ?? {}) as Record<string, unknown>,
+        }));
+    }
+    const legacy = m.tool_calls;
+    if (Array.isArray(legacy) && legacy.length > 0) {
+        return legacy.map((tc) => {
+            let args: Record<string, unknown> = {};
+            const raw = tc.function?.arguments;
+            if (typeof raw === 'string' && raw) {
+                try { args = JSON.parse(raw) as Record<string, unknown>; } catch { args = {}; }
+            }
+            return { id: tc.id, name: tc.function?.name ?? 'unknown', arguments: args };
+        });
+    }
+    return [];
 }
 
 function contentToString(content: string | unknown[] | undefined): string {
@@ -313,6 +372,12 @@ function aiToPfFinishReason(
         case 'content-filter': return 'error';
         case 'tool-calls': return 'tool_calls';
         case 'error': return 'error';
+        // Providers use `other`/`unknown` when the termination is opaque (content
+        // policy, interruption, provider-specific filters). Do not claim a clean
+        // `stop` — surface it as an error so callers can distinguish it.
+        case 'other':
+        case 'unknown':
+            return 'error';
         default: return 'stop';
     }
 }
@@ -324,10 +389,12 @@ async function collectStreamToResult(
     onChunk?: (text: string) => void,
 ): Promise<GenerateResult> {
     const reader = stream.getReader();
-    // const decoder = new TextDecoder();
 
     let text = '';
-    let toolCalls: GenerateResult['toolCalls'] = [];
+    // toolCallId → accumulated tool-call (args accumulated as raw JSON text and
+    // parsed once at the end, exactly like the OpenAI/Anthropic adapters, so
+    // incremental argument fragments never hit the JSON parser mid-stream).
+    const toolBlocks = new Map<string, { name: string; argsRaw: string }>();
     let finishReason: GenerateResult['finishReason'] = 'stop';
     let usage: GenerateResult['usage'] = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
@@ -342,31 +409,33 @@ async function collectStreamToResult(
                     text += value.textDelta;
                     onChunk?.(value.textDelta);
                     break;
-                case 'tool-call':
-                    toolCalls.push({
-                        id: value.toolCallId,
-                        name: value.toolName,
-                        arguments: value.args,
-                    });
-                    break;
-                case 'tool-call-delta':
-                    // Accumulate partial args — AI SDK sends deltas for long args
-                    const existing = toolCalls.find(
-                        (tc: { id: string }) => tc.id === value.toolCallId,
-                    );
-                    if (existing) {
-                        existing.arguments = {
-                            ...existing.arguments,
-                            ...JSON.parse(value.argsTextDelta || '{}'),
-                        };
+                case 'tool-call': {
+                    // Some providers send a complete tool call in one chunk.
+                    const block = toolBlocks.get(value.toolCallId);
+                    if (block) {
+                        block.name = value.toolName || block.name;
                     } else {
-                        toolCalls.push({
-                            id: value.toolCallId,
+                        toolBlocks.set(value.toolCallId, {
                             name: value.toolName,
-                            arguments: JSON.parse(value.argsTextDelta || '{}'),
+                            argsRaw: JSON.stringify(value.args ?? {}),
                         });
                     }
                     break;
+                }
+                case 'tool-call-delta': {
+                    // Incremental args fragment — accumulate raw text, do NOT parse.
+                    const existing = toolBlocks.get(value.toolCallId);
+                    if (existing) {
+                        existing.argsRaw += value.argsTextDelta || '';
+                        if (value.toolName) existing.name = value.toolName;
+                    } else {
+                        toolBlocks.set(value.toolCallId, {
+                            name: value.toolName,
+                            argsRaw: value.argsTextDelta || '',
+                        });
+                    }
+                    break;
+                }
                 case 'finish':
                     finishReason = aiToPfFinishReason(value.finishReason);
                     usage = {
@@ -388,5 +457,18 @@ async function collectStreamToResult(
         reader.releaseLock();
     }
 
-    return { text, toolCalls, finishReason, usage };
+    const toolCalls: GenerateResult['toolCalls'] = Array.from(toolBlocks.entries()).map(([id, block]) => ({
+        id,
+        name: block.name,
+        arguments: (() => {
+            try { return JSON.parse(block.argsRaw || '{}') as Record<string, unknown>; } catch { return {}; }
+        })(),
+    }));
+
+    return {
+        text,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        finishReason,
+        usage,
+    };
 }

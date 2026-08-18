@@ -22,7 +22,7 @@ const _require = createRequire(import.meta.url);
 interface OpenAIClient {
     chat: {
         completions: {
-            create(params: OpenAICreateParams, requestOptions?: { signal?: AbortSignal }): Promise<OpenAIResponse | AsyncIterable<OpenAIStreamChunk>>;
+            create(params: OpenAICreateParams, requestOptions?: { signal?: AbortSignal; headers?: Record<string, string> }): Promise<OpenAIResponse | AsyncIterable<OpenAIStreamChunk>>;
         };
     };
 }
@@ -90,6 +90,18 @@ export interface OpenAIProviderConfig {
     baseURL?: string;
     /** Enable debug logging */
     debug?: boolean;
+    /**
+     * Extra HTTP headers sent with every request (e.g. W3C `traceparent`,
+     * provider-specific auth conventions such as DashScope / Azure headers).
+     */
+    headers?: Record<string, string>;
+    /**
+     * Extra JSON payload merged into the request body — the escape hatch for
+     * provider-specific parameters (reasoning effort, JSON-mode, thinking,
+     * temperature-passthrough flags, `extra_body`, …) that OpenAI-compatible
+     * endpoints expose beyond the shared OpenAI subset.
+     */
+    extraBody?: Record<string, unknown>;
 }
 
 /**
@@ -111,12 +123,12 @@ function toOpenAIMessages(messages: Message[]): OpenAIMessageParam[] {
             };
         }
         if (m.role === 'tool') {
-            const toolMsg = m as Message & { toolCallId?: string };
+            const toolMsg = m as Message & { toolCallId?: string; tool_call_id?: string };
             const content = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? (m.content.find((p: { type: string; text?: string }) => p.type === 'text') as { text?: string } | undefined)?.text ?? '' : '');
             return {
                 role: 'tool',
                 content,
-                tool_call_id: toolMsg.toolCallId ?? '',
+                tool_call_id: toolMsg.toolCallId ?? toolMsg.tool_call_id ?? '',
             };
         }
         const content = m.content;
@@ -147,6 +159,8 @@ function toOpenAITools(tools?: LLMToolDefinition[]): OpenAITool[] | undefined {
 export class OpenAIProvider implements LLMProvider {
     private client: OpenAIClient | null = null;
     private readonly clientOpts: { apiKey: string; baseURL?: string } | null = null;
+    private readonly staticHeaders: Record<string, string> | undefined;
+    private readonly extraBody: Record<string, unknown> | undefined;
     private model: string;
     private logger: DebugLogger;
 
@@ -168,6 +182,8 @@ export class OpenAIProvider implements LLMProvider {
                 ...(baseURL && { baseURL }),
             };
         }
+        this.staticHeaders = config.headers;
+        this.extraBody = config.extraBody;
         this.model = config.model ?? 'gpt-4o';
         this.logger.debug('OpenAIProvider initialized', undefined, { model: this.model });
     }
@@ -205,6 +221,7 @@ export class OpenAIProvider implements LLMProvider {
             temperature: options?.temperature ?? 0.7,
             max_tokens: options?.maxTokens,
             stop: options?.stop,
+            ...(this.extraBody && { ...this.extraBody }),
         };
 
         const tools = toOpenAITools(options?.tools);
@@ -214,9 +231,13 @@ export class OpenAIProvider implements LLMProvider {
             this.logger.debug('Including tools in request', undefined, { toolCount: tools.length });
         }
 
-        // Forward the abort signal as a per-request option (OpenAI SDK 2nd arg).
+        // Forward the abort signal (+ per-call headers and static provider headers)
+        // as per-request options (OpenAI SDK 2nd arg).
         const client = this.getClient();
-        const requestOpts = options?.signal ? { signal: options.signal } : undefined;
+        const mergedHeaders = { ...this.staticHeaders, ...(options?.headers ?? {}) };
+        const requestOpts = options?.signal || mergedHeaders
+            ? { ...(options?.signal && { signal: options.signal }), ...(mergedHeaders && { headers: mergedHeaders }) }
+            : undefined;
         const response = await (requestOpts
             ? client.chat.completions.create(body as unknown as OpenAICreateParams, requestOpts as never)
             : client.chat.completions.create(body as unknown as OpenAICreateParams)
@@ -274,6 +295,7 @@ export class OpenAIProvider implements LLMProvider {
             stream: true,
             // Request the final usage chunk; without this streamed usage is never sent.
             stream_options: { include_usage: true },
+            ...(this.extraBody && { ...this.extraBody }),
         };
 
         const tools = toOpenAITools(options?.tools);
@@ -282,7 +304,10 @@ export class OpenAIProvider implements LLMProvider {
             body.tool_choice = options?.toolChoice === 'none' ? 'none' : 'auto';
         }
 
-        const requestOpts = options?.signal ? { signal: options.signal } : undefined;
+        const mergedHeaders = { ...this.staticHeaders, ...(options?.headers ?? {}) };
+        const requestOpts = options?.signal || mergedHeaders
+            ? { ...(options?.signal && { signal: options.signal }), ...(mergedHeaders && { headers: mergedHeaders }) }
+            : undefined;
         const client = this.getClient();
         const stream = await (requestOpts
             ? client.chat.completions.create(body as unknown as OpenAICreateParams, requestOpts as never)
@@ -309,20 +334,19 @@ export class OpenAIProvider implements LLMProvider {
             if (delta.tool_calls) {
                 for (const tc of delta.tool_calls) {
                     if (tc.id) {
+                        // A chunk may carry BOTH the id and the first args fragment —
+                        // accumulate onto any existing block instead of dropping args.
+                        const existing = toolCallsMap.get(tc.index);
                         toolCallsMap.set(tc.index, {
                             id: tc.id,
-                            name: tc.function?.name ?? '',
-                            args: tc.function?.arguments ?? ''
+                            name: tc.function?.name ?? existing?.name ?? '',
+                            args: (existing?.args ?? '') + (tc.function?.arguments ?? ''),
                         });
                     } else if (tc.function?.arguments) {
                         const existing = toolCallsMap.get(tc.index);
-                        if (existing) {
-                            existing.args += tc.function.arguments;
-                        }
+                        if (existing) existing.args += tc.function.arguments;
                     }
-
-                    // tool-call streaming intentionally omitted from onChunk (see LLMProvider contract; deltas are aggregated into result.toolCalls)
-                    }
+                }
             }
 
             if (chunk.choices?.[0]?.finish_reason) {

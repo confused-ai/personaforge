@@ -68,10 +68,12 @@ export const MODEL_PRICING: Record<
     'grok-3': { input: 3, output: 15 },
     'grok-3-mini': { input: 0.3, output: 0.5 },
     'grok-2': { input: 2, output: 10 },
+    'grok-2-mini': { input: 0.3, output: 0.5 },
     'grok-beta': { input: 5, output: 15 },
 
     // ── Together AI ───────────────────────────────────────────────────────
     'meta-llama/Llama-3.3-70B-Instruct-Turbo': { input: 0.88, output: 0.88 },
+    'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo': { input: 0.88, output: 0.88 },
     'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo': { input: 0.18, output: 0.18 },
     'Qwen/Qwen2.5-72B-Instruct-Turbo': { input: 1.2, output: 1.2 },
     'mistralai/Mixtral-8x22B-Instruct-v0.1': { input: 1.2, output: 1.2 },
@@ -89,6 +91,7 @@ export const MODEL_PRICING: Record<
 
     // ── Cohere ────────────────────────────────────────────────────────────
     'command-r-plus-08-2024': { input: 2.5, output: 10 },
+    'command-a-03-2025': { input: 2.5, output: 10 },
     'command-r-08-2024': { input: 0.15, output: 0.6 },
     'command-r7b-12-2024': { input: 0.0375, output: 0.15 },
 
@@ -157,10 +160,48 @@ export const MODEL_PRICING: Record<
 
     // ── Novita AI ─────────────────────────────────────────────────────────
     'meta-llama/llama-3.3-70b-instruct': { input: 0.4, output: 0.4 },
+    'meta-llama/Meta-Llama-3.1-70B-Instruct': { input: 0.6, output: 0.6 },
+    'deepseek/deepseek-v3': { input: 0.27, output: 1.1 },
 
     // ── Writer (Palmyra) ──────────────────────────────────────────────────
     'palmyra-x5': { input: 6, output: 30 },
     'palmyra-x4': { input: 2.5, output: 10 },
+    'palmyra-x-002-128k': { input: 3, output: 15 },
+
+    // ── MiniMax ───────────────────────────────────────────────────────────
+    'MiniMax-Text-01': { input: 0.22, output: 1.1 },
+    'abab6.5s-chat': { input: 0.135, output: 0.135 },
+
+    // ── Baichuan ──────────────────────────────────────────────────────────
+    'Baichuan4-Turbo': { input: 0.6, output: 1.2 },
+    'Baichuan4-Air': { input: 0.2, output: 0.2 },
+
+    // ── StepFun ───────────────────────────────────────────────────────────
+    'step-2-16k': { input: 0.55, output: 0.55 },
+    'step-1-8k': { input: 0.3, output: 0.3 },
+
+    // ── InternLM ──────────────────────────────────────────────────────────
+    'internlm2.5-20b-chat': { input: 0.2, output: 0.2 },
+
+    // ── Tencent Hunyuan ───────────────────────────────────────────────────
+    'hunyuan-turbo': { input: 0.14, output: 0.56 },
+    'hunyuan-standard': { input: 0.5, output: 2 },
+    'hunyuan-lite': { input: 0.02, output: 0.08 },
+
+    // ── Volcengine Doubao ─────────────────────────────────────────────────
+    'doubao-1.5-pro-32k': { input: 0.12, output: 0.3 },
+    'doubao-1.5-lite-32k': { input: 0.04, output: 0.08 },
+
+    // ── Snowflake ─────────────────────────────────────────────────────────
+    'snowflake-arctic-instruct': { input: 0.35, output: 1.4 },
+
+    // ── OpenRouter (provider-prefixed common models) ──────────────────────
+    'qwen/qwen3.6-plus': { input: 0.4, output: 1.2 },
+    'anthropic/claude-sonnet-4': { input: 3, output: 15, cache: { input: 0.3, output: 1.5 } },
+    'openai/gpt-4o-mini': { input: 0.15, output: 0.6 },
+
+    // ── Replicate ─────────────────────────────────────────────────────────
+    'meta/meta-llama-3-70b-instruct': { input: 0.65, output: 2.75 },
 
     // ── Open-source / local (free) ────────────────────────────────────────
     'llama-2-7b': { input: 0, output: 0 },

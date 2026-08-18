@@ -16,6 +16,21 @@ export function toToolRegistry(tools: ToolProvider): ToolRegistry {
         for (const t of tools) reg.register(t);
         return reg;
     }
+    if (tools && typeof tools === "object") {
+        const regObj = tools as any;
+        if (typeof regObj.getByName !== "function") {
+            regObj.getByName = (name: string) => {
+                if (typeof regObj.get === "function") {
+                    const found = regObj.get(name);
+                    if (found) return found;
+                }
+                if (typeof regObj.list === "function") {
+                    return regObj.list().find((t: any) => t.name === name);
+                }
+                return undefined;
+            };
+        }
+    }
     return tools;
 }
 

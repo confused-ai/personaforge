@@ -1,8 +1,8 @@
 /**
  * Amazon Bedrock Converse API — optional peer: `@aws-sdk/client-bedrock-runtime`.
  *
- * Supports text-only messages (system, user, assistant). Tool / multimodal messages
- * are not mapped yet; extend as needed for your models.
+ * Supports text + function tools via the Converse `toolUse`/`toolResult` blocks,
+ * non-streaming and streaming, with abort-signal forwarding and usage capture.
  */
 
 import type {
@@ -10,18 +10,52 @@ import type {
     Message,
     GenerateResult,
     GenerateOptions,
+    LLMToolDefinition,
+    ToolCall,
 } from './types.js';
 import { normalizeFinishReason } from './types.js';
 
 // Minimal Bedrock response shapes — avoids importing the heavy AWS SDK at compile time
+
+/** Text or toolUse content block in a Converse response. */
+interface BedrockContentBlock {
+    text?: string;
+    toolUse?: { toolUseId?: string; name?: string; input?: Record<string, unknown> };
+}
+
 interface BedrockConverseResponse {
-    output?: { message?: { content?: Array<{ text?: string }> } };
+    output?: { message?: { role?: string; content?: BedrockContentBlock[] } };
     usage?: { inputTokens?: number; outputTokens?: number };
     stopReason?: string;
 }
 
+/** Request content block — text, toolUse (assistant hint), or toolResult (tool output). */
+type BedrockRequestBlock =
+    | { text: string }
+    | { toolUse: { toolUseId: string; name: string; input: Record<string, unknown> } }
+    | {
+          toolResult: {
+              toolUseId: string;
+              content: Array<{ text?: string }>;
+              status?: 'success' | 'error';
+          };
+      };
+
+interface BedrockRequestMessage {
+    role: 'user' | 'assistant';
+    content: BedrockRequestBlock[];
+}
+
 interface BedrockStreamEvent {
-    contentBlockDelta?: { delta?: { text?: string } };
+    contentBlockStart?: {
+        start?: { toolUse?: { toolUseId?: string; name?: string; input?: Record<string, unknown> } };
+    };
+    contentBlockDelta?: {
+        delta?: { text?: string; toolUse?: { input?: string } };
+    };
+    usage?: { inputTokens?: number; outputTokens?: number };
+    metadata?: { usage?: { inputTokens?: number; outputTokens?: number } };
+    messageStop?: { stopReason?: string };
 }
 
 interface BedrockConverseStreamResponse {
@@ -30,7 +64,7 @@ interface BedrockConverseStreamResponse {
 
 // Minimal Bedrock client interface — avoids importing the heavy AWS SDK at compile time
 interface BedrockRuntimeClient {
-    send(command: unknown): Promise<BedrockConverseResponse | BedrockConverseStreamResponse>;
+    send(command: unknown, options?: { abortSignal?: AbortSignal }): Promise<BedrockConverseResponse | BedrockConverseStreamResponse>;
 }
 
 export interface BedrockConverseProviderConfig {
@@ -42,14 +76,121 @@ export interface BedrockConverseProviderConfig {
     readonly client?: BedrockRuntimeClient;
 }
 
+/** Extract plain text from a message (either a string or text parts). */
 function flattenText(m: Message): string {
-    if (typeof m.content === 'string') {
-        return m.content;
-    }
+    if (typeof m.content === 'string') return m.content;
     return m.content
         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
         .map((p) => p.text)
         .join('\n');
+}
+
+/** Tool-call shapes accepted from both runners: flat and OpenAI-style. */
+function extractAssistantToolCalls(m: Message): ToolCall[] {
+    const typed = m as Message & {
+        toolCalls?: Array<{ id: string; name: string; arguments: unknown }>;
+        tool_calls?: Array<{ id: string; type?: string; function?: { name?: string; arguments?: string } }>;
+    };
+    if (Array.isArray(typed.toolCalls)) {
+        return typed.toolCalls.map((tc) => ({
+            id: tc.id,
+            name: tc.name,
+            arguments: (tc.arguments ?? {}) as Record<string, unknown>,
+        }));
+    }
+    if (Array.isArray(typed.tool_calls)) {
+        return typed.tool_calls.map((tc) => {
+            let args: Record<string, unknown> = {};
+            const raw = tc.function?.arguments;
+            if (typeof raw === 'string' && raw) {
+                try { args = JSON.parse(raw) as Record<string, unknown>; } catch { args = {}; }
+            }
+            return { id: tc.id, name: tc.function?.name ?? 'unknown', arguments: args };
+        });
+    }
+    return [];
+}
+
+/**
+ * Convert a personforge message list into Bedrock Converse `messages` + `system`,
+ * preserving tool-use / tool-result pairing for multi-turn ReAct loops.
+ */
+function toBedrockMessages(messages: Message[]): { system: Array<{ text: string }>; beds: BedrockRequestMessage[] } {
+    const system: Array<{ text: string }> = [];
+    const beds: BedrockRequestMessage[] = [];
+    const toolResults: Array<{ toolUseId: string; text: string }> = [];
+
+    for (const m of messages) {
+        if (m.role === 'system') {
+            const t = flattenText(m);
+            if (t) system.push({ text: t });
+            continue;
+        }
+        if (m.role === 'user') {
+            beds.push({ role: 'user', content: [{ text: flattenText(m) }] });
+            continue;
+        }
+        if (m.role === 'assistant') {
+            const calls = extractAssistantToolCalls(m);
+            const text = flattenText(m);
+            const content: BedrockRequestBlock[] = [];
+            if (text) content.push({ text });
+            for (const c of calls) {
+                content.push({ toolUse: { toolUseId: c.id, name: c.name, input: c.arguments } });
+            }
+            beds.push({ role: 'assistant', content });
+            continue;
+        }
+        if (m.role === 'tool') {
+            const toolMsg = m as Message & { toolCallId?: string; tool_call_id?: string };
+            const id = toolMsg.toolCallId ?? toolMsg.tool_call_id ?? 'unknown';
+            toolResults.push({ toolUseId: id, text: flattenText(m) });
+        }
+    }
+
+    // Bedrock requires each toolResult immediately following the assistant
+    // message that declared the toolUse. Flush pending toolResults as user turns.
+    if (toolResults.length > 0) {
+        beds.push({
+            role: 'user',
+            content: toolResults.map((r) => ({
+                toolResult: { toolUseId: r.toolUseId, content: [{ text: r.text }], status: 'success' as const },
+            })),
+        });
+        toolResults.length = 0;
+    }
+
+    return { system, beds };
+}
+
+/** Convert personforge tools → Bedrock toolConfig. */
+function toBedrockToolConfig(tools?: LLMToolDefinition[]): { tools: Array<{ toolSpec: { name: string; description: string; inputSchema: Record<string, unknown> } }> } | undefined {
+    if (!tools?.length) return undefined;
+    return {
+        tools: tools.map((t) => ({
+            toolSpec: {
+                name: t.name,
+                description: t.description,
+                inputSchema: t.parameters as Record<string, unknown>,
+            },
+        })),
+    };
+}
+
+/** Parse toolUse blocks from a non-streamed Converse response. */
+function extractToolCallsFromContent(content: BedrockContentBlock[] | undefined): ToolCall[] | undefined {
+    const calls: ToolCall[] = [];
+    if (!content) return undefined;
+    for (const block of content) {
+        if (block.toolUse?.toolUseId && block.toolUse.name) {
+            calls.push({
+                id: block.toolUse.toolUseId,
+                name: block.toolUse.name,
+                arguments: block.toolUse.input ?? {},
+            });
+        }
+    }
+    return calls.length > 0 ? calls : undefined;
 }
 
 /**
@@ -85,49 +226,29 @@ export class BedrockConverseProvider implements LLMProvider {
         const client = await this.ensureClient();
         const { ConverseCommand } = await import('@aws-sdk/client-bedrock-runtime');
 
-        const system: { text: string }[] = [];
-        const beds: { role: 'user' | 'assistant'; content: { text: string }[] }[] = [];
-
-        for (const m of messages) {
-            if (m.role === 'system') {
-                const t = flattenText(m);
-                if (t) {
-                    system.push({ text: t });
-                }
-                continue;
-            }
-            if (m.role === 'user') {
-                beds.push({ role: 'user', content: [{ text: flattenText(m) }] });
-                continue;
-            }
-            if (m.role === 'assistant') {
-                beds.push({ role: 'assistant', content: [{ text: flattenText(m) }] });
-                continue;
-            }
-            if (m.role === 'tool') {
-                beds.push({
-                    role: 'user',
-                    content: [{ text: `[tool result] ${flattenText(m as Message)}` }],
-                });
-            }
-        }
+        const { system, beds } = toBedrockMessages(messages);
+        const toolConfig = toBedrockToolConfig(options?.tools);
 
         const cmd = new ConverseCommand({
             modelId: this.modelId,
             ...(system.length ? { system } : {}),
+            // The minimal BedrockRequestMessage/ToolConfiguration shapes are a
+            // structural subset of the SDK's strict smithy types — bridge once
+            // at the command-construction boundary instead of per field.
             messages: beds,
             inferenceConfig: {
-                maxTokens: options?.maxTokens,
-                temperature: options?.temperature,
+                ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+                ...(options?.temperature !== undefined && { temperature: options.temperature }),
             },
-        });
+            ...(toolConfig ? { toolConfig } : {}),
+        } as unknown as ConstructorParameters<typeof ConverseCommand>[0]);
 
-        const out = await client.send(cmd) as BedrockConverseResponse;
+        const out = await client.send(cmd, options?.signal ? { abortSignal: options.signal } : undefined) as BedrockConverseResponse;
         const contentBlocks = out.output?.message?.content ?? [];
         let text = '';
         for (const block of contentBlocks) {
-            if (block && typeof block === 'object' && 'text' in block && typeof (block as { text: string }).text === 'string') {
-                text += (block as { text: string }).text;
+            if (block && typeof block === 'object' && typeof block.text === 'string') {
+                text += block.text;
             }
         }
 
@@ -141,6 +262,7 @@ export class BedrockConverseProvider implements LLMProvider {
 
         return {
             text,
+            toolCalls: extractToolCallsFromContent(contentBlocks),
             finishReason: normalizeFinishReason(out.stopReason),
             usage,
         };
@@ -150,56 +272,72 @@ export class BedrockConverseProvider implements LLMProvider {
         const client = await this.ensureClient();
         const { ConverseStreamCommand } = await import('@aws-sdk/client-bedrock-runtime');
 
-        const system: { text: string }[] = [];
-        const beds: { role: 'user' | 'assistant'; content: { text: string }[] }[] = [];
-        for (const m of messages) {
-            if (m.role === 'system') {
-                const t = flattenText(m);
-                if (t) {
-                    system.push({ text: t });
-                }
-                continue;
-            }
-            if (m.role === 'user') {
-                beds.push({ role: 'user', content: [{ text: flattenText(m) }] });
-                continue;
-            }
-            if (m.role === 'assistant') {
-                beds.push({ role: 'assistant', content: [{ text: flattenText(m) }] });
-                continue;
-            }
-            if (m.role === 'tool') {
-                beds.push({
-                    role: 'user',
-                    content: [{ text: `[tool result] ${flattenText(m as Message)}` }],
-                });
-            }
-        }
+        const { system, beds } = toBedrockMessages(messages);
+        const toolConfig = toBedrockToolConfig(options?.tools);
 
         const cmd = new ConverseStreamCommand({
             modelId: this.modelId,
             ...(system.length ? { system } : {}),
             messages: beds,
             inferenceConfig: {
-                maxTokens: options?.maxTokens,
-                temperature: options?.temperature,
+                ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+                ...(options?.temperature !== undefined && { temperature: options.temperature }),
             },
-        });
+            ...(toolConfig ? { toolConfig } : {}),
+        } as unknown as ConstructorParameters<typeof ConverseStreamCommand>[0]);
 
-        const response = await client.send(cmd) as BedrockConverseStreamResponse;
+        const response = await client.send(cmd, options?.signal ? { abortSignal: options.signal } : undefined) as BedrockConverseStreamResponse;
+
         let text = '';
+        // ConverseStream tool input arrives as JSON-text deltas after a
+        // contentBlockStart that carries the toolUseId + name. Multiple parallel
+        // calls each open sequentially, so we append deltas to the most recent block.
+        const toolBlocks: Array<{ id: string; name: string; argsRaw: string }> = [];
+        let usage: GenerateResult['usage'];
         const stream = response.stream;
         if (stream) {
             for await (const evt of stream) {
-                if (evt.contentBlockDelta?.delta && 'text' in evt.contentBlockDelta.delta) {
-                    const delta = evt.contentBlockDelta.delta as { text?: string };
-                    const piece = delta.text ?? '';
-                    text += piece;
-                    options?.onChunk?.(piece);
+                if (evt.contentBlockStart?.start?.toolUse) {
+                    const start = evt.contentBlockStart.start.toolUse;
+                    toolBlocks.push({
+                        id: start.toolUseId ?? `tool_${toolBlocks.length}`,
+                        name: start.name ?? 'unknown',
+                        argsRaw: '',
+                    });
+                }
+                if (evt.contentBlockDelta?.delta) {
+                    const delta = evt.contentBlockDelta.delta;
+                    if (delta.text) {
+                        text += delta.text;
+                        options?.onChunk?.(delta.text);
+                    } else if (delta.toolUse?.input && toolBlocks.length > 0) {
+                        toolBlocks[toolBlocks.length - 1]!.argsRaw += delta.toolUse.input;
+                    }
+                }
+                const u = evt.usage ?? evt.metadata?.usage;
+                if (u && (u.inputTokens !== undefined || u.outputTokens !== undefined)) {
+                    usage = {
+                        promptTokens: u.inputTokens,
+                        completionTokens: u.outputTokens,
+                        totalTokens: (u.inputTokens ?? 0) + (u.outputTokens ?? 0),
+                    };
                 }
             }
         }
 
-        return { text, finishReason: 'stop' };
+        const toolCalls: ToolCall[] = toolBlocks.map((b) => ({
+            id: b.id,
+            name: b.name,
+            arguments: (() => {
+                try { return JSON.parse(b.argsRaw || '{}') as Record<string, unknown>; } catch { return {}; }
+            })(),
+        }));
+
+        return {
+            text,
+            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+            finishReason: 'stop',
+            ...(usage && { usage }),
+        };
     }
 }
