@@ -7,6 +7,66 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.0.0](https://github.com/confused-ai/personaforge/compare/v2.4.0...v3.0.0) (2026-08-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* package renamed to personaforge; ConfusedAIError->PersonaForgeError, isConfusedAIError->isPersonaForgeError, Prometheus prefix confused_ai_->personaforge_, SQL table confused_ai_audit_log->personaforge_audit_log. Fix bun.lockb->bun.lock cache key in workflows.
+
+### Features
+
+* add Mastra-style factory methods and enhance tools handling in Agent class ([62f90a8](https://github.com/confused-ai/personaforge/commit/62f90a8352e8d366642409cde1910748cb74c354))
+* add operational runbooks for various tools and generate documentation ([6e90e9c](https://github.com/confused-ai/personaforge/commit/6e90e9c072b9e30bcfa77dd4717bc617d816deb4))
+* add personaforge Python SDK and control-plane dashboard ([cb55d9f](https://github.com/confused-ai/personaforge/commit/cb55d9f26586bf7fb0c50ccd28d16dda5c20bb7b))
+* add production system registry, harness, and agent/workflow-as-tool ([16166a9](https://github.com/confused-ai/personaforge/commit/16166a901714ddcc836538ff44c8300149753db9))
+* add Standard Schema validation, system streaming, and hermetic coverage ([be9cdbb](https://github.com/confused-ai/personaforge/commit/be9cdbbc3704d0ee9091fe6ff7c0319c768cdb9a))
+* **agent:** expose durable recorder on createAgent facade (L1-D1) ([e6ef3d8](https://github.com/confused-ai/personaforge/commit/e6ef3d8a376bbbf9b48f8f9ca210c93877bc742c))
+* **compression:** headroom-parity for Mastermind — session stats + query retrieve ([c21d743](https://github.com/confused-ai/personaforge/commit/c21d743649da807f09abf60ef85ee4174f38435d))
+* **docs:** add enterprise and compliance section to README ([8761a8a](https://github.com/confused-ai/personaforge/commit/8761a8a94a136e97c6098ba156fe1c1dc08bdb7f))
+* **docs:** add new features to README - Graph, Compression, and Learning ([784cf5e](https://github.com/confused-ai/personaforge/commit/784cf5ecfcf81548170deccf9d4fec8722c30a0c))
+* **docs:** update scheduler, skills, stream-utils, tool composition, and workflows guides ([68e0569](https://github.com/confused-ai/personaforge/commit/68e0569052c0c3d4b3d86a58dcee8cd3facb0bf4))
+* **dx:** graph memory, prompt optimization, specialist-gap modules + tests ([98adac3](https://github.com/confused-ai/personaforge/commit/98adac3cc3cddca0b948089f3967c449c090cd0f))
+* enhance RateLimiter to floor available tokens and improve output safety in McpBridgeTool with prompt injection detection ([988e3fa](https://github.com/confused-ai/personaforge/commit/988e3fa87ea3b66b4c5e6960d514b43c28e591f6))
+* enhance README with improved introduction, installation instructions, and example usage ([c261072](https://github.com/confused-ai/personaforge/commit/c26107297a515b70150c21d657ad128378dded32))
+* **graph:** batched async event writes (enterprise 4/4) ([1f435a5](https://github.com/confused-ai/personaforge/commit/1f435a5a189a285db6fdd12307c78c829915d5e6))
+* **graph:** deterministic replay from the durable event log (L1-D2) ([7db77ff](https://github.com/confused-ai/personaforge/commit/7db77ffedd058f7ae759547daa35f3fc9b0c175f))
+* **graph:** enterprise-harden the durable recorder ([5e61d54](https://github.com/confused-ai/personaforge/commit/5e61d54b7a60a62776ff2d633f0ee5c1425f8b5f))
+* **graph:** free-text PII redaction (enterprise 1/4) ([9274181](https://github.com/confused-ai/personaforge/commit/9274181bbfb62ad653abb685d502fd369ee1e11e))
+* **graph:** right-to-erasure on the event log (enterprise 2/4) ([a2ebe76](https://github.com/confused-ai/personaforge/commit/a2ebe7655427ab18364eda848455cb13623bb274))
+* **graph:** tamper-evident hash-chain audit (enterprise 3/4) ([1e3b6c6](https://github.com/confused-ai/personaforge/commit/1e3b6c6d63180aafc777e04f7b7d9a3e33bb0d91))
+* implement ExecutionEngine with task execution and event handling ([ed2c8ce](https://github.com/confused-ai/personaforge/commit/ed2c8ceab6c5b3fdc439fce283929344be96e441))
+* implement run tracking and AI SDK provider integration ([f3fc196](https://github.com/confused-ai/personaforge/commit/f3fc1968ba338f91841491f61b048667085a93e9))
+* implement ThreadPool for CPU-bound task parallelism using worker threads ([4267634](https://github.com/confused-ai/personaforge/commit/4267634da8bfd93a09caebf9c51913a658261205))
+* **runtime:** universal durable event log for agent runs (L1-D1) ([42d80d5](https://github.com/confused-ai/personaforge/commit/42d80d536c9a47175dd2c75f101ac2898fc442f7))
+* **simulation:** agent wind-tunnel over the durable log (L2) ([24f1e57](https://github.com/confused-ai/personaforge/commit/24f1e57ce58e083177f2b018f7a90abc5da71f34))
+* **simulation:** bridge sim outcomes to the optimizer (L3 seed) ([6ea3d38](https://github.com/confused-ai/personaforge/commit/6ea3d381818796e5ae5928271019ced703c8b5c7))
+* update version to 1.1.2, enhance WorkerPool with task execution capabilities, and add tests for parallel execution ([77cd64f](https://github.com/confused-ai/personaforge/commit/77cd64fbf7502a746cbb4334ce4deabbd5303a57))
+
+
+### Bug Fixes
+
+* **loader:** update base URL for openrouter configuration ([17e1ad0](https://github.com/confused-ai/personaforge/commit/17e1ad0948ab3231a78e49e99dc9aaf25fd1ddae))
+* production-grade cleanup — export collisions, optional peers, docs ([052feec](https://github.com/confused-ai/personaforge/commit/052feec6e776da1058f45cd3307d417bae3547a5))
+* **providers:** use createRequire shim so ESM bundle doesn't crash on default agent() ([f25425e](https://github.com/confused-ai/personaforge/commit/f25425e20005ed735bb3590fa917746e7e9e14de))
+* replace fake-data stubs with honest behavior ([54aa7e1](https://github.com/confused-ai/personaforge/commit/54aa7e1eae684de76825a560fde0f0eda49b13ef))
+* resolve all TypeScript typecheck errors ([26abfb9](https://github.com/confused-ai/personaforge/commit/26abfb9d78a55dc34d6a0cecc46b4f1e1b3b3d66))
+* revert version to 1.0.0 in package.json and clean up unused imports in trace-dataset and types files ([0432f71](https://github.com/confused-ai/personaforge/commit/0432f712e7b03fc2d404a9b3f303a52c48a160ad))
+* **test:** fix flaky bad-signature mutation in JWKS verifier test ([21e1133](https://github.com/confused-ai/personaforge/commit/21e1133ee87cf36bde6cedb1feb3082306849a88))
+* **test:** fix flaky bad-signature mutation in JWKS verifier test ([973cd4d](https://github.com/confused-ai/personaforge/commit/973cd4ddb0499f62cb2e9798a93b385e0e3e44e7))
+* update Hono import type and improve edge ID generation in GraphBuilder ([4db8195](https://github.com/confused-ai/personaforge/commit/4db819504f807ab6b4ca82c335ec7d5066cf3372))
+* update message creation types in anthropic and openai adapters ([c08adee](https://github.com/confused-ai/personaforge/commit/c08adee4f139d5a2367df1e1c485a5b864cf793d))
+* update message creation types in anthropic and openai adapters ([5b41e41](https://github.com/confused-ai/personaforge/commit/5b41e412d0bca588650d68b1271c9b0d2caa9253))
+* update message return types in anthropic and openai adapters ([c74a88f](https://github.com/confused-ai/personaforge/commit/c74a88f92246f1b5ba1359c3857590dbf1488041))
+* update README badges for coverage and AI SDK support ([3204fc3](https://github.com/confused-ai/personaforge/commit/3204fc39d2f012ae5d46fc89ab1b639603006a89))
+* update version to 1.0.1 in package.json ([f2aff81](https://github.com/confused-ai/personaforge/commit/f2aff814db4f6d0970349b73598217d26f2c0dd1))
+* update version to 1.3.0 in package.json ([53e36c6](https://github.com/confused-ai/personaforge/commit/53e36c63db29f239536df24132c7340fef62f270))
+
+
+### Code Refactoring
+
+* rename confused-ai to personaforge ([0b99c20](https://github.com/confused-ai/personaforge/commit/0b99c2053045819784383a64c5abda8a00f0a640))
+
 ## [Unreleased] — production-hardening audit sweep (items 1–24)
 
 ### Added
