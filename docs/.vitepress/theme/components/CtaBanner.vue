@@ -115,7 +115,7 @@ function copy() {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #2dd4bf;
+  color: #F5893B;
   margin-bottom: 20px;
 }
 
@@ -194,7 +194,7 @@ function copy() {
 .ca-cta-copy:hover {
   border-color: rgba(20, 184, 166, 0.5);
   background: rgba(20, 184, 166, 0.2);
-  color: #2dd4bf;
+  color: #F5893B;
 }
 
 /* ── Action buttons ─────────────────────────────────────── */

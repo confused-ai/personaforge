@@ -136,11 +136,11 @@ defineProps<{ compact?: boolean; showLegend?: boolean }>();
 }
 
 .cm-th-highlight {
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(76, 91, 212, 0.08);
 }
 
 .cm-brand {
-  background: linear-gradient(135deg, #0f766e 0%, #0f4c81 100%);
+  background: linear-gradient(135deg, #F5893B 0%, #4C5BD4 55%, #33409E 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -148,7 +148,7 @@ defineProps<{ compact?: boolean; showLegend?: boolean }>();
 }
 
 .dark .cm-brand {
-  background: linear-gradient(135deg, #5eead4 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, #F7A85C 0%, #8B97F5 55%, #B9A6F2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

@@ -1156,7 +1156,7 @@ export class AgenticRunner {
             if (!result?.nodes.length) return undefined;
             return result.nodes
                 .filter((n) => n.score > 0.3)
-                .map((n, i) => `Node ${n.id} [${n.operation}] (score=${n.score.toFixed(2)}): ${n.thought}`)
+                .map((n) => `Node ${n.id} [${n.operation}] (score=${n.score.toFixed(2)}): ${n.thought}`)
                 .join('\n');
         }
 

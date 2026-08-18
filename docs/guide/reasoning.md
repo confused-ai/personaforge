@@ -1,22 +1,116 @@
 ---
 title: Reasoning
-description: Chain-of-Thought and Tree-of-Thought reasoning with ReasoningManager and TreeOfThoughtEngine — emit structured ReasoningStep events for inspectable, streamable multi-step thinking.
+description: Chain-of-Thought, Tree-of-Thought, Reflexion, ReWOO, and Graph-of-Thoughts reasoning engines — emit structured ReasoningStep events for inspectable, streamable multi-step thinking.
 outline: [2, 3]
 ---
 
 # Reasoning
 
-The reasoning module gives agents explicit, inspectable multi-step thinking. Use `ReasoningManager` for Chain-of-Thought (CoT) and `TreeOfThoughtEngine` for Tree-of-Thought (ToT) reasoning.
+The reasoning module gives agents explicit, inspectable multi-step thinking across five standard frameworks:
 
-> **Experimental.** This subsystem is newer and not yet semver-stable — its CoT/ToT engines and config shapes may change in a minor release.
+- **Chain-of-Thought (CoT)**: `ReasoningManager` step-by-step reasoning.
+- **Tree-of-Thought (ToT)**: `TreeOfThoughtEngine` beam search tree.
+- **Reflexion**: `ReflexionEngine` actor-evaluator-reflection critique retry loop.
+- **ReWOO**: `ReWOOEngine` decoupled planning with variable substitution (`#E1`, `#E2`) and execution.
+- **Graph-of-Thoughts (GoT)**: `GotEngine` non-linear graph with node generation, refinement, aggregation, and graph scoring.
+
+> **Experimental.** This subsystem is newer and not yet semver-stable — its engines and config shapes may change in a minor release.
 
 ```ts
 import {
   ReasoningManager,
   TreeOfThoughtEngine,
-  ReasoningEventType,
-  NextAction,
+  ReflexionEngine,
+  ReWooEngine,
+  GotEngine,
 } from 'personaforge';
+```
+
+---
+
+## Agentic Loop Strategies
+
+When configuring an `AgenticRunner` or agent reasoning options, set `reasoning.strategy` to choose the active engine:
+
+```ts
+const agent = createAgent({
+  name: 'reasoner',
+  model: 'gpt-4o',
+  apiKey: process.env.OPENAI_API_KEY!,
+  reasoning: {
+    enabled: true,
+    strategy: 'cot' | 'tot' | 'reflexion' | 'rewoo' | 'got',
+    maxSteps: 6,
+  },
+});
+```
+
+---
+
+## Reflexion (`ReflexionEngine`)
+
+Reflexion implements verbal reinforcement learning (Shinn et al. 2023). It executes candidate generation, evaluation, and self-critique:
+
+```ts
+import { ReflexionEngine } from 'personaforge';
+
+const reflexion = new ReflexionEngine({
+  generate: async (msgs) => llm.generate(msgs),
+  maxAttempts: 3,
+  evaluate: async (response, goal) => {
+    const passed = response.includes('42');
+    return { passed, score: passed ? 1.0 : 0.2, feedback: passed ? 'Correct' : 'Missing result' };
+  },
+});
+
+const result = await reflexion.solve('Solve equation step by step');
+console.log(result.solution);      // winning response text
+console.log(result.passed);        // boolean verdict
+console.log(result.attempts);      // full step trace with self-critiques
+```
+
+---
+
+## ReWOO (`ReWooEngine`)
+
+ReWOO decouples planning from tool execution (Wang et al. 2023) using `#E` variable placeholders to eliminate redundant context tokens:
+
+```ts
+import { ReWooEngine } from 'personaforge';
+
+const rewoo = new ReWooEngine({
+  generate: async (msgs) => llm.generate(msgs),
+  executeTool: async (toolName, input) => {
+    return runMyTool(toolName, input);
+  },
+});
+
+const result = await rewoo.solve('Find weather in Tokyo and calculate clothing index');
+console.log(result.plan);          // execution steps (#E1, #E2)
+console.log(result.variableMap);   // { '#E1': '22C', '#E2': 'Light jacket' }
+console.log(result.solution);      // synthesized final answer
+```
+
+---
+
+## Graph-of-Thoughts (`GotEngine`)
+
+GoT (Besta et al. 2023) expands thoughts into a non-linear graph with generate, aggregate, and refine operations:
+
+```ts
+import { GotEngine } from 'personaforge';
+
+const got = new GotEngine({
+  generate: async (msgs) => llm.generate(msgs),
+  numBranches: 4,
+  maxIterations: 3,
+  keepBest: 3,
+});
+
+const result = await got.solve('Optimize supply chain logistics');
+console.log(result.solution);      // highest-scoring node output
+console.log(result.nodes);         // all graph nodes (operations: generate, refine, aggregate)
+console.log(result.edges);         // graph connectivity edges
 ```
 
 ---
@@ -24,49 +118,37 @@ import {
 ## Chain-of-Thought with `ReasoningManager`
 
 ```ts
-import { createAgent, OpenAIProvider } from 'personaforge';
 import { ReasoningManager, ReasoningEventType } from 'personaforge';
-
-const llm = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY!, model: 'gpt-4o' });
 
 const manager = new ReasoningManager({
   generate: async (messages) => llm.generate(messages),
-  minSteps: 2,       // minimum reasoning steps before final answer
-  maxSteps: 10,      // maximum steps before forced termination
-  // systemPrompt: '...',  // override the built-in CoT prompt
+  minSteps: 2,
+  maxSteps: 10,
 });
 
-const messages = [
-  { role: 'user' as const, content: 'A farmer has 17 sheep. All but 9 die. How many are left?' },
-];
-
 for await (const event of manager.reason(messages)) {
-  switch (event.eventType) {
-    case ReasoningEventType.STARTED:
-      console.log('Reasoning started');
-      break;
-    case ReasoningEventType.STEP:
-      console.log(`Step: ${event.step?.title}`);
-      console.log(`  Action:     ${event.step?.action}`);
-      console.log(`  Result:     ${event.step?.result}`);
-      console.log(`  Confidence: ${event.step?.confidence}`);
-      console.log(`  Next:       ${event.step?.nextAction}`);
-      break;
-    case ReasoningEventType.DELTA:
-      process.stdout.write(event.contentDelta ?? '');
-      break;
-    case ReasoningEventType.COMPLETED:
-      console.log('\nFinal answer:', event.steps?.at(-1)?.result);
-      console.log('Total steps:', event.steps?.length);
-      break;
-    case ReasoningEventType.ERROR:
-      console.error('Reasoning error:', event.error);
-      break;
+  if (event.eventType === ReasoningEventType.STEP) {
+    console.log(`Step: ${event.step?.title}`);
   }
 }
 ```
 
-Prefer a single result over the event stream? `await manager.run(messages)` collects every step and returns a `ReasoningResult` (`{ steps, success, error? }`). The default CoT system prompt is exported as `REASONING_SYSTEM_PROMPT` if you want to extend rather than replace it.
+---
+
+## Tree-of-Thought (`TreeOfThoughtEngine`)
+
+```ts
+import { TreeOfThoughtEngine } from 'personaforge';
+
+const tot = new TreeOfThoughtEngine({
+  generate: async (messages) => llm.generate(messages),
+  beamWidth: 3,
+  maxDepth: 4,
+});
+
+const result = await tot.solve('Solve puzzle');
+console.log(result.bestThought, result.score);
+```
 
 ---
 
@@ -82,64 +164,6 @@ Each step emitted by `ReasoningManager` contains:
 | `reasoning` | `string` | Rationale and assumptions |
 | `nextAction` | `NextAction` | `continue` \| `validate` \| `final_answer` \| `reset` |
 | `confidence` | `number` | 0.0–1.0 confidence score |
-
----
-
-## Attach reasoning to an agent
-
-Pass a `ReasoningManager` to `createAgent()` for automatic CoT on every run:
-
-```ts
-import { createAgent } from 'personaforge';
-import { ReasoningManager } from 'personaforge';
-
-const agent = createAgent({
-  name: 'reasoning-agent',
-  instructions: 'Solve problems step by step.',
-  model: 'gpt-4o',
-  apiKey: process.env.OPENAI_API_KEY!,
-  reasoning: new ReasoningManager({
-    generate: async (msgs) => llm.generate(msgs),
-    maxSteps: 8,
-  }),
-  // Stream reasoning steps in the result
-  streamReasoningSteps: true,
-});
-
-const result = await agent.run('What is the optimal strategy for the knapsack problem?');
-console.log(result.reasoningSteps);  // full array of ReasoningStep
-console.log(result.text);            // final answer
-```
-
----
-
-## Tree-of-Thought
-
-`TreeOfThoughtEngine` explores multiple reasoning branches and picks the best path:
-
-```ts
-import { TreeOfThoughtEngine } from 'personaforge';
-
-const tot = new TreeOfThoughtEngine({
-  generate: async (messages) => llm.generate(messages),
-  beamWidth: 3,          // branches to expand and keep per BFS level
-  maxDepth: 4,           // max tree depth
-  // Optional separate evaluator. Receives a messages array and returns a score
-  // as a string — either a plain float ('0.0'–'1.0') or JSON `{ "score": 0.8 }`.
-  // Defaults to `generate` when omitted.
-  evaluate: async (messages) => llm.generate(messages),
-});
-
-// solve(goal, context?) runs beam search and returns the best branch.
-const result = await tot.solve(
-  'What is the optimal strategy for the knapsack problem?',
-);
-
-console.log(result.bestThought); // best final thought text
-console.log(result.score);       // cumulative score of the winning branch (0–1)
-console.log(result.nodes);       // full beam tree (TotNode[], for inspection)
-console.log(result.depth);       // number of BFS levels traversed
-```
 
 ---
 

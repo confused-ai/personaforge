@@ -1,12 +1,18 @@
 /* =========================================================
-   personaforge — Starlight theme
-   Default Starlight colors + minimal hero/card tweaks only
+   personaforge — VitePress theme
+   Polygon palette (orange · blue · purple) + minimal tweaks
    ========================================================= */
+
+:root {
+  --brand-orange:  #F5893B;
+  --brand-blue:    #4C5BD4;
+  --brand-purple:  #33409E;
+}
 
 /* ── Hero title gradient ─────────────────────────────────── */
 .hero h1,
 .hero .sl-flex h1 {
-    background: linear-gradient(135deg, #7c3aed 0%, #0891b2 100%);
+    background: linear-gradient(120deg, #F5893B 0%, #4C5BD4 52%, #33409E 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -14,7 +20,7 @@
 
 /* ── Primary button ──────────────────────────────────────── */
 a.sl-button[data-variant='primary'] {
-    background: linear-gradient(135deg, #7c3aed 0%, #0891b2 100%) !important;
+    background: linear-gradient(135deg, #4C5BD4 0%, #33409E 100%) !important;
     border-color: transparent !important;
     color: #fff !important;
     font-weight: 600;
@@ -29,5 +35,5 @@ a.sl-button[data-variant='primary']:hover {
 /* ── Card hover ──────────────────────────────────────────── */
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(76, 91, 212, 0.18);
 }
