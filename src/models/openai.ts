@@ -66,7 +66,7 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
     };
     const openaiClient = client as import('openai').default;
     const createChat = openaiClient.chat.completions.create.bind(openaiClient.chat.completions) as
-      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('openai').OpenAI.Chat.Completions.ChatCompletion>;
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('openai').OpenAI.Chat.ChatCompletion>;
     const res = await createChat(request, opts?.headers ? { headers: opts.headers } : undefined);
 
     const choice = res.choices[0];

@@ -77,7 +77,7 @@ export function anthropic(config: ModelAdapterConfig = {}): LLMProvider {
     const system = getSystem(messages);
     const anthropicClient = client as import('@anthropic-ai/sdk').default;
     const createMessage = anthropicClient.messages.create.bind(anthropicClient.messages) as
-      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('@anthropic-ai/sdk').Anthropic.Message>;
+      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('@anthropic-ai/sdk').Anthropic.Messages.Message>;
     const res = await createMessage({
       model,
       max_tokens: opts?.maxTokens ?? config.maxTokens ?? 4096,
