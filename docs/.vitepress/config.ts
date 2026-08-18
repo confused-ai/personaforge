@@ -37,7 +37,7 @@ export default defineConfig({
         // Favicon & theme
         ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
         ['link', { rel: 'shortcut icon', href: `${base}favicon.svg` }],
-        ['meta', { name: 'theme-color', content: '#0f766e' }],
+        ['meta', { name: 'theme-color', content: '#4C5BD4' }],
 
         // Open Graph
         ['meta', { property: 'og:type', content: 'website' }],

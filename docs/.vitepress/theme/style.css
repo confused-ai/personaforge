@@ -11,59 +11,64 @@
   --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
-/* ── Brand palette (teal-blue) ───────────────────────────── */
+/* ── Brand palette (polygon layers: orange · blue · purple) ─ */
 :root {
-  --vp-c-brand-1:    #0f766e;
-  --vp-c-brand-2:    #115e59;
-  --vp-c-brand-3:    #164e63;
-  --vp-c-brand-soft: rgba(15, 118, 110, 0.08);
+  --brand-orange:  #F5893B;
+  --brand-blue:    #4C5BD4;
+  --brand-purple:  #33409E;
+
+  --vp-c-brand-1:    #4C5BD4;
+  --vp-c-brand-2:    #33409E;
+  --vp-c-brand-3:    #6A4FD0;
+  --vp-c-brand-soft: rgba(76, 91, 212, 0.10);
 }
 
 .dark {
-  --vp-c-brand-1:    #5eead4;
-  --vp-c-brand-2:    #2dd4bf;
-  --vp-c-brand-3:    #60a5fa;
-  --vp-c-brand-soft: rgba(94, 234, 212, 0.12);
+  --vp-c-brand-1:    #8B97F5;
+  --vp-c-brand-2:    #B9A6F2;
+  --vp-c-brand-3:    #C7B6F7;
+  --vp-c-brand-soft: rgba(124, 138, 240, 0.14);
 }
 
 /* ── Light backgrounds ──────────────────────────────────── */
 :root {
-  --vp-c-bg:      #fcfcf8;
-  --vp-c-bg-soft: #f3f7f3;
-  --vp-c-bg-mute: #e7efea;
-  --vp-c-divider: #d8e3dc;
-  --vp-c-text-1:  #13211d;
-  --vp-c-text-2:  #496159;
-  --vp-c-text-3:  #768981;
+  --vp-c-bg:      #fbfbfd;
+  --vp-c-bg-soft: #f1f3fb;
+  --vp-c-bg-mute: #e6e9f5;
+  --vp-c-divider: #dde1ee;
+  --vp-c-text-1:  #12142a;
+  --vp-c-text-2:  #434a6b;
+  --vp-c-text-3:  #6b7299;
 }
 
 /* ── Dark backgrounds ───────────────────────────────────── */
 .dark {
-  --vp-c-bg:      #091312;
-  --vp-c-bg-soft: #101c1a;
-  --vp-c-bg-mute: #172826;
-  --vp-c-divider: #223734;
-  --vp-c-text-1:  #ecf7f3;
-  --vp-c-text-2:  #a5beb7;
-  --vp-c-text-3:  #6f8c85;
+  --vp-c-bg:      #0a0c1a;
+  --vp-c-bg-soft: #11142b;
+  --vp-c-bg-mute: #181c38;
+  --vp-c-divider: #232a4d;
+  --vp-c-text-1:  #eef0fb;
+  --vp-c-text-2:  #aab0d0;
+  --vp-c-text-3:  #6e759b;
 }
 
 /* ── Hero ───────────────────────────────────────────────── */
 :root {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(120deg, #0f766e 20%, #0f4c81 80%);
+  --vp-home-hero-name-background: linear-gradient(120deg, #F5893B 0%, #4C5BD4 52%, #33409E 100%);
   --vp-home-hero-image-background-image: none;
   --vp-home-hero-image-filter: none;
 }
 
 .dark {
-  --vp-home-hero-name-background: linear-gradient(120deg, #5eead4 20%, #60a5fa 80%);
+  --vp-home-hero-name-background: linear-gradient(120deg, #F7A85C 0%, #8B97F5 52%, #B9A6F2 100%);
 }
 
 .VPHome {
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.10), transparent 26%),
-    radial-gradient(circle at top right, rgba(15, 76, 129, 0.08), transparent 22%),
+    radial-gradient(circle at top left,  rgba(245,137,59,0.10), transparent 26%),
+    radial-gradient(circle at top right, rgba(76,91,212,0.12),  transparent 24%),
+    radial-gradient(circle at 60% 0%,    rgba(51,64,158,0.08),  transparent 30%),
     var(--vp-c-bg);
 }
 
@@ -125,12 +130,12 @@
 .VPButton.medium.brand:hover {
   background: var(--vp-c-brand-2) !important;
   border-color: var(--vp-c-brand-2) !important;
-  box-shadow: 0 8px 24px rgba(15,118,110,0.22) !important;
+  box-shadow: 0 8px 24px rgba(76,91,212,0.28) !important;
 }
 .dark .VPButton.medium.brand {
   background: var(--vp-c-brand-1) !important;
   border-color: var(--vp-c-brand-1) !important;
-  color: #062e2a !important;
+  color: #0b0e22 !important;
 }
 .dark .VPButton.medium.brand:hover {
   background: var(--vp-c-brand-2) !important;
@@ -220,7 +225,7 @@
 }
 .VPFeatures .VPFeature:hover {
   border-color: var(--vp-c-brand-1) !important;
-  box-shadow: 0 10px 24px rgba(15,118,110,0.08) !important;
+  box-shadow: 0 10px 24px rgba(76,91,212,0.12) !important;
 }
 .VPFeatures .VPFeature .title {
   font-size: 0.9rem !important;
@@ -255,7 +260,7 @@
   border-color: #1e1e1e !important;
 }
 .vp-doc div[class*='language-']:hover {
-  border-color: rgba(15,118,110,0.35) !important;
+  border-color: rgba(76,91,212,0.40) !important;
 }
 .vp-doc div[class*='language-'] .lang {
   font-size: 0.7rem !important;
@@ -376,8 +381,8 @@
   border: 1px solid !important;
 }
 .vp-doc .custom-block.tip {
-  background: rgba(15,118,110,0.05) !important;
-  border-color: rgba(15,118,110,0.2) !important;
+  background: rgba(76,91,212,0.06) !important;
+  border-color: rgba(76,91,212,0.20) !important;
 }
 .vp-doc .custom-block.warning {
   background: rgba(234,179,8,0.05) !important;
@@ -556,14 +561,14 @@ a:focus-visible, button:focus-visible {
 
 .af-stage-panel {
   background:
-    radial-gradient(circle at top right, rgba(94,234,212,0.12), transparent 28%),
-    linear-gradient(180deg, #0d1918, #081111);
+    radial-gradient(circle at top right, rgba(139,151,245,0.16), transparent 30%),
+    linear-gradient(180deg, #11142b, #0a0c1f);
 }
 
 .dark .af-stage-panel {
   background:
-    radial-gradient(circle at top right, rgba(94,234,212,0.12), transparent 28%),
-    linear-gradient(180deg, #0d1918, #081111);
+    radial-gradient(circle at top right, rgba(139,151,245,0.16), transparent 30%),
+    linear-gradient(180deg, #11142b, #0a0c1f);
 }
 
 .af-stage-lede {
@@ -620,8 +625,8 @@ a:focus-visible, button:focus-visible {
   overflow-x: auto;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 18px;
-  background: rgba(4, 12, 11, 0.6);
-  color: #dcfdf7;
+  background: rgba(10, 12, 26, 0.6);
+  color: #e8ebfb;
   font-family: var(--vp-font-family-mono);
   font-size: 0.84rem;
   line-height: 1.75;
@@ -646,7 +651,7 @@ a:focus-visible, button:focus-visible {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--vp-c-brand-1);
+  color: var(--brand-orange);
 }
 
 .af-grid {
@@ -737,7 +742,7 @@ a:focus-visible, button:focus-visible {
 .af-link-card:hover {
   transform: translateY(-2px);
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 16px 36px rgba(15,118,110,0.10);
+  box-shadow: 0 16px 36px rgba(76,91,212,0.14);
 }
 
 .dark .af-link-card:hover {

@@ -1,4 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <rect width="100" height="100" rx="20" fill="#646cff"/>
-  <text x="50" y="62" font-family="monospace" font-size="40" font-weight="bold" fill="white" text-anchor="middle">AI</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 128" width="480" height="128" role="img" aria-label="personaforge">
+  <title>personaforge</title>
+  <style>
+    .wm { font-family: Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 46px; font-weight: 600; letter-spacing: -1.6px; fill: #0E1220; }
+    @media (prefers-color-scheme: dark) { .wm { fill: #EEF0FB; } }
+  </style>
+  <polygon points="64,8 109.03,34 64,60 18.97,34" fill="#F5893B"/>
+  <polygon points="112.43,40 112.43,92 67.4,118 67.4,66" fill="#4C5BD4"/>
+  <polygon points="15.57,40 60.6,66 60.6,118 15.57,92" fill="#33409E"/>
+  <text class="wm" x="148" y="80">personaforge</text>
 </svg>

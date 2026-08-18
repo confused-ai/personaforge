@@ -1,62 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
   <defs>
     <linearGradient id="og-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%"   stop-color="#0f0720"/>
-      <stop offset="50%"  stop-color="#1e0a3c"/>
-      <stop offset="100%" stop-color="#0a1628"/>
+      <stop offset="0%"   stop-color="#0a0c1a"/>
+      <stop offset="55%"  stop-color="#11142b"/>
+      <stop offset="100%" stop-color="#0d1130"/>
     </linearGradient>
 
     <linearGradient id="og-brand" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%"   stop-color="#a855f7"/>
-      <stop offset="100%" stop-color="#22d3ee"/>
+      <stop offset="0%"   stop-color="#F5893B"/>
+      <stop offset="50%"  stop-color="#4C5BD4"/>
+      <stop offset="100%" stop-color="#33409E"/>
     </linearGradient>
 
-    <linearGradient id="og-node" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%"   stop-color="#e9d5ff"/>
-      <stop offset="100%" stop-color="#a5f3fc"/>
+    <linearGradient id="og-wordmark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#F7A85C"/>
+      <stop offset="55%"  stop-color="#8B97F5"/>
+      <stop offset="100%" stop-color="#B9A6F2"/>
     </linearGradient>
 
-    <radialGradient id="og-glow-purple" cx="30%" cy="40%" r="50%">
-      <stop offset="0%"   stop-color="rgba(168,85,247,0.25)"/>
-      <stop offset="100%" stop-color="rgba(168,85,247,0)"/>
+    <radialGradient id="og-glow-orange" cx="22%" cy="38%" r="48%">
+      <stop offset="0%"   stop-color="rgba(245,137,59,0.22)"/>
+      <stop offset="100%" stop-color="rgba(245,137,59,0)"/>
     </radialGradient>
 
-    <radialGradient id="og-glow-cyan" cx="75%" cy="65%" r="40%">
-      <stop offset="0%"   stop-color="rgba(34,211,238,0.15)"/>
-      <stop offset="100%" stop-color="rgba(34,211,238,0)"/>
+    <radialGradient id="og-glow-blue" cx="78%" cy="66%" r="42%">
+      <stop offset="0%"   stop-color="rgba(76,91,212,0.20)"/>
+      <stop offset="100%" stop-color="rgba(76,91,212,0)"/>
     </radialGradient>
 
-    <filter id="og-glow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-
-    <filter id="og-node-glow">
-      <feGaussianBlur stdDeviation="12" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-
-    <linearGradient id="og-logo-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%"   stop-color="#6d28d9"/>
-      <stop offset="100%" stop-color="#0891b2"/>
+    <linearGradient id="og-logo-sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
+
+    <filter id="og-soft">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
   </defs>
 
   <!-- Dark background -->
   <rect width="1200" height="630" fill="url(#og-bg)"/>
 
   <!-- Ambient glow blobs -->
-  <rect width="1200" height="630" fill="url(#og-glow-purple)"/>
-  <rect width="1200" height="630" fill="url(#og-glow-cyan)"/>
+  <rect width="1200" height="630" fill="url(#og-glow-orange)"/>
+  <rect width="1200" height="630" fill="url(#og-glow-blue)"/>
 
   <!-- Subtle grid lines -->
-  <g stroke="rgba(255,255,255,0.025)" stroke-width="1">
+  <g stroke="rgba(255,255,255,0.03)" stroke-width="1">
     <line x1="0"    y1="210" x2="1200" y2="210"/>
     <line x1="0"    y1="420" x2="1200" y2="420"/>
     <line x1="300"  y1="0"   x2="300"  y2="630"/>
@@ -64,125 +54,74 @@
     <line x1="900"  y1="0"   x2="900"  y2="630"/>
   </g>
 
-  <!-- ── Logo mark (left section) ──────────────────────── -->
-  <!-- Logo squircle -->
-  <rect x="80" y="195" width="200" height="200" rx="45"
-        fill="url(#og-logo-bg)"/>
-  <rect x="80" y="195" width="200" height="100" rx="45"
-        fill="rgba(255,255,255,0.04)"/>
-
-  <!-- Logo outer rings -->
-  <circle cx="180" cy="295" r="78" fill="none"
-          stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
-  <circle cx="180" cy="295" r="63" fill="none"
-          stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-
-  <!-- Logo spokes -->
-  <line x1="180" y1="295" x2="180" y2="247"
-        stroke="rgba(255,255,255,0.6)" stroke-width="3"
-        stroke-linecap="round"/>
-  <line x1="180" y1="295" x2="148" y2="330"
-        stroke="rgba(255,255,255,0.6)" stroke-width="3"
-        stroke-linecap="round"/>
-  <line x1="180" y1="295" x2="212" y2="330"
-        stroke="rgba(255,255,255,0.6)" stroke-width="3"
-        stroke-linecap="round"/>
-
-  <!-- Logo outer triangle -->
-  <line x1="180" y1="247" x2="148" y2="330"
-        stroke="rgba(255,255,255,0.2)" stroke-width="1.5"
-        stroke-linecap="round"/>
-  <line x1="180" y1="247" x2="212" y2="330"
-        stroke="rgba(255,255,255,0.2)" stroke-width="1.5"
-        stroke-linecap="round"/>
-  <line x1="148" y1="330" x2="212" y2="330"
-        stroke="rgba(255,255,255,0.2)" stroke-width="1.5"
-        stroke-linecap="round"/>
-
-  <!-- Logo nodes -->
-  <!-- Top -->
-  <circle cx="180" cy="247" r="18" fill="rgba(255,255,255,0.08)"
-          filter="url(#og-glow)"/>
-  <circle cx="180" cy="247" r="12" fill="url(#og-node)"/>
-  <circle cx="180" cy="247" r="7"  fill="white"/>
-
-  <!-- Bottom-left -->
-  <circle cx="148" cy="330" r="18" fill="rgba(255,255,255,0.08)"
-          filter="url(#og-glow)"/>
-  <circle cx="148" cy="330" r="12" fill="url(#og-node)"/>
-  <circle cx="148" cy="330" r="7"  fill="white"/>
-
-  <!-- Bottom-right -->
-  <circle cx="212" cy="330" r="18" fill="rgba(255,255,255,0.08)"
-          filter="url(#og-glow)"/>
-  <circle cx="212" cy="330" r="12" fill="url(#og-node)"/>
-  <circle cx="212" cy="330" r="7"  fill="white"/>
-
-  <!-- Hub -->
-  <circle cx="180" cy="295" r="24" fill="rgba(255,255,255,0.08)"
-          filter="url(#og-glow)"/>
-  <circle cx="180" cy="295" r="17" fill="url(#og-node)"/>
-  <circle cx="180" cy="295" r="10" fill="white"/>
+  <!-- ── Polygon logo mark (scaled 128 → 200, placed top-left) ── -->
+  <g transform="translate(96,212) scale(1.5625)">
+    <!-- soft glow behind mark -->
+    <polygon points="64,8 109.03,34 64,60 18.97,34" fill="#F5893B" filter="url(#og-soft)" opacity="0.35"/>
+    <polygon points="64,8 109.03,34 64,60 18.97,34" fill="#F5893B"/>
+    <polygon points="112.43,40 112.43,92 67.4,118 67.4,66" fill="#4C5BD4"/>
+    <polygon points="15.57,40 60.6,66 60.6,118 15.57,92" fill="#33409E"/>
+    <polygon points="64,8 109.03,34 64,60 18.97,34" fill="url(#og-logo-sheen)"/>
+  </g>
 
   <!-- ── Text content ─────────────────────────────────── -->
-  <!-- "Confused-AI" wordmark -->
-  <text x="324" y="279"
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-        font-size="76" font-weight="900" letter-spacing="-3"
-        fill="url(#og-brand)">Confused-AI</text>
+  <!-- Wordmark -->
+  <text x="338" y="284"
+        font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-size="78" font-weight="800" letter-spacing="-3"
+        fill="url(#og-wordmark)">personaforge</text>
 
   <!-- Tagline -->
-  <text x="326" y="338"
+  <text x="340" y="342"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-        font-size="28" font-weight="400" letter-spacing="-0.5"
-        fill="rgba(255,255,255,0.65)">
+        font-size="27" font-weight="400" letter-spacing="-0.5"
+        fill="rgba(238,240,251,0.66)">
     Production AI Agents, Shipped in TypeScript
   </text>
 
   <!-- Divider line -->
-  <line x1="326" y1="370" x2="880" y2="370"
-        stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <line x1="340" y1="372" x2="884" y2="372"
+        stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
 
   <!-- Feature pills -->
   <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-     font-size="20" font-weight="600" fill="rgba(255,255,255,0.5)">
-    <text x="326" y="410">100+ Tools</text>
-    <text x="480" y="410" fill="rgba(255,255,255,0.2)">·</text>
-    <text x="500" y="410">Multi-Agent</text>
-    <text x="660" y="410" fill="rgba(255,255,255,0.2)">·</text>
-    <text x="680" y="410">Circuit Breakers</text>
-    <text x="874" y="410" fill="rgba(255,255,255,0.2)">·</text>
-    <text x="894" y="410">OTLP Tracing</text>
+     font-size="20" font-weight="600" fill="rgba(238,240,251,0.55)">
+    <text x="340" y="412">100+ Tools</text>
+    <text x="494" y="412" fill="rgba(238,240,251,0.2)">·</text>
+    <text x="514" y="412">Multi-Agent</text>
+    <text x="674" y="412" fill="rgba(238,240,251,0.2)">·</text>
+    <text x="694" y="412">Circuit Breakers</text>
+    <text x="888" y="412" fill="rgba(238,240,251,0.2)">·</text>
+    <text x="908" y="412">OTLP Tracing</text>
   </g>
 
-  <!-- npm badge area -->
-  <rect x="326" y="440" width="180" height="42" rx="10"
-        fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.4)"
+  <!-- npm badge -->
+  <rect x="340" y="442" width="196" height="42" rx="10"
+        fill="rgba(76,91,212,0.18)" stroke="rgba(76,91,212,0.45)"
         stroke-width="1"/>
-  <text x="342" y="467"
+  <text x="358" y="469"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         font-size="18" font-weight="700"
-        fill="#a78bfa">npm install personaforge</text>
+        fill="#A9B4F8">npm install personaforge</text>
 
   <!-- MIT badge -->
-  <rect x="524" y="440" width="90" height="42" rx="10"
-        fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.3)"
+  <rect x="552" y="442" width="90" height="42" rx="10"
+        fill="rgba(76,212,158,0.15)" stroke="rgba(76,212,158,0.32)"
         stroke-width="1"/>
-  <text x="539" y="467"
+  <text x="567" y="469"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         font-size="18" font-weight="700"
-        fill="#4ade80">MIT</text>
+        fill="#67D9A6">MIT</text>
 
   <!-- TypeScript badge -->
-  <rect x="630" y="440" width="130" height="42" rx="10"
-        fill="rgba(49,120,198,0.2)" stroke="rgba(49,120,198,0.4)"
+  <rect x="658" y="442" width="130" height="42" rx="10"
+        fill="rgba(76,91,212,0.16)" stroke="rgba(139,151,245,0.4)"
         stroke-width="1"/>
-  <text x="647" y="467"
+  <text x="675" y="469"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         font-size="18" font-weight="700"
-        fill="#60a5fa">TypeScript</text>
+        fill="#8B97F5">TypeScript</text>
 
-  <!-- Bottom border accent -->
-  <rect x="0" y="618" width="1200" height="12" rx="0"
-        fill="url(#og-brand)" opacity="0.7"/>
+  <!-- Bottom border accent (brand gradient) -->
+  <rect x="0" y="618" width="1200" height="12" fill="url(#og-brand)" opacity="0.8"/>
 </svg>
