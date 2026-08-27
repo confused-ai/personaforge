@@ -205,8 +205,75 @@ const streamingTool = tool({
 
 ---
 
+## Output schema and validation
+
+`outputSchema` validates what `execute()` returns, the same way `parameters` validates the input — both are strict by default and reject malformed data before it goes anywhere:
+
+```ts
+const getOrder = tool({
+  name: 'get_order',
+  description: 'Retrieve an order by ID.',
+  parameters: z.object({ orderId: z.string() }),
+  outputSchema: z.object({
+    id: z.string(),
+    status: z.enum(['pending', 'shipped', 'delivered']),
+    total: z.number(),
+  }),
+  execute: async ({ orderId }) => orderService.findById(orderId),
+  // If execute() returns something that doesn't match outputSchema,
+  // the tool fails with an OUTPUT_VALIDATION_ERROR instead of silently
+  // passing bad data to the model.
+});
+```
+
+## Shaping output for the model vs. for the UI
+
+Two independent hooks reshape a tool's output — they exist for different audiences and never affect each other:
+
+- **`transform()`** (alias for `toModelOutput`) — reshapes the validated output before it's sent back to the model. This is part of the feedback loop: whatever it returns is what the LLM sees in the next turn.
+- **`display()`** — reshapes the output for UI streams and transcripts (`streamHooks.onToolResult`). It runs on the same validated output as `transform()`, but independently — use it to hide secrets, trim large payloads, or format something friendlier for a chat UI, without touching what the model receives.
+
+```ts
+const lookupCustomer = tool({
+  name: 'lookup_customer',
+  description: 'Look up a customer by ID.',
+  parameters: z.object({ id: z.string() }),
+  execute: async ({ id }) => customerService.findById(id),
+})
+  .transform((full) => full) // model sees the full record
+  .display((full) => ({ name: full.name, tier: full.tier })); // UI/transcript sees only this
+
+// Equivalent using tool({ ... }) directly:
+const lookupCustomer2 = tool({
+  name: 'lookup_customer',
+  description: 'Look up a customer by ID.',
+  parameters: z.object({ id: z.string() }),
+  execute: async ({ id }) => customerService.findById(id),
+  toModelOutput: (full) => full,
+  toDisplayOutput: (full) => ({ name: full.name, tier: full.tier }),
+});
+```
+
+`displayInput()` / `toDisplayInput` and `displayError()` / `toDisplayError` do the same for a tool's arguments and thrown errors — the model still gets the real arguments and the real error message; only what's streamed to `onToolCall`/`onToolResult` is reshaped:
+
+```ts
+const chargeCard = tool({
+  name: 'charge_card',
+  description: 'Charge a customer credit card.',
+  parameters: z.object({ cardNumber: z.string(), amount: z.number() }),
+  execute: async ({ cardNumber, amount }) => paymentGateway.charge(cardNumber, amount),
+})
+  .displayInput((input) => ({ ...input, cardNumber: `••••${input.cardNumber.slice(-4)}` }))
+  .displayError(() => ({ message: 'Payment failed. Please try again.' }));
+```
+
+If a tool defines no display hook, `streamHooks` fall back to the raw args/output/error — existing tools are unaffected.
+
+---
+
 ## Where to go next
 
 - [Tool composition](./tool-composition) — `extendTool`, `wrapTool`, `pipeTools`.
 - [Tools](./tools) — built-in tools (100+) and the `tools: 'web'` preset.
 - [HITL](./hitl) — durable approval stores for `needsApproval` tools.
+- [Agent Approval](./approval) — `display()`/`displayInput()` also shape what's shown for pending approvals and suspensions.

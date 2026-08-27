@@ -100,6 +100,20 @@ export interface ToolHelperConfig<TSchema extends SchemaInput = SchemaInput, TOu
     readonly onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
     /** Transform tool output before returning to model. */
     readonly toModelOutput?: (output: TOutput) => unknown;
+    /**
+     * Shape tool INPUT for UI/transcript display — independent of the
+     * model-facing path (`toModelOutput`). Use when the raw arguments
+     * shouldn't be shown verbatim to a browser stream or transcript.
+     */
+    readonly toDisplayInput?: (input: InferToolSchema<TSchema>) => unknown;
+    /**
+     * Shape tool OUTPUT for UI/transcript display — independent of
+     * `toModelOutput`. Runs on the validated output; the model still
+     * receives the `toModelOutput`-shaped (or raw) result unchanged.
+     */
+    readonly toDisplayOutput?: (output: TOutput) => unknown;
+    /** Shape a thrown error for UI/transcript display. */
+    readonly toDisplayError?: (error: Error) => unknown;
     /** Run before the tool executes. Return false to cancel. */
     readonly beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
     /** Run after the tool executes. */
@@ -157,6 +171,12 @@ export interface LightweightTool<
     };
     /** Transform output for model. */
     readonly toModelOutput?: (output: TOutput) => unknown;
+    /** Shape tool input for UI/transcript display. See `ToolHelperConfig.toDisplayInput`. */
+    readonly toDisplayInput?: (input: InferToolSchema<TSchema>) => unknown;
+    /** Shape tool output for UI/transcript display. See `ToolHelperConfig.toDisplayOutput`. */
+    readonly toDisplayOutput?: (output: TOutput) => unknown;
+    /** Shape a thrown error for UI/transcript display. See `ToolHelperConfig.toDisplayError`. */
+    readonly toDisplayError?: (error: Error) => unknown;
 }
 
 // ── Implementation ─────────────────────────────────────────────────────────
@@ -187,6 +207,9 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
         onInputDelta,
         onInputAvailable,
         toModelOutput,
+        toDisplayInput,
+        toDisplayOutput,
+        toDisplayError,
         beforeExecute,
         afterExecute,
         onError,
@@ -290,11 +313,16 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
                     await afterExecute(finalResult, validatedParams, ctx);
                 }
 
+                // UI/transcript display shape — computed from the same validated
+                // output as the model path, but independent of toModelOutput.
+                const display = toDisplayOutput ? await toDisplayOutput(validatedOutput) : undefined;
+
                 return {
                     success: true,
                     data: finalResult,
                     executionTimeMs,
                     metadata: { startTime, endTime, retries: 0 },
+                    ...(display !== undefined ? { display } : {}),
                 };
             } catch (error) {
                 const executionTimeMs = performance.now() - t0;
@@ -314,14 +342,18 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
                     };
                 }
 
+                const errObj = error instanceof Error ? error : new Error(String(error));
+                const errorDisplay = toDisplayError ? await toDisplayError(errObj) : undefined;
+
                 return {
                     success: false,
                     error: {
                         code: 'EXECUTION_ERROR',
-                        message: error instanceof Error ? error.message : String(error),
+                        message: errObj.message,
                     },
                     executionTimeMs,
                     metadata: { startTime, endTime, retries: 0 },
+                    ...(errorDisplay !== undefined ? { display: errorDisplay } : {}),
                 };
             }
         },
@@ -358,6 +390,9 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
                 ...(effectiveApproval ? { requireApproval: effectiveApproval === true } : {}),
                 ...(suspendSchema !== undefined ? { suspendSchema } : {}),
                 ...(resumeSchema !== undefined ? { resumeSchema } : {}),
+                ...(toDisplayInput !== undefined ? { toDisplayInput } : {}),
+                ...(toDisplayOutput !== undefined ? { toDisplayOutput } : {}),
+                ...(toDisplayError !== undefined ? { toDisplayError } : {}),
                 execute: async (input: Record<string, unknown>, context?: unknown) => {
                     const canonicalCtx = context as {
                         agentId?: string; sessionId?: string; signal?: AbortSignal;
@@ -403,6 +438,9 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
             ...(onError !== undefined ? { onError } : {}),
         },
         ...(toModelOutput !== undefined ? { toModelOutput } : {}),
+        ...(toDisplayInput !== undefined ? { toDisplayInput } : {}),
+        ...(toDisplayOutput !== undefined ? { toDisplayOutput } : {}),
+        ...(toDisplayError !== undefined ? { toDisplayError } : {}),
     };
 
     return lightweight;
@@ -486,6 +524,9 @@ interface ToolBuilderState<TSchema extends SchemaInput, TOutput> {
     onInputDelta?: (toolName: string, delta: string) => void;
     onInputAvailable?: (toolName: string, input: InferToolSchema<TSchema>) => void;
     toModelOutput?: (output: TOutput) => unknown;
+    toDisplayInput?: (input: InferToolSchema<TSchema>) => unknown;
+    toDisplayOutput?: (output: TOutput) => unknown;
+    toDisplayError?: (error: Error) => unknown;
     beforeExecute?: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined;
     afterExecute?: (output: TOutput, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<void> | void;
     onError?: (error: Error, params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => TOutput | Promise<TOutput>;
@@ -617,6 +658,29 @@ export class ToolBuilder<
         return this;
     }
 
+    /**
+     * Shape tool output for UI/transcript display — independent of
+     * `.transform()`/`toModelOutput`. The model still receives the
+     * `.transform()`-shaped (or raw) result; this only affects what a
+     * browser stream or transcript renders (`streamHooks.onToolResult`).
+     */
+    display(fn: (output: TOutput) => unknown): this {
+        this.state.toDisplayOutput = fn;
+        return this;
+    }
+
+    /** Shape tool input for UI/transcript display (independent of the model-facing args). */
+    displayInput(fn: (input: InferToolSchema<TSchema>) => unknown): this {
+        this.state.toDisplayInput = fn;
+        return this;
+    }
+
+    /** Shape a thrown error for UI/transcript display. */
+    displayError(fn: (error: Error) => unknown): this {
+        this.state.toDisplayError = fn;
+        return this;
+    }
+
     /** Hook: run before the tool executes. Return false to cancel. */
     before(fn: (params: InferToolSchema<TSchema>, ctx: SimpleToolContext) => Promise<false | undefined> | false | undefined): this {
         this.state.beforeExecute = fn;
@@ -657,6 +721,9 @@ export class ToolBuilder<
             onInputDelta: this.state.onInputDelta,
             onInputAvailable: this.state.onInputAvailable,
             toModelOutput: this.state.toModelOutput,
+            toDisplayInput: this.state.toDisplayInput,
+            toDisplayOutput: this.state.toDisplayOutput,
+            toDisplayError: this.state.toDisplayError,
             beforeExecute: this.state.beforeExecute,
             afterExecute: this.state.afterExecute,
             onError: this.state.onError,

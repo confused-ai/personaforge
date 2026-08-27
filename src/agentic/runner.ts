@@ -654,13 +654,14 @@ export class AgenticRunner {
             } catch (err) {
                 if (isApprovalRequiredError(err) || isToolSuspendedError(err)) {
                     const p = this._suspensionPayload(err);
+                    const displayed = this._displaySuspension(p);
                     if (isApprovalRequiredError(err)) {
                         streamHooks?.onApproval?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, requiresApproval: true,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, requiresApproval: true,
                         });
                     } else {
                         streamHooks?.onSuspended?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, suspendPayload: p.suspendPayload,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, suspendPayload: displayed.suspendPayload,
                         });
                     }
                     return this._suspendedResult(runConfig, messages, p, agentId, sessionId);
@@ -945,13 +946,14 @@ export class AgenticRunner {
                             updatedAt: new Date().toISOString(),
                         }).catch((e: unknown) => { this._softFail(e, { op: 'suspendedRun.persist', step: steps }); });
                     }
+                    const displayed = this._displaySuspension(p);
                     if (isApprovalRequiredError(err)) {
                         streamHooks?.onApproval?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, requiresApproval: true,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, requiresApproval: true,
                         });
                     } else {
                         streamHooks?.onSuspended?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, suspendPayload: p.suspendPayload,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, suspendPayload: displayed.suspendPayload,
                         });
                     }
                     suspendPayload = p;
@@ -1582,7 +1584,10 @@ export class AgenticRunner {
             }
         }
 
-        streamHooks?.onToolCall?.(tc.name, effectiveArgs);
+        streamHooks?.onToolCall?.(
+            tc.name,
+            (tool.toDisplayInput ? tool.toDisplayInput(effectiveArgs) : effectiveArgs) as Record<string, unknown>,
+        );
 
         const toolContext = this._buildToolContext(tool, agentId, sessionId, ctx, tc.id);
         // toolMiddleware is initialised to [] in the constructor; the ! is safe.
@@ -1656,6 +1661,10 @@ export class AgenticRunner {
                 if (m.onError) await m.onError(tool, error, toolContext);
             }
             await lifecycle.onError?.(error, step);
+            streamHooks?.onToolResult?.(
+                tc.name,
+                tool.toDisplayError ? tool.toDisplayError(error) : { error: error.message },
+            );
             return this._toolErrorMessage(tc.id, tc.name, error.message);
         }
 
@@ -1677,7 +1686,12 @@ export class AgenticRunner {
         // Memoize the successful output for later identical calls in this run.
         if (memoKey !== undefined) ctx.memo.set(memoKey, toolResult);
 
-        streamHooks?.onToolResult?.(tc.name, toolResult);
+        // UI/transcript display shape, independent of the model-facing `toolResult`.
+        // Sourced from the tool's own toDisplayOutput (computed in tool-helper.ts
+        // from the validated output), not re-derived from lifecycle/guardrail
+        // post-processing of toolResult — a tool opting into display shaping is
+        // expected to own that shape end-to-end.
+        streamHooks?.onToolResult?.(tc.name, toolResultObj?.display ?? toolResult);
 
         const content = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult);
         return { role: 'tool', content, toolCallId: tc.id, tool_call_id: tc.id, name: tc.name } as Message & { toolCallId: string; name: string };
@@ -1968,6 +1982,25 @@ export class AgenticRunner {
             };
         }
         return { toolCallId: '', toolName: '', args: {}, requiresApproval: false };
+    }
+
+    /**
+     * UI/transcript-facing shape of an approval/suspension payload, via the
+     * tool's own `toDisplayInput`/`toDisplaySuspendPayload` hooks. Used only
+     * for `streamHooks.onApproval`/`onSuspended` — never for what gets
+     * persisted to `suspendedRunStore` or replayed on resume, which always
+     * keep the raw `args`/`suspendPayload`.
+     */
+    private _displaySuspension(
+        p: NonNullable<AgenticRunResult['suspendPayload']>,
+    ): { args: Record<string, unknown>; suspendPayload?: unknown } {
+        const tool = this.config.tools.getByName(p.toolName);
+        return {
+            args: (tool?.toDisplayInput ? tool.toDisplayInput(p.args) : p.args) as Record<string, unknown>,
+            suspendPayload: tool?.toDisplaySuspendPayload && p.suspendPayload !== undefined
+                ? tool.toDisplaySuspendPayload(p.suspendPayload)
+                : p.suspendPayload,
+        };
     }
 
     private _tripwireResult(

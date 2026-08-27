@@ -102,6 +102,34 @@ await store.markResolved('run_123');
 
 ---
 
+## Shaping approval/suspension payloads for a UI
+
+`err.args` / `payload` above are the raw values used for the model feedback loop and for persistence in the suspended-run store — they are never redacted automatically. If a tool's arguments or suspend payload shouldn't be shown verbatim in a browser stream or transcript, define `displayInput()` (or `toDisplayInput`) on the tool; the runner applies it before calling `streamHooks.onApproval` / `onSuspended`, while what's persisted to the suspended-run store and replayed on resume stays raw:
+
+```ts
+import { tool } from 'personaforge';
+
+const chargeCard = tool({
+  name: 'charge_card',
+  description: 'Charge a customer credit card.',
+  parameters: z.object({ cardNumber: z.string(), amount: z.number() }),
+  needsApproval: true,
+  execute: async ({ cardNumber, amount }) => paymentGateway.charge(cardNumber, amount),
+}).displayInput((input) => ({ ...input, cardNumber: `••••${input.cardNumber.slice(-4)}` }));
+
+await agent.run('Charge $50 to card 4111111111111111', {
+  onApproval: ({ toolName, args }) => {
+    // args.cardNumber is masked here — the model and the approval store
+    // still see/persist the full card number.
+    console.log(`${toolName} needs approval:`, args);
+  },
+});
+```
+
+See [Custom Tools](./custom-tools#shaping-output-for-the-model-vs-for-the-ui) for the full set of display hooks (`display()`, `displayInput()`, `displayError()`).
+
+---
+
 ## Run-scoped approval
 
 For run-wide approval policy, use `requireToolApproval` in the agent run options — boolean for every tool, or a function for per-call decisions (fails closed):

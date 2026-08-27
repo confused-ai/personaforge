@@ -322,8 +322,12 @@ export function mapTool<
     mapper:  (data: TIn) => TOut | Promise<TOut>,
     options: { id?: string; description?: string } = {},
 ): Tool<P, TOut> {
+    // toDisplayOutput/toDisplayError are typed against TIn's output shape;
+    // they don't apply after mapper reshapes it to TOut, so drop them here
+    // rather than carry a display hook that would receive the wrong shape.
+    const { toDisplayOutput: _droppedDisplayOutput, toDisplayError: _droppedDisplayError, ...toolRest } = tool;
     return {
-        ...tool,
+        ...toolRest,
         id:          options.id          ?? `${tool.id}:mapped`,
         description: options.description ?? tool.description,
         async execute(params, ctx): Promise<ToolResult<TOut>> {
@@ -352,8 +356,11 @@ export function filterTool<
     tool:      Tool<P, T>,
     predicate: (params: InferOutput<P & AnySchema>, ctx: ToolContext) => boolean | Promise<boolean>,
 ): Tool<P, T | null> {
+    // toDisplayOutput is typed against T; output can now also be null, so drop
+    // it here rather than carry a display hook typed for the narrower shape.
+    const { toDisplayOutput: _droppedDisplayOutput, ...toolRest } = tool;
     return {
-        ...tool,
+        ...toolRest,
         id: `${tool.id}:filtered`,
 
         async execute(params, ctx): Promise<ToolResult<T | null>> {
