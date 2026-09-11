@@ -606,7 +606,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1036.0",
-    "@libsql/client": "^0.17.4",
+    "@libsql/client": "^0.18.0",
     "@types/bun": "latest",
     "@types/form-data": "^2.5.2",
     "@types/js-yaml": "^4.0.9",
