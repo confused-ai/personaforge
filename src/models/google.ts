@@ -25,6 +25,15 @@ export function google(config: ModelAdapterConfig = {}): LLMProvider {
     return _genai as import('@google/generative-ai').GenerativeModel;
   }
 
+  async function getModelWithConfig(generationConfig: Record<string, unknown>): Promise<import('@google/generative-ai').GenerativeModel> {
+    const mod = await import('@google/generative-ai').catch(() => { throw new Error(MISSING_SDK_MSG); });
+    const genAI = new mod.GoogleGenerativeAI(apiKey ?? '');
+    // generationConfig is a supported ModelParams field at runtime (SDK ≥0.1);
+    // the cast covers older bundled type snapshots that only list { model }.
+    const params = { model, generationConfig } as Parameters<typeof genAI.getGenerativeModel>[0];
+    return genAI.getGenerativeModel(params) as import('@google/generative-ai').GenerativeModel;
+  }
+
   /** Convert messages to Gemini Content format. O(n). */
   function toGeminiContents(msgs: Message[]): import('@google/generative-ai').Content[] {
     return msgs
@@ -35,14 +44,34 @@ export function google(config: ModelAdapterConfig = {}): LLMProvider {
       }));
   }
 
-  async function generateText(messages: Message[], _opts?: GenerateOptions): Promise<GenerateResult> {
+  async function generateText(messages: Message[], opts?: GenerateOptions): Promise<GenerateResult> {
     const genModel = await getModel();
     const contents = toGeminiContents(messages);
     const last     = contents.pop(); // last user turn is the prompt
     const history  = contents;
 
-    const chat = genModel.startChat({ history });
-    const res  = await chat.sendMessage(last?.parts[0]?.text ?? '');
+    // The SDK pins generation config at model creation, so rebuild the
+    // model handle when per-call overrides are present.
+    const maxTokens = opts?.maxTokens ?? config.maxTokens;
+    const temperature = opts?.temperature ?? config.temperature;
+    const model = (maxTokens !== undefined || temperature !== undefined)
+      ? await getModelWithConfig({
+          ...(maxTokens !== undefined ? { maxOutputTokens: maxTokens } : {}),
+          ...(temperature !== undefined ? { temperature } : {}),
+        })
+      : genModel;
+
+    const chat = model.startChat({ history });
+    // The SDK has no AbortSignal support — race so callers still observe cancellation.
+    const res = opts?.signal
+      ? await Promise.race([
+          chat.sendMessage(last?.parts[0]?.text ?? ''),
+          new Promise<never>((_, reject) => {
+            if (opts.signal!.aborted) reject(new Error('Aborted.'));
+            else opts.signal!.addEventListener('abort', () => reject(new Error('Aborted.')), { once: true });
+          }),
+        ])
+      : await chat.sendMessage(last?.parts[0]?.text ?? '');
     const text = res.response.text();
     const usageMetadata = res.response.usageMetadata;
     const usage = {

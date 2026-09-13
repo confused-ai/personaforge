@@ -5,7 +5,9 @@
  */
 
 import type { LLMProvider } from '../core/index.js';
-import { OpenAIProvider, AnthropicProvider, GoogleProvider } from './index.js';
+import { OpenAIProvider } from './openai-provider.js';
+import { AnthropicProvider } from './anthropic-provider.js';
+import { GoogleProvider } from './google-provider.js';
 import { resolveModelString, getProviderFromModelString, PROVIDER } from './model-resolver.js';
 
 const getEnv = typeof process !== 'undefined'

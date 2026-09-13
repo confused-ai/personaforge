@@ -66,8 +66,10 @@ type InferToolSchema<TSchema> =
 
 /** Options for the `tool()` helper. */
 export interface ToolHelperConfig<TSchema extends SchemaInput = SchemaInput, TOutput = unknown> {
-    /** Unique tool name (used as ID). */
-    readonly name: string;
+    /** Unique tool name (used as ID). `id` is accepted as an alias. */
+    readonly name?: string;
+    /** Alias for `name`. */
+    readonly id?: string;
     /** Human-readable description for the LLM. */
     readonly description: string;
     /** Parameter schema (Zod, Valibot, ArkType, or any Standard Schema). */
@@ -78,7 +80,7 @@ export interface ToolHelperConfig<TSchema extends SchemaInput = SchemaInput, TOu
     readonly execute: (params: InferToolSchema<TSchema>, context: SimpleToolContext) => Promise<TOutput> | TOutput;
     /** Require human approval before execution. Default: false. */
     readonly needsApproval?: boolean | ((params: InferToolSchema<TSchema>) => boolean | Promise<boolean>);
-    /** Alias for `needsApproval` (Mastra naming). Pause before `execute()` for approval. */
+    /** Alias for `needsApproval`. Pause before `execute()` for approval. */
     readonly requireApproval?: boolean;
     /** Schema for the custom payload emitted when the tool self-suspends via `context.agent.suspend()`. */
     readonly suspendSchema?: SchemaInput;
@@ -190,7 +192,8 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
     config: ToolHelperConfig<TSchema, TOutput>,
 ): LightweightTool<TSchema, TOutput> {
     const {
-        name,
+        name: nameOpt,
+        id: idOpt,
         description,
         parameters,
         outputSchema,
@@ -216,6 +219,10 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
     } = config;
 
     const effectiveApproval = needsApproval || requireApproval;
+    const name = nameOpt ?? idOpt;
+    if (!name?.trim()) {
+        throw new Error('tool() requires `name` (or `id` alias).');
+    }
 
     const lightweight: LightweightTool<TSchema, TOutput> = {
         name,
@@ -232,10 +239,18 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
         async execute(params, context) {
             const t0 = performance.now();
             const startTime = new Date();
+            // Linked controller: caller aborts propagate, and tool timeouts
+            // signal cooperative tools to stop (best-effort — a tool that
+            // ignores the signal still runs to completion in the background).
+            const timeoutController = new AbortController();
+            if (context?.abortSignal) {
+                if (context.abortSignal.aborted) timeoutController.abort();
+                else context.abortSignal.addEventListener('abort', () => timeoutController.abort(), { once: true });
+            }
             const ctx: SimpleToolContext = {
                 agentId: context?.agentId ?? 'unknown',
                 sessionId: context?.sessionId ?? 'unknown',
-                ...(context?.abortSignal !== undefined ? { abortSignal: context.abortSignal } : {}),
+                abortSignal: timeoutController.signal,
             };
 
             // Validate input (Standard Schema or legacy safeParse)
@@ -278,7 +293,10 @@ export function tool<TSchema extends SchemaInput = SchemaInput, TOutput = unknow
                     execute(validatedParams, ctx),
                     new Promise<never>((_, reject) => {
                         timeoutHandle = setTimeout(
-                            () => { reject(new Error(`Tool '${name}' timed out after ${String(timeoutMs)}ms`)); },
+                            () => {
+                                timeoutController.abort();
+                                reject(new Error(`Tool '${name}' timed out after ${String(timeoutMs)}ms`));
+                            },
                             timeoutMs,
                         );
                     }),

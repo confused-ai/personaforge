@@ -100,9 +100,11 @@ export default defineConfig({
         approval: 'src/approval/index.ts',
     },
     format: ['cjs', 'esm'],
+    // dts:false is intentional — declarations come from scripts/build-dts.mjs
+    // (kept in sync by scripts/check-entry-completeness.mjs).
     dts: false,
     splitting: false,
-    sourcemap: false,
+    sourcemap: true,
     clean: true,
     treeshake: true,
     /** Lazy `require()` — install only what you use; must not be resolved at bundle time */

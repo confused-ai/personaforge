@@ -118,8 +118,14 @@ export class FileStorageAdapter implements StorageAdapter {
 
     private keyToPath(key: string): string {
         // 'user:123:prefs' → '{basePath}/user/123/prefs.json'
-        const segments = key.replace(/:/g, '/');
-        return join(this.basePath, `${segments}.json`);
+        // join() normalizes `..` away, so containment is checked post-join.
+        const segments = key.replace(/:/g, '/').replace(/\\/g, '/');
+        const resolved = join(this.basePath, `${segments}.json`);
+        const base = this.basePath.endsWith('/') ? this.basePath : `${this.basePath}/`;
+        if (!resolved.startsWith(base)) {
+            throw new Error(`Storage key escapes basePath: ${JSON.stringify(key)}`);
+        }
+        return resolved;
     }
 
     async get(key: string): Promise<string | undefined> {

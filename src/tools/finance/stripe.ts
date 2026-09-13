@@ -6,6 +6,8 @@
 import { z } from 'zod';
 import { BaseTool } from '../core/base-tool.js';
 import { ToolCategory, type ToolContext } from '../core/types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 export interface StripeToolConfig {
     secretKey?: string;
@@ -32,7 +34,7 @@ interface StripeClient {
 function getClient(config: StripeToolConfig): StripeClient {
     const key = config.secretKey ?? process.env['STRIPE_SECRET_KEY'];
     if (!key) throw new Error('StripeTools require STRIPE_SECRET_KEY');
-    const Stripe = require('stripe') as (k: string, o: object) => StripeClient;
+    const Stripe = _require('stripe') as (k: string, o: object) => StripeClient;
     return Stripe(key, { apiVersion: '2024-12-18.acacia' });
 }
 

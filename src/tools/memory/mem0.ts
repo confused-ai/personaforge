@@ -284,6 +284,11 @@ export class Mem0DeleteAllMemoriesTool extends BaseTool<typeof DeleteAllMemories
     }
 
     protected async performExecute(input: DeleteAllMemoriesInput): Promise<string> {
+        // Unscoped DELETE wipes every memory — require an explicit scope
+        // before touching config/credentials.
+        if (!input.user_id && !input.agent_id && !input.run_id) {
+            throw new Error('mem0_delete_all_memories requires at least one of user_id, agent_id, or run_id.');
+        }
         const key = getKey(this.config);
         const qs = new URLSearchParams();
         if (input.user_id) qs.set('user_id', input.user_id);

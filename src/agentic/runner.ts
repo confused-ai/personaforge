@@ -523,7 +523,7 @@ export class AgenticRunner {
         // ── Pre-run reasoning enrichment ──────────────────────────────────────
         // Only run on a fresh session (no checkpoint restore) to avoid double-enrichment.
         if (steps === 0 && this.config.reasoning?.enabled) {
-            const enriched = await this._applyReasoning(prompt, systemPrompt);
+            const enriched = await this._applyReasoning(prompt, systemPrompt, effectiveRunConfig.requireToolApproval);
             if (enriched) {
                 // Inject as an extra assistant message so the LLM sees its own chain-of-thought
                 messages = [
@@ -1100,7 +1100,11 @@ export class AgenticRunner {
      * Runs a CoT or ToT reasoning pass and returns the enriched reasoning text
      * to prepend to the conversation. Returns `undefined` if reasoning yields nothing.
      */
-    private async _applyReasoning(prompt: string, systemPrompt: string): Promise<string | undefined> {
+    private async _applyReasoning(
+        prompt: string,
+        systemPrompt: string,
+        requireToolApproval?: AgenticRunConfig['requireToolApproval'],
+    ): Promise<string | undefined> {
         // reasoning is guaranteed non-null here: _applyReasoning is only called
         // when this.config.reasoning is set (checked by callers).
 
@@ -1169,9 +1173,17 @@ export class AgenticRunner {
                     if (!tool) {
                         return `Tool ${name} not found. Available: ${this.config.tools.list().map((t) => t.name).join(', ')}`;
                     }
+                    // ReWOO returns strings, so approval suspension cannot pause
+                    // here — fail closed instead of silently bypassing approval.
+                    if (tool.requireApproval) {
+                        return `Tool ${name} requires approval and cannot run in ReWOO mode.`;
+                    }
+                    let parsedArgs: unknown = input;
+                    try { parsedArgs = JSON.parse(input); } catch { parsedArgs = { query: input, input }; }
+                    if (await this._rewooNeedsApproval(name, parsedArgs, requireToolApproval)) {
+                        return `Tool ${name} requires approval and cannot run in ReWOO mode.`;
+                    }
                     try {
-                        let parsedArgs: unknown = input;
-                        try { parsedArgs = JSON.parse(input); } catch { parsedArgs = { query: input, input }; }
                         const res = await tool.execute(parsedArgs as any, {
                             toolId: tool.id,
                             agentId: this.config.agentId ?? 'agent',
@@ -1384,7 +1396,11 @@ export class AgenticRunner {
         // the W3C spec so the provider request joins the caller's trace.
         let traceHeaders: Record<string, string> | undefined;
         if (ctx.traceId && /^[0-9a-f]{32}$/i.test(ctx.traceId)) {
-            const spanId = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            // Crypto-random span ids (W3C: 16 hex chars); Math.random fallback
+            // only where WebCrypto is unavailable.
+            const spanId = typeof globalThis.crypto?.randomUUID === 'function'
+                ? globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+                : Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
             traceHeaders = { traceparent: `00-${ctx.traceId.toLowerCase()}-${spanId}-01` };
         }
 
@@ -1753,6 +1769,29 @@ export class AgenticRunner {
     }
 
     // ── Private: small builders ───────────────────────────────────────────────
+
+    /** Run-level approval policy check for the ReWOO path (no suspension possible there). */
+    private async _rewooNeedsApproval(
+        toolName: string,
+        args: unknown,
+        policy: AgenticRunConfig['requireToolApproval'],
+    ): Promise<boolean> {
+        if (!policy) return false;
+        try {
+            if (policy === true) return true;
+            if (typeof policy === 'function') {
+                return await policy({
+                    toolName,
+                    args: (args ?? {}) as Record<string, unknown>,
+                    agentId: this.config.agentId,
+                    sessionId: this.config.sessionId,
+                });
+            }
+            return false;
+        } catch {
+            return true; // fails closed
+        }
+    }
 
     private async _requiresApproval(tc: LLMToolCall, ctx: RunContext): Promise<boolean> {
         const tool = this.config.tools.getByName(tc.name);

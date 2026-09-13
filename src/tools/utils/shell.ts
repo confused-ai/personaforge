@@ -49,6 +49,41 @@ interface ShellResult {
 }
 
 /**
+ * Split a command line into binary + args, respecting single/double quotes
+ * and backslash escapes. Unterminated quotes fail closed with an error.
+ */
+function splitCommand(command: string): string[] {
+    const parts: string[] = [];
+    let current = '';
+    let quote: "'" | '"' | null = null;
+    let escaped = false;
+    for (const ch of command) {
+        if (escaped) {
+            current += ch;
+            escaped = false;
+        } else if (ch === '\\' && quote !== "'") {
+            escaped = true;
+        } else if (quote) {
+            if (ch === quote) quote = null;
+            else current += ch;
+        } else if (ch === "'" || ch === '"') {
+            quote = ch;
+        } else if (/\s/.test(ch)) {
+            if (current) {
+                parts.push(current);
+                current = '';
+            }
+        } else {
+            current += ch;
+        }
+    }
+    if (escaped) current += '\\';
+    if (quote) throw new Error('Unterminated quote in command.');
+    if (current) parts.push(current);
+    return parts;
+}
+
+/**
  * Parameters for shell command execution
  */
 const ShellCommandParameters = z.object({
@@ -196,10 +231,11 @@ export class ShellTool extends BaseTool<typeof ShellCommandParameters, ShellResu
             const { promisify } = await import('util');
             const execFileAsync = promisify(execFile);
 
-            // Split command into binary + args. Simple whitespace split is safe here
-            // because execFile never invokes a shell, so metacharacters (;, &&, |, $())
+            // Split command into binary + args, respecting single/double quotes
+            // so `grep "hello world" file` keeps its quoted argument intact.
+            // execFile never invokes a shell, so metacharacters (;, &&, |, $())
             // are passed as literal arguments rather than interpreted.
-            const [bin, ...args] = params.command.trim().split(/\s+/);
+            const [bin, ...args] = splitCommand(params.command.trim());
             if (!bin) {
                 return { stdout: '', stderr: '', exitCode: 1, error: 'Empty command' };
             }

@@ -138,8 +138,12 @@ export class ThreadPool {
      */
     register<TInput = unknown, TOutput = unknown>(fn: (input: TInput) => TOutput | Promise<TOutput>): ThreadJob<TInput, TOutput> {
         if (this.isShuttingDown) throw new Error('ThreadPool is shut down');
+        if (typeof fn !== 'function') throw new Error('ThreadPool.register() requires a function.');
         const id = this.nextJobId++;
         const body = fn.toString();
+        if (!/^(async\s+)?(function\b|\(|[^=()\s]+\s*=>)/s.test(body.trimStart())) {
+            throw new Error('ThreadPool.register() requires a self-contained function value.');
+        }
         const registration: PoolJob = { id, body };
         this.registrations.set(id, registration);
         for (const slot of this.slots) {

@@ -22,3 +22,33 @@ export function uuid(): string {
 export function now(): number {
   return Math.floor(Date.now() / 1000);
 }
+
+/** Writable columns of the schedules table (mirrors ScheduleRow minus immutable keys). */
+const SCHEDULE_COLUMNS = new Set([
+  'name', 'agent_id', 'cron', 'enabled', 'next_run_at', 'last_run_at',
+  'locked_by', 'locked_at', 'metadata', 'updated_at',
+]);
+
+/**
+ * Throw unless `key` is a writable schedules column. Update paths
+ * interpolate column names into SQL, so anything else fails closed.
+ */
+export function assertScheduleColumn(key: string): string {
+  if (!SCHEDULE_COLUMNS.has(key)) {
+    throw new Error(`Invalid schedule column: ${JSON.stringify(key)}.`);
+  }
+  return key;
+}
+
+/**
+ * Strip MongoDB operator injection from an update document: drop keys
+ * starting with `$` or containing `.`, which would otherwise escape `$set`.
+ */
+export function sanitizeMongoUpdate(updates: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(updates)) {
+    if (k.startsWith('$') || k.includes('.')) continue;
+    clean[k] = v;
+  }
+  return clean;
+}

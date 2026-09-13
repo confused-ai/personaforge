@@ -30,6 +30,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 /** Minimal agent interface required for eval — avoids a cross-package import. */
 interface CreateAgentResult {
@@ -277,7 +279,7 @@ export class SqliteEvalStore implements EvalStore {
 
         let Database: (p: string) => BetterSqlite3DB;
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error(
                 'SqliteEvalStore requires better-sqlite3. Install: npm install better-sqlite3'

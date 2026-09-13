@@ -124,7 +124,7 @@ export class DurableExecutor {
   /** Run from the start with a fresh (or provided) thread id. */
   async run(input: unknown, threadId?: string): Promise<RunResult> {
     const tid = threadId ?? crypto.randomUUID();
-    return this.execute(tid, 0, input, {}, [], undefined);
+    return this.execute(tid, 0, input, {}, [], undefined, false);
   }
 
   /** Resume a paused thread; `value` becomes the interrupted node's interrupt() return. */
@@ -133,7 +133,7 @@ export class DurableExecutor {
     if (!cp) throw new Error(`[DurableExecutor] No checkpoint for thread ${threadId}`);
     const idx = this.nodes.findIndex(([n]) => n === cp.node);
     if (idx < 0) throw new Error(`[DurableExecutor] Unknown node "${cp.node}"`);
-    return this.execute(threadId, idx, cp.pendingInput, { ...cp.state }, [...cp.history], value);
+    return this.execute(threadId, idx, cp.pendingInput, { ...cp.state }, [...cp.history], value, true);
   }
 
   /** Fork any checkpoint into a new thread for time-travel. */
@@ -163,13 +163,15 @@ export class DurableExecutor {
     state: Record<string, unknown>,
     history: Array<{ node: string; output: unknown }>,
     resumeValue: unknown,
+    // Explicit flag: resume(undefined) is a real resume, not a fresh run.
+    resuming = false,
   ): Promise<RunResult> {
     let input = initialInput;
 
     for (let i = startIdx; i < this.nodes.length; i++) {
       const [name, fn] = this.nodes[i]!;
       // On the resumed node, interrupt() returns resumeValue exactly once.
-      const isResumingNode = i === startIdx && resumeValue !== undefined;
+      const isResumingNode = i === startIdx && resuming;
       let consumed = false;
 
       const ctx: InterruptContext = {

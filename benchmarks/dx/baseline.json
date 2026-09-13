@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-13T13:25:35.446Z",
+  "metrics": {
+    "importMs": 78.01,
+    "modelResolve200Ms": 0.67,
+    "toolDefineMs": 0.15,
+    "workflow3StepMs": 1.98,
+    "helloWorldLines": 4,
+    "toolName": "getWeather",
+    "workflowResult": 39
+  }
+}

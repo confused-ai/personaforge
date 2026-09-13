@@ -162,7 +162,7 @@ export class BigQueryListTablesTool extends BaseTool<typeof ListTablesSchema> {
         const { token, projectId } = getAuth(this.config);
         const params = new URLSearchParams({ maxResults: String(input.maxResults ?? 50) });
         return bqRequest(token, 'GET',
-            `https://bigquery.googleapis.com/bigquery/v2/projects/${projectId}/datasets/${input.datasetId}/tables?${params.toString()}`);
+            `https://bigquery.googleapis.com/bigquery/v2/projects/${encodeURIComponent(projectId)}/datasets/${encodeURIComponent(input.datasetId)}/tables?${params.toString()}`);
     }
 }
 
@@ -181,7 +181,7 @@ export class BigQueryGetTableTool extends BaseTool<typeof GetTableSchema> {
     protected async performExecute(input: z.infer<typeof GetTableSchema>, _ctx: ToolContext) {
         const { token, projectId } = getAuth(this.config);
         return bqRequest(token, 'GET',
-            `https://bigquery.googleapis.com/bigquery/v2/projects/${projectId}/datasets/${input.datasetId}/tables/${input.tableId}`);
+            `https://bigquery.googleapis.com/bigquery/v2/projects/${encodeURIComponent(projectId)}/datasets/${encodeURIComponent(input.datasetId)}/tables/${encodeURIComponent(input.tableId)}`);
     }
 }
 

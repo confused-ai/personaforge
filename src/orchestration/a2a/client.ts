@@ -28,6 +28,9 @@ export type { A2AStreamEvent };
 
 // ── JSON-RPC helpers ───────────────────────────────────────────────────────
 
+/** Max buffered undecoded SSE bytes — a peer that never sends `\n` can't OOM us. */
+const MAX_SSE_BUFFER_BYTES = 1_048_576;
+
 async function* parseSse(stream: ReadableStream<Uint8Array>): AsyncGenerator<string> {
     const reader = stream.getReader();
     const dec = new TextDecoder();
@@ -37,6 +40,9 @@ async function* parseSse(stream: ReadableStream<Uint8Array>): AsyncGenerator<str
             const { done, value } = await reader.read();
             if (done) break;
             buf += dec.decode(value, { stream: true });
+            if (buf.length > MAX_SSE_BUFFER_BYTES) {
+                throw new Error('A2A SSE stream exceeded 1 MB without a newline; aborting.');
+            }
             const lines = buf.split('\n');
             buf = lines.pop() ?? '';
             for (const line of lines) {
@@ -101,6 +107,7 @@ export class A2AClient {
     async getAgentCard(): Promise<A2AAgentCard> {
         const res = await fetch(`${this.baseUrl}/.well-known/agent.json`, {
             headers: { accept: 'application/json' },
+            signal: AbortSignal.timeout(this.timeoutMs),
         });
         if (!res.ok) throw new Error(`A2A agent card HTTP ${res.status}`);
         return res.json() as Promise<A2AAgentCard>;

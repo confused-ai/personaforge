@@ -19,6 +19,8 @@ import type {
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] RedisAgentDb requires ioredis.\n' +
@@ -63,7 +65,7 @@ export class RedisAgentDb extends AgentDb {
   private client(): RedisClient {
     if (this._client) return this._client;
     let Ctor: RedisCtor;
-    try { Ctor = require('ioredis') as RedisCtor; }
+    try { Ctor = _require('ioredis') as RedisCtor; }
     catch { throw new Error(MISSING); }
     this._client = new Ctor(this.opts.url);
     return this._client;

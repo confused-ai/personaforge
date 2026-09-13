@@ -42,11 +42,12 @@ export class MapToolRegistry implements ToolRegistry {
 
     /**
      * O(n) on first call after any mutation; O(1) on subsequent calls.
-     * Returns a frozen snapshot — mutations to the returned array don't affect the registry.
+     * Returns a frozen snapshot — mutations to the returned array throw
+     * instead of corrupting registry state.
      */
     list(): Tool[] {
         if (!this._listCache) {
-            this._listCache = Array.from(this._map.values());
+            this._listCache = Object.freeze(Array.from(this._map.values())) as Tool[];
         }
         return this._listCache;
     }

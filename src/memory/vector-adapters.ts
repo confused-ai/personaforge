@@ -217,10 +217,12 @@ export class QdrantVectorStore implements VectorStoreAdapter {
     private async ensureCollection(): Promise<void> {
         if (this.collectionEnsured) return;
         const res = await fetch(`${this.url}/collections/${this.collection}`, {
+            signal: AbortSignal.timeout(30_000),
             headers: this.headers(),
         });
         if (res.status === 404) {
             const create = await fetch(`${this.url}/collections/${this.collection}`, {
+                signal: AbortSignal.timeout(30_000),
                 method: 'PUT',
                 headers: this.headers(),
                 body: JSON.stringify({
@@ -250,6 +252,7 @@ export class QdrantVectorStore implements VectorStoreAdapter {
                 method: 'PUT',
                 headers: this.headers(),
                 body: JSON.stringify({ points }),
+                signal: AbortSignal.timeout(30_000),
             });
             if (!res.ok) {
                 const err = await res.text();
@@ -282,6 +285,7 @@ export class QdrantVectorStore implements VectorStoreAdapter {
             method: 'POST',
             headers: this.headers(),
             body: JSON.stringify(body),
+            signal: AbortSignal.timeout(30_000),
         });
         if (!res.ok) {
             const err = await res.text();
@@ -301,6 +305,7 @@ export class QdrantVectorStore implements VectorStoreAdapter {
         if (ids.length === 0) return;
         await this.ensureCollection();
         const res = await fetch(`${this.url}/collections/${this.collection}/points/delete`, {
+            signal: AbortSignal.timeout(30_000),
             method: 'POST',
             headers: this.headers(),
             body: JSON.stringify({ points: ids }),
@@ -313,6 +318,7 @@ export class QdrantVectorStore implements VectorStoreAdapter {
 
     async clear(): Promise<void> {
         await fetch(`${this.url}/collections/${this.collection}`, {
+            signal: AbortSignal.timeout(30_000),
             method: 'DELETE',
             headers: this.headers(),
         });
@@ -372,6 +378,11 @@ export class PgVectorStore implements VectorStoreAdapter {
 
     constructor(config: PgVectorStoreConfig) {
         this.pool = config.pool;
+        // Interpolated into DDL/DML — must be a bare identifier even though
+        // it comes from deployer config, not model input.
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(config.table ?? 'vector_store')) {
+            throw new Error(`Invalid pgvector table name: ${JSON.stringify(config.table)}.`);
+        }
         this.table = config.table ?? 'vector_store';
         this.dimension = config.dimension ?? 1536;
         this.ivfflatLists = config.ivfflatLists ?? 100;

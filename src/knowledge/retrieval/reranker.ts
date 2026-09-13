@@ -49,10 +49,13 @@ export class CohereReranker implements Reranker {
         documents: candidates.map((c) => c.document.content),
         top_n: topK ?? candidates.length,
       }),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`[CohereReranker] HTTP ${String(res.status)} ${await res.text()}`);
     const json = (await res.json()) as { results: Array<{ index: number; relevance_score: number }> };
-    return json.results.map((r) => ({ document: candidates[r.index]!.document, score: r.relevance_score }));
+    return json.results
+      .filter((r) => Number.isInteger(r.index) && (r.index as number) >= 0 && (r.index as number) < candidates.length)
+      .map((r) => ({ document: (candidates[r.index] as SearchResult).document, score: r.relevance_score }));
   }
 }
 
@@ -86,10 +89,13 @@ export class JinaReranker implements Reranker {
         documents: candidates.map((c) => c.document.content),
         top_n: topK ?? candidates.length,
       }),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`[JinaReranker] HTTP ${String(res.status)} ${await res.text()}`);
     const json = (await res.json()) as { results: Array<{ index: number; relevance_score: number }> };
-    return json.results.map((r) => ({ document: candidates[r.index]!.document, score: r.relevance_score }));
+    return json.results
+      .filter((r) => Number.isInteger(r.index) && (r.index as number) >= 0 && (r.index as number) < candidates.length)
+      .map((r) => ({ document: (candidates[r.index] as SearchResult).document, score: r.relevance_score }));
   }
 }
 

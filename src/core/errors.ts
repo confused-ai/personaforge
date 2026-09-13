@@ -5,17 +5,30 @@
  * do not pull in any runtime code.
  */
 
-/** Base class for all framework errors. */
-export class PersonaForgeError extends Error {
-    readonly code: string;
-    readonly context?: Record<string, unknown>;
+import {
+    PersonaForgeError as CanonicalError,
+    type ErrorCode as CanonicalCode,
+} from '../contracts/errors.js';
 
+/**
+ * Base class for all framework errors.
+ *
+ * Extends the canonical contracts error so `instanceof` checks against
+ * either class succeed. Legacy `code` strings are preserved verbatim
+ * (tests and consumers match on them).
+ */
+export class PersonaForgeError extends CanonicalError {
     constructor(message: string, opts?: { code?: string; context?: Record<string, unknown> }) {
-        super(message);
+        super({
+            message,
+            code: (opts?.code ?? 'CONFUSED_AI_ERROR') as CanonicalCode,
+            ...(opts?.context !== undefined ? { context: opts.context } : {}),
+        });
         this.name = 'PersonaForgeError';
-        this.code = opts?.code ?? 'CONFUSED_AI_ERROR';
-        if (opts?.context !== undefined) {
-            this.context = opts.context;
+        // Preserve the legacy shape: context stays undefined unless provided
+        // (the canonical base defaults it to {}).
+        if (opts?.context === undefined) {
+            (this as { context?: Record<string, unknown> }).context = undefined;
         }
     }
 }

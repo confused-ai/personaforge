@@ -22,6 +22,7 @@ import type { AgentLifecycleHooks as _AgentLifecycleHooks } from './types.js'; /
 import { generateEntityId } from './types.js';
 import { DebugLogger, createDebugLogger } from '../shared/index.js';
 import { PersonaForgeError } from '../contracts/index.js';
+import { ConfigError } from './errors.js';
 
 /**
  * Validated agent lifecycle transitions. Any `state → state` pair not listed
@@ -63,6 +64,9 @@ export abstract class BaseAgent implements Agent {
     protected startTime?: Date;
     protected iterationCount = 0;
     protected logger: DebugLogger;
+
+    /** Rejects overlapping runWithContext calls sharing instance state. */
+    private _inFlight = false;
 
     /** Guards the one-time deprecation warning for `runWithContext`. */
     private static _legacyRunWarned = false;
@@ -121,6 +125,17 @@ export abstract class BaseAgent implements Agent {
         this.startTime = new Date();
         this.iterationCount = 0;
 
+        if (typeof input?.prompt !== 'string') {
+            throw new ConfigError('AgentInput.prompt must be a string.');
+        }
+
+        // Instance fields (startTime/iterationCount/state) are shared across
+        // calls — concurrent runs on one instance corrupt each other.
+        if (this._inFlight) {
+            throw new ConfigError('Agent instance is already running; concurrent runs on one instance are not supported.');
+        }
+        this._inFlight = true;
+
         this.logger.logStart('Agent execution', {
             agentId: this.id,
             prompt: input.prompt.slice(0, 100),
@@ -156,9 +171,16 @@ export abstract class BaseAgent implements Agent {
             this.logger.logComplete('Agent execution', output.metadata?.durationMs);
             return output;
         } catch (error) {
-            // Set state to failed
+            // Set state to failed. Guarded: a throwing setState/hook must not
+            // mask the original error that brought us here.
             this.logger.logStateChange('Agent', this.state, AgentState.FAILED);
-            await this.setState(AgentState.FAILED, ctx);
+            try {
+                await this.setState(AgentState.FAILED, ctx);
+            } catch (stateError) {
+                this.logger.error('Failed to set FAILED state', undefined, {
+                    error: stateError instanceof Error ? stateError.message : String(stateError),
+                });
+            }
 
             const errorMessage = error instanceof Error ? error.message : String(error);
             this.logger.error('Agent execution failed', undefined, { error: errorMessage });
@@ -179,6 +201,8 @@ export abstract class BaseAgent implements Agent {
             }
 
             return errorOutput;
+        } finally {
+            this._inFlight = false;
         }
     }
 

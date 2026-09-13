@@ -39,7 +39,8 @@ Every agent framework can spin up an agent. personaforge is the **only TypeScrip
 ## One quick example
 
 ```ts
-import { agent, tool } from 'personaforge';
+import { agent } from 'personaforge/lite';
+import { tool } from 'personaforge/tool';
 import { z } from 'zod';
 
 const getQuote = tool({

@@ -13,6 +13,8 @@ import type {
     EntityMemory, EntityFact, EntityEvent, EntityRelationship, EntityMemoryStore,
     DecisionLog, DecisionLogStore,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Minimal mongodb typing ────────────────────────────────────────────────────
 
@@ -41,7 +43,7 @@ type MongoClientCtor = new (uri: string, opts?: Record<string, unknown>) => Mong
 
 function loadMongo(): MongoClientCtor {
     try {
-        const m = require('mongodb') as { MongoClient: MongoClientCtor };
+        const m = _require('mongodb') as { MongoClient: MongoClientCtor };
         return m.MongoClient;
     } catch {
         throw new Error(MISSING_SDK);

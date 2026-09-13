@@ -48,7 +48,9 @@ const HackerNewsTopStoriesParameters = z.object({
  * Parameters for getting user details
  */
 const HackerNewsUserParameters = z.object({
-    username: z.string().describe('Username of the Hacker News user'),
+    // HN usernames are alphanumerics, `-` and `_` — anything else would
+    // interpolate into the request path.
+    username: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).describe('Username of the Hacker News user'),
 });
 
 /**
@@ -88,6 +90,7 @@ export class HackerNewsTopStoriesTool extends BaseTool<typeof HackerNewsTopStori
             // Fetch story details
             const stories: HackerNewsStory[] = [];
             for (const storyId of topIds) {
+                if (!Number.isInteger(storyId)) continue;
                 try {
                     const storyResponse = await fetch(`https://hacker-news.firebaseio.com/v0/item/${storyId}.json`);
                     if (storyResponse.ok) {

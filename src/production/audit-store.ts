@@ -17,6 +17,9 @@
  * ```
  */
 
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 /** A single audit log entry capturing one HTTP request / agent run. */
@@ -162,7 +165,7 @@ export class SqliteAuditStore implements AuditStore {
 
         let Database: (p: string) => SqliteAuditStore['db'];
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error(
                 'SqliteAuditStore requires better-sqlite3. Install: npm install better-sqlite3'

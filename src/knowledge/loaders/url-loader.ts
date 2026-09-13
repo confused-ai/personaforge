@@ -50,6 +50,29 @@ function isSsrfBlocked(hostname: string): boolean {
     return false;
 }
 
+function isBlockedIp(address: string): boolean {
+    const lower = address.toLowerCase().replace(/^\[(.*)\]$/, '$1');
+    for (const pattern of BLOCKED_IP_PATTERNS) {
+        if (pattern.test(lower)) return true;
+    }
+    return false;
+}
+
+/**
+ * DNS-resolving SSRF check — catches public hostnames that resolve to
+ * private IPs (DNS rebinding, split-horizon DNS). Fail-closed on DNS error.
+ */
+async function isSsrfBlockedResolved(hostname: string): Promise<boolean> {
+    if (isSsrfBlocked(hostname)) return true;
+    try {
+        const { lookup } = await import('node:dns/promises');
+        const results = await lookup(hostname, { all: true });
+        return results.some((r) => isBlockedIp(r.address));
+    } catch {
+        return true;
+    }
+}
+
 export interface UrlLoaderOptions {
     /**
      * Timeout in milliseconds for the HTTP request. Default: 10_000.
@@ -106,6 +129,26 @@ export async function loadUrl(
         );
     }
 
+    // Redirects are followed manually (max 5) so every hop is re-validated:
+    // fetch() would otherwise let an allowlisted URL bounce to an internal host.
+    const checkHop = async (target: URL): Promise<void> => {
+        if (target.protocol !== 'https:' && !(allowHttp && target.protocol === 'http:')) {
+            throw new Error(`URL Loader: redirect to non-HTTPS URL "${target.protocol}" is not allowed.`);
+        }
+        if (options.allowedHosts && options.allowedHosts.length > 0) {
+            const hostname = target.hostname.toLowerCase();
+            if (!options.allowedHosts.some((h) => h.toLowerCase() === hostname)) {
+                throw new Error(`URL Loader: redirect hostname "${target.hostname}" is not in the allowedHosts list.`);
+            }
+        }
+        if (await isSsrfBlockedResolved(target.hostname)) {
+            throw new Error(
+                `URL Loader: redirect to "${target.hostname}" blocked to prevent SSRF. ` +
+                `Only public internet hosts are permitted.`,
+            );
+        }
+    };
+
     // Hostname allowlist check
     if (options.allowedHosts && options.allowedHosts.length > 0) {
         const hostname = parsed.hostname.toLowerCase();
@@ -116,8 +159,8 @@ export async function loadUrl(
         }
     }
 
-    // Private/reserved IP block
-    if (isSsrfBlocked(parsed.hostname)) {
+    // Private/reserved IP block (DNS-resolving — catches rebinding)
+    if (await isSsrfBlockedResolved(parsed.hostname)) {
         throw new Error(
             `URL Loader: request to "${parsed.hostname}" blocked to prevent SSRF. ` +
             `Only public internet hosts are permitted.`,
@@ -130,10 +173,27 @@ export async function loadUrl(
     let text: string;
     let contentType = 'text/plain';
     try {
-        const res = await fetch(url, {
-            signal: controller.signal,
-            headers: { 'User-Agent': userAgent, Accept: 'text/html,text/plain,application/json;q=0.9,*/*;q=0.8' },
-        });
+        let current = url;
+        let res: Response | undefined;
+        for (let hop = 0; hop <= 5; hop++) {
+            const hopRes = await fetch(current, {
+                signal: controller.signal,
+                redirect: 'manual',
+                headers: { 'User-Agent': userAgent, Accept: 'text/html,text/plain,application/json;q=0.9,*/*;q=0.8' },
+            });
+            const location = hopRes.headers.get('location');
+            if (hopRes.status >= 300 && hopRes.status < 400 && location) {
+                if (hop === 5) throw new Error('URL Loader: too many redirects.');
+                await hopRes.arrayBuffer().catch(() => undefined);
+                const next = new URL(location, current);
+                await checkHop(next);
+                current = next.toString();
+                continue;
+            }
+            res = hopRes;
+            break;
+        }
+        if (!res) throw new Error('URL Loader: too many redirects.');
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} for ${url}`);
         contentType = res.headers.get('content-type') ?? 'text/plain';
         text = await res.text();

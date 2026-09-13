@@ -9,6 +9,9 @@
 import { z } from 'zod';
 import { BaseTool } from '../core/base-tool.js';
 import { ToolCategory, type ToolContext } from '../core/types.js';
+import { assertIdentifier, assertSelectOnly } from './sql-guard.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 export interface DatabaseToolConfig {
     /** Database URL (postgres://..., mysql://..., or file path for SQLite) */
@@ -43,11 +46,16 @@ export class PostgreSQLQueryTool extends BaseTool<typeof PgQuerySchema, { rows: 
         });
     }
     protected async performExecute(input: z.infer<typeof PgQuerySchema>, _ctx: ToolContext) {
-        const { Pool } = require('pg') as { Pool: new (o: { connectionString: string }) => { query(q: string, p?: unknown[]): Promise<{ rows: unknown[]; rowCount: number; fields: Array<{ name: string }> }> } };
+        assertSelectOnly(input.query);
+        const { Pool } = _require('pg') as { Pool: new (o: { connectionString: string }) => { query(q: string, p?: unknown[]): Promise<{ rows: unknown[]; rowCount: number; fields: Array<{ name: string }> }>; end(): Promise<void> } };
         const pool = new Pool({ connectionString: this.config.connectionString });
-        const result = await pool.query(input.query, input.params);
-        const rows = this.config.maxRows ? result.rows.slice(0, this.config.maxRows) : result.rows;
-        return { rows, rowCount: result.rowCount, fields: result.fields.map((f) => f.name) };
+        try {
+            const result = await pool.query(input.query, input.params);
+            const rows = this.config.maxRows ? result.rows.slice(0, this.config.maxRows) : result.rows;
+            return { rows, rowCount: result.rowCount, fields: result.fields.map((f) => f.name) };
+        } finally {
+            await pool.end?.().catch(() => undefined);
+        }
     }
 }
 
@@ -70,12 +78,12 @@ export class PostgreSQLInsertTool extends BaseTool<typeof PgInsertSchema, { id: 
     }
     protected async performExecute(input: z.infer<typeof PgInsertSchema>, _ctx: ToolContext) {
         checkTable(input.table, this.config.allowedTables);
-        const { Pool } = require('pg') as { Pool: new (o: { connectionString: string }) => { query(q: string, p?: unknown[]): Promise<{ rows: unknown[] }> } };
+        const { Pool } = _require('pg') as { Pool: new (o: { connectionString: string }) => { query(q: string, p?: unknown[]): Promise<{ rows: unknown[] }> } };
         const pool = new Pool({ connectionString: this.config.connectionString });
-        const cols = Object.keys(input.record);
+        const cols = Object.keys(input.record).map((c) => assertIdentifier(c, 'column'));
         const vals = Object.values(input.record);
         const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-        const sql = `INSERT INTO ${input.table} (${cols.join(', ')}) VALUES (${placeholders}) RETURNING id`;
+        const sql = `INSERT INTO ${assertIdentifier(input.table, 'table')} (${cols.join(', ')}) VALUES (${placeholders}) RETURNING id`;
         const result = await pool.query(sql, vals);
         return { id: (result.rows[0] as Record<string, unknown>)?.['id'], success: true };
     }
@@ -99,21 +107,25 @@ export class MySQLQueryTool extends BaseTool<typeof MySQLQuerySchema, { rows: un
         });
     }
     protected async performExecute(input: z.infer<typeof MySQLQuerySchema>, _ctx: ToolContext) {
-        const mysql2 = require('mysql2/promise') as {
+        assertSelectOnly(input.query);
+        const mysql2 = _require('mysql2/promise') as {
             createConnection(o: { uri: string }): Promise<{ execute(q: string, p?: unknown[]): Promise<[unknown[], unknown[]]>; end(): Promise<void> }>;
         };
         const conn = await mysql2.createConnection({ uri: this.config.connectionString });
-        const [rows] = await conn.execute(input.query, input.params ?? []);
-        await conn.end();
-        const arr = Array.isArray(rows) ? rows : [];
-        return { rows: this.config.maxRows ? arr.slice(0, this.config.maxRows) : arr, rowCount: arr.length };
+        try {
+            const [rows] = await conn.execute(input.query, input.params ?? []);
+            const arr = Array.isArray(rows) ? rows : [];
+            return { rows: this.config.maxRows ? arr.slice(0, this.config.maxRows) : arr, rowCount: arr.length };
+        } finally {
+            await conn.end?.().catch(() => undefined);
+        }
     }
 }
 
 // ── SQLite Query ───────────────────────────────────────────────────────────
 
 const SQLiteQuerySchema = z.object({
-    query: z.string().describe('SQL query to execute'),
+    query: z.string().describe('SQL SELECT query to execute (read-only; single statement)'),
     params: z.array(z.unknown()).optional().describe('Query parameters (? placeholders)'),
 });
 
@@ -128,9 +140,10 @@ export class SQLiteQueryTool extends BaseTool<typeof SQLiteQuerySchema, { rows: 
         });
     }
     protected async performExecute(input: z.infer<typeof SQLiteQuerySchema>, _ctx: ToolContext) {
-        const Database = require('better-sqlite3') as (path: string) => { prepare(q: string): { all(...a: unknown[]): unknown[] } };
+        assertSelectOnly(input.query);
+        const Database = _require('better-sqlite3') as (path: string) => { prepare(q: string): { all(...a: unknown[]): unknown[] } };
         const db = Database(this.config.connectionString);
-        const rows = db.prepare(input.query).all(...(input.params ?? []));
+        const rows = db.prepare(assertSelectOnly(input.query)).all(...(input.params ?? []));
         const trimmed = this.config.maxRows ? rows.slice(0, this.config.maxRows) : rows;
         return { rows: trimmed, rowCount: trimmed.length };
     }

@@ -7,13 +7,15 @@
 
 import { AgentDb, validateTableNames } from './base.js';
 import { DEFAULT_TABLE_NAMES } from './types.js';
-import { uuid, now } from './utils.js';
+import { uuid, now, sanitizeMongoUpdate } from './utils.js';
 import type {
   SessionRow, MemoryRow, LearningRow, KnowledgeRow, TraceRow, ScheduleRow,
   SessionQuery, MemoryQuery, LearningQuery, KnowledgeQuery,
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] MongoAgentDb requires mongodb.\n' +
@@ -55,7 +57,7 @@ export class MongoAgentDb extends AgentDb {
   private getClient(): MongoClient {
     if (this._client) return this._client;
     let Ctor: MongoCtor;
-    try { Ctor = (require('mongodb') as { MongoClient: MongoCtor }).MongoClient; }
+    try { Ctor = (_require('mongodb') as { MongoClient: MongoCtor }).MongoClient; }
     catch { throw new Error(MISSING); }
     this._client = new Ctor(this.opts.url);
     return this._client;
@@ -388,7 +390,10 @@ export class MongoAgentDb extends AgentDb {
 
   async updateSchedule(id: string, updates: Partial<ScheduleRow>): Promise<ScheduleRow | null> {
     await this.init();
-    await this.col(this.t.schedules).updateOne({ id }, { $set: { ...updates, updated_at: now() } }, {});
+    const { id: _omitId, created_at: _omitCreated, ...rest } = updates as Record<string, unknown>;
+    void _omitId;
+    void _omitCreated;
+    await this.col(this.t.schedules).updateOne({ id }, { $set: { ...sanitizeMongoUpdate(rest), updated_at: now() } }, {});
     return this.getSchedule(id);
   }
 

@@ -13,8 +13,19 @@ export interface JsonLoaderOptions {
 
 export async function loadJson(filePath: string, opts: JsonLoaderOptions = {}): Promise<Document[]> {
   const raw = await readFile(filePath, 'utf-8');
+  const parseJsonl = (): unknown[] =>
+    raw.split('\n').flatMap((line, i) => {
+      if (!line.trim()) return [];
+      try {
+        return [JSON.parse(line) as unknown];
+      } catch (err) {
+        // Fail with the offending line number instead of aborting opaquely
+        // or silently skipping (either hides data loss).
+        throw new Error(`Invalid JSON on line ${i + 1} of ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    });
   const data: unknown[] = filePath.endsWith('.jsonl')
-    ? raw.split('\n').filter(Boolean).map((l) => JSON.parse(l) as unknown)
+    ? parseJsonl()
     : (() => { const p = JSON.parse(raw) as unknown; return Array.isArray(p) ? p : [p]; })();
   return data.map((item) => {
     const obj = item as Record<string, unknown>;

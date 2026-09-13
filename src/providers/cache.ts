@@ -8,6 +8,7 @@
  * - In-memory with pluggable adapter interface
  */
 
+import { createHash } from 'node:crypto';
 import type { Message, GenerateOptions, GenerateResult } from './types.js';
 import type { MetricsCollector } from '../observability/types.js';
 
@@ -208,7 +209,8 @@ export class LLMCache {
             return this.config.hashFn(input);
         }
 
-        // Default: JSON-based hash
+        // Default: JSON-based hash. Tools are part of the key — the same
+        // prompt with different tools must not share a cached response.
         const normalized = {
             messages: input.messages.map(m => ({
                 role: m.role,
@@ -217,20 +219,16 @@ export class LLMCache {
             model: input.model,
             temperature: input.temperature,
             maxTokens: input.maxTokens,
-            // Exclude tools from cache key by default (too variable)
+            tools: input.tools === undefined ? null : JSON.stringify(input.tools),
         };
 
         return this.simpleHash(JSON.stringify(normalized));
     }
 
     private simpleHash(str: string): string {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32bit integer
-        }
-        return hash.toString(36);
+        // SHA-256: a 32-bit Java-style hash collides routinely at cache
+        // scale, and a collision serves the wrong cached response.
+        return createHash('sha256').update(str, 'utf8').digest('hex');
     }
 
     private evictLRU(): void {

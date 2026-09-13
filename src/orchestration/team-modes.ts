@@ -42,6 +42,14 @@ export interface TeamResult {
 }
 
 export function createModeTeam(config: TeamConfig): { run: (prompt: string) => Promise<TeamResult> } {
+  // Leader-first ordering: route/coordinate without a leader reports the
+  // missing leader even when the agent list is also empty.
+  if ((config.mode === 'route' || config.mode === 'coordinate') && !config.leader) {
+    throw new Error(`[createTeam] mode:"${config.mode}" requires a leader agent`);
+  }
+  if (!config.agents || config.agents.length === 0) {
+    throw new Error('[createTeam] at least one agent is required.');
+  }
   switch (config.mode) {
     case 'route': return { run: routeRun(config) };
     case 'coordinate': return { run: coordinateRun(config) };

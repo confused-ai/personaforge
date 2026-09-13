@@ -74,7 +74,9 @@ export class HttpMcpClient implements MCPClient {
 
         const parsed = JsonRpcRequestSchema.safeParse(body);
         if (!parsed.success) {
-            throw new Error(`MCP: invalid JSON-RPC response: ${JSON.stringify(body)}`);
+            // Truncate: raw bodies can be megabytes and may carry secrets.
+            const preview = JSON.stringify(body).slice(0, 500);
+            throw new Error(`MCP: invalid JSON-RPC response: ${preview}`);
         }
         if (parsed.data.error) {
             throw new Error(`MCP error ${parsed.data.error.code}: ${parsed.data.error.message}`);

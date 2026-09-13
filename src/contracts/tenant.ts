@@ -130,9 +130,12 @@ export class TenantBudgetEnforcer {
 
   /** Check whether `estimatedCostUsd` would exceed any configured limit. */
   async check(estimatedCostUsd: number): Promise<void> {
+    // Corrupt store values (non-numbers) coerce to 0 via `?? 0` and poison
+    // the sum to NaN, and `NaN > limit` is false — budgets would never trip.
+    const toAmount = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
     const [userSpent, tenantSpent] = await Promise.all([
-      this.store.get(this.userKey).then((v) => (v as number | null) ?? 0),
-      this.store.get(this.tenantKey).then((v) => (v as number | null) ?? 0),
+      this.store.get(this.userKey).then(toAmount),
+      this.store.get(this.tenantKey).then(toAmount),
     ]);
 
     const userLimit = this.ctx.budget?.maxUsdPerUser ?? Infinity;

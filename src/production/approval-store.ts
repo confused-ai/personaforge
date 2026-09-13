@@ -36,6 +36,8 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { AgentError, ErrorCode, type ErrorCodeType } from '../shared/index.js';
 import { tool } from '../tools/core/tool-helper.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -220,7 +222,7 @@ export class SqliteApprovalStore implements ApprovalStore {
 
         let Database: (p: string) => SqliteApprovalStore['db'];
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error('SqliteApprovalStore requires better-sqlite3. Install: npm install better-sqlite3');
         }

@@ -75,6 +75,10 @@ export interface A2AServerOptions {
     auth?: McpAuthConfig;
     /** Max request body bytes (default: 1 MB) */
     maxBodyBytes?: number;
+    /** How long terminal tasks stay retrievable before eviction (default: 600_000) */
+    taskTtlMs?: number;
+    /** Max stored tasks; oldest terminal tasks evicted first (default: 1000) */
+    maxTasks?: number;
     logger?: {
         info?(msg: string, ctx?: unknown): void;
         error?(msg: string, ctx?: unknown): void;
@@ -146,9 +150,31 @@ export class A2AServer {
             port: 3200,
             host: '127.0.0.1',
             maxBodyBytes: 1_048_576,
+            taskTtlMs: 600_000,
+            maxTasks: 1000,
             cors: '*',
             ...opts,
         };
+    }
+
+    /**
+     * Settle a terminal task: schedule TTL eviction and enforce the task cap.
+     * Terminal tasks stay pollable through the grace period, then the map
+     * entry is dropped so long-lived servers don't leak memory.
+     */
+    private settleTask(taskId: string): void {
+        const ttl = this.opts.taskTtlMs ?? 600_000;
+        if (ttl >= 0) {
+            const timer = setTimeout(() => { this.tasks.delete(taskId); }, ttl);
+            timer.unref?.();
+        }
+        const max = this.opts.maxTasks ?? 1000;
+        while (this.tasks.size > max) {
+            const oldestTerminal = [...this.tasks.entries()].find(([, s]) =>
+                s.task.status.state === 'completed' || s.task.status.state === 'failed' || s.task.status.state === 'canceled');
+            if (!oldestTerminal) break;
+            this.tasks.delete(oldestTerminal[0]);
+        }
     }
 
     async start(): Promise<void> {
@@ -302,6 +328,7 @@ export class A2AServer {
                 timestamp: new Date().toISOString(),
             };
         }
+        this.settleTask(taskId);
         return stored.task;
     }
 
@@ -353,6 +380,7 @@ export class A2AServer {
             stored.sseRes = undefined;
             res.end();
         }
+        this.settleTask(taskId);
         return null; // response already handled
     }
 
@@ -383,6 +411,7 @@ export class A2AServer {
             stored.sseRes.write(`data: ${line}\n\n`);
             stored.sseRes.end();
         }
+        this.settleTask(params.id);
         return stored.task;
     }
 

@@ -19,12 +19,13 @@ function getToken(config: ApifyToolConfig): string {
     return token;
 }
 
-async function apifyRequest(token: string, method: string, path: string, body?: object): Promise<unknown> {
+async function apifyRequest(token: string, method: string, path: string, body?: object, timeoutMs = 30_000): Promise<unknown> {
     const url = `https://api.apify.com/v2${path}${path.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
     const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         ...(body !== undefined && { body: JSON.stringify(body) }),
+        signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) throw new Error(`Apify API ${res.status}: ${await res.text()}`);
     return res.json();
@@ -88,6 +89,7 @@ export class ApifyRunActorTool extends BaseTool<typeof RunActorSchema> {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input.input ?? {}),
+                signal: AbortSignal.timeout(360_000),
             }
         );
         if (!res.ok) throw new Error(`Apify API ${res.status}: ${await res.text()}`);
@@ -133,7 +135,8 @@ export class ApifyGetDatasetItemsTool extends BaseTool<typeof GetDatasetItemsSch
             format: input.format ?? 'json',
         });
         const res = await fetch(
-            `https://api.apify.com/v2/datasets/${input.datasetId}/items?${params.toString()}`
+            `https://api.apify.com/v2/datasets/${input.datasetId}/items?${params.toString()}`,
+            { signal: AbortSignal.timeout(30_000) }
         );
         if (!res.ok) throw new Error(`Apify API ${res.status}: ${await res.text()}`);
         return res.json();
@@ -165,6 +168,7 @@ export class ApifyRunActorGetDataTool extends BaseTool<typeof RunActorGetDataSch
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input.input ?? {}),
+                signal: AbortSignal.timeout(360_000),
             }
         );
         if (!runRes.ok) throw new Error(`Apify API ${runRes.status}: ${await runRes.text()}`);
@@ -173,7 +177,7 @@ export class ApifyRunActorGetDataTool extends BaseTool<typeof RunActorGetDataSch
         if (!datasetId) return run;
 
         const itemsParams = new URLSearchParams({ token, limit: String(input.maxItems ?? 100), format: 'json' });
-        const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?${itemsParams.toString()}`);;
+        const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?${itemsParams.toString()}`, { signal: AbortSignal.timeout(120_000) });
         if (!itemsRes.ok) throw new Error(`Apify API ${itemsRes.status}: ${await itemsRes.text()}`);
         return { run: run.data, items: await itemsRes.json() };
     }

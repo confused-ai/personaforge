@@ -25,6 +25,10 @@ export function bedrock(config: ModelAdapterConfig & { region?: string } = {}): 
   }
 
   async function generateText(messages: Message[], opts?: GenerateOptions): Promise<GenerateResult> {
+    // This adapter speaks the Anthropic-on-Bedrock body shape only.
+    if (!/anthropic/i.test(model)) {
+      throw new Error(`Bedrock adapter supports Anthropic models only; got ${JSON.stringify(model)}.`);
+    }
     const client = await getClient();
     const { InvokeModelCommand } = await import('@aws-sdk/client-bedrock-runtime').catch(() => { throw new Error(MISSING_SDK_MSG); });
 

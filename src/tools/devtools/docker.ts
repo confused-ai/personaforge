@@ -38,22 +38,46 @@ function getHost(config: DockerToolConfig): string {
     return `${host.replace(/\/$/, '')}/${version}`;
 }
 
-/** Host paths whose mount into a container grants effective host takeover. */
-const SENSITIVE_MOUNT_PREFIXES = ['/', '/etc', '/var/run/docker.sock', '/root'];
-
 /**
  * Reject volume binds mounting sensitive host paths unless explicitly allowed.
  * A bind is `host:container[:mode]`; we inspect the host side.
+ * Blocked: `/` itself, anything under `/etc`, `/root`, `/var/run`
+ * (docker socket), or the user's `$HOME`. Prefixes match on segment
+ * boundaries over `..`-normalized absolute paths.
  */
+function normalizeHostPath(p: string): string {
+    const collapsed = p.replace(/\/+/g, '/');
+    const parts: string[] = [];
+    for (const seg of collapsed.split('/')) {
+        if (seg === '' || seg === '.') continue;
+        if (seg === '..') parts.pop();
+        else parts.push(seg);
+    }
+    return `/${parts.join('/')}`;
+}
+
+/** True when `p` is `prefix` or nested beneath it (segment boundary). */
+function underPrefix(p: string, prefix: string): boolean {
+    return p === prefix || p.startsWith(`${prefix}/`);
+}
+
 function assertSafeBinds(binds: string[] | undefined, allowHostMounts: boolean): void {
     if (allowHostMounts || !binds) return;
     const home = process.env['HOME'] ?? '';
+    const homeNorm = home ? normalizeHostPath(home) : '';
     for (const bind of binds) {
-        const hostPath = (bind.split(':')[0] ?? '').replace(/\/+$/, '') || '/';
+        const rawHost = bind.split(':')[0] ?? '';
+        // Relative host paths resolve against the daemon cwd — treat as opaque
+        // and block only the exact sensitive roots; absolute paths get prefix checks.
+        const hostPath = rawHost.startsWith('/') ? normalizeHostPath(rawHost) : rawHost;
         const blocked =
-            SENSITIVE_MOUNT_PREFIXES.includes(hostPath) ||
-            hostPath === '/var/run/docker.sock' ||
-            (home !== '' && (hostPath === home || hostPath === home.replace(/\/+$/, '')));
+            hostPath === '/' ||
+            (hostPath.startsWith('/') && (
+                underPrefix(hostPath, '/etc') ||
+                underPrefix(hostPath, '/root') ||
+                underPrefix(hostPath, '/var/run') ||
+                (homeNorm !== '' && underPrefix(hostPath, homeNorm))
+            ));
         if (blocked) {
             throw new Error(
                 `Refusing to mount sensitive host path "${hostPath}" into a container; ` +
@@ -150,7 +174,7 @@ export class DockerGetContainerTool extends BaseTool<typeof GetContainerSchema> 
     }
 
     protected async performExecute(input: z.infer<typeof GetContainerSchema>, _ctx: ToolContext) {
-        return dockerRequest(getHost(this.config), 'GET', `/containers/${input.containerId}/json`);
+        return dockerRequest(getHost(this.config), 'GET', `/containers/${encodeURIComponent(input.containerId)}/json`);
     }
 }
 
@@ -167,7 +191,7 @@ export class DockerStartContainerTool extends BaseTool<typeof GetContainerSchema
     }
 
     protected async performExecute(input: z.infer<typeof GetContainerSchema>, _ctx: ToolContext) {
-        return dockerRequest(getHost(this.config), 'POST', `/containers/${input.containerId}/start`);
+        return dockerRequest(getHost(this.config), 'POST', `/containers/${encodeURIComponent(input.containerId)}/start`);
     }
 }
 
@@ -189,7 +213,7 @@ export class DockerStopContainerTool extends BaseTool<typeof StopContainerSchema
 
     protected async performExecute(input: z.infer<typeof StopContainerSchema>, _ctx: ToolContext) {
         const params = new URLSearchParams({ t: String(input.t) });
-        return dockerRequest(getHost(this.config), 'POST', `/containers/${input.containerId}/stop?${params.toString()}`);
+        return dockerRequest(getHost(this.config), 'POST', `/containers/${encodeURIComponent(input.containerId)}/stop?${params.toString()}`);
     }
 }
 
@@ -206,9 +230,11 @@ export class DockerCreateContainerTool extends BaseTool<typeof CreateContainerSc
     }
 
     protected async performExecute(input: z.infer<typeof CreateContainerSchema>, _ctx: ToolContext) {
-        const base = getHost(this.config);
         // Block mounting sensitive host paths unless explicitly opted in.
+        // Input validation runs before host/config resolution so malicious
+        // input fails fast even when the tool isn't configured.
         assertSafeBinds(input.volumes, this.config.allowHostMounts ?? false);
+        const base = getHost(this.config);
         const params = input.name ? `?name=${encodeURIComponent(input.name)}` : '';
         const portBindings: Record<string, Array<{ HostPort: string; HostIp?: string }>> = {};
         const exposedPorts: Record<string, object> = {};
@@ -275,7 +301,7 @@ export class DockerContainerLogsTool extends BaseTool<typeof ContainerLogsSchema
             timestamps: String(input.timestamps),
         });
         const base = getHost(this.config);
-        const res = await fetch(`${base}/containers/${input.containerId}/logs?${params.toString()}`);
+        const res = await fetch(`${base}/containers/${encodeURIComponent(input.containerId)}/logs?${params.toString()}`);
         if (!res.ok) throw new Error(`Docker API ${String(res.status)}: ${await res.text()}`);
         return { logs: await res.text() };
     }

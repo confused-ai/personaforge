@@ -111,6 +111,12 @@ export interface MemoryOptions {
     threadTitle?: boolean;
     /** Local token-estimator override for OM / trimming. */
     tokenEstimator?: TokenEstimator;
+    /**
+     * Called when a background memory task (semantic indexing, observational
+     * buffering, mem0 extraction) fails. Background work never throws into
+     * the run — without this hook failures are invisible. Default: silent.
+     */
+    onBackgroundError?: (err: unknown, scope: 'semantic-index' | 'observational' | 'mem0') => void;
 }
 
 export interface MemoryConfig {
@@ -166,6 +172,7 @@ export class Memory {
     private readonly estimator: TokenEstimator;
     private _observational: ObservationalMemoryManager | undefined;
     private _observationalCfg: ObservationalMemoryConfig | false;
+    private readonly onBackgroundError: MemoryOptions['onBackgroundError'];
 
     constructor(config: MemoryConfig = {}) {
         this.name = config.name;
@@ -222,6 +229,15 @@ export class Memory {
 
         this._observationalCfg = options.observationalMemory ?? false;
         this._observational = undefined;
+        this.onBackgroundError = options.onBackgroundError;
+    }
+
+    private reportBackgroundError(err: unknown, scope: 'semantic-index' | 'observational' | 'mem0'): void {
+        try {
+            this.onBackgroundError?.(err, scope);
+        } catch {
+            // Listener errors never propagate into memory paths.
+        }
     }
 
     // ── Storage access ──────────────────────────────────────────────────────
@@ -464,7 +480,7 @@ export class Memory {
     async indexStoredMessages(threadId: string, resourceId: string | undefined, stored: StorageMessage[]): Promise<void> {
         if (!this.semantic) return;
         const resolved = await this.resolveResourceId(threadId, resourceId);
-        await this.semantic.embedAndIndex(stored, threadId, resolved).catch(() => undefined);
+        await this.semantic.embedAndIndex(stored, threadId, resolved).catch((err: unknown) => this.reportBackgroundError(err, 'semantic-index'));
     }
 
     /**
@@ -481,12 +497,12 @@ export class Memory {
         const { threadId, resourceId, messages, storedMessages } = options;
         const om = this._observationalCfg ? this._ensureObservational() : undefined;
         if (om) {
-            await om.afterTurn({ threadId, resourceId }).catch(() => undefined);
+            await om.afterTurn({ threadId, resourceId }).catch((err: unknown) => this.reportBackgroundError(err, 'observational'));
         }
         if (this.mem0Engine && this.mem0AutoExtract) {
             const fresh = messages.filter((m) => m.role !== 'system');
             if (fresh.length) {
-                await this.mem0Engine.processMessages(fresh, { userID: resourceId, agentID: this.name }).catch(() => undefined);
+                await this.mem0Engine.processMessages(fresh, { userID: resourceId, agentID: this.name }).catch((err: unknown) => this.reportBackgroundError(err, 'mem0'));
             }
         }
         if (storedMessages?.length) {

@@ -256,17 +256,29 @@ export async function* streamMerge(
 ): AsyncIterable<StreamDelta> {
     const queue: StreamDelta[] = [];
     let active = streams.length;
+    let failure: unknown;
+    let failed = false;
     // Object property avoids TypeScript narrowing `null` in closures
     const state = { notify: null as ((() => void) | null) };
 
     for (const stream of streams) {
         void (async () => {
-            for await (const delta of stream) {
-                queue.push(delta);
+            try {
+                for await (const delta of stream) {
+                    queue.push(delta);
+                    state.notify?.();
+                }
+            } catch (err) {
+                // Record the first source failure; still drain queued deltas,
+                // then surface it to the consumer instead of hanging.
+                if (!failed) {
+                    failed = true;
+                    failure = err;
+                }
+            } finally {
+                active--;
                 state.notify?.();
             }
-            active--;
-            state.notify?.();
         })();
     }
 
@@ -279,6 +291,7 @@ export async function* streamMerge(
             state.notify = null;
         }
     }
+    if (failed) throw failure;
 }
 
 // ── streamToNodeCallback ──────────────────────────────────────────────────────

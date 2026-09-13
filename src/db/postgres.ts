@@ -7,7 +7,7 @@
 
 import { AgentDb, validateTableNames } from './base.js';
 import { DEFAULT_TABLE_NAMES } from './types.js';
-import { uuid, now } from './utils.js';
+import { uuid, now, assertScheduleColumn } from './utils.js';
 import { runMigrations, MIGRATIONS } from './migrations/index.js';
 import type {
   SessionRow, MemoryRow, LearningRow, KnowledgeRow, TraceRow, ScheduleRow,
@@ -15,6 +15,8 @@ import type {
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] PostgresAgentDb requires pg.\n' +
@@ -54,7 +56,7 @@ export class PostgresAgentDb extends AgentDb {
   private pool(): PgPool {
     if (this._pool) return this._pool;
     let Pool: PgPoolCtor;
-    try { Pool = (require('pg') as { Pool: PgPoolCtor }).Pool; }
+    try { Pool = (_require('pg') as { Pool: PgPoolCtor }).Pool; }
     catch { throw new Error(MISSING); }
     const { tables: _t, ...pgConfig } = this.opts;
     void _t;
@@ -502,7 +504,7 @@ export class PostgresAgentDb extends AgentDb {
     let i = 1;
     for (const [k, v] of Object.entries(updates)) {
       if (k === 'created_at' || k === 'id') continue;
-      sets.push(`${k} = $${i++}`); params.push(v);
+      sets.push(`${assertScheduleColumn(k)} = $${i++}`); params.push(v);
     }
     sets.push(`updated_at = $${i++}`); params.push(now());
     params.push(id);

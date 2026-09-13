@@ -585,7 +585,7 @@ export class LLMRouter implements LLMProvider {
     }
 
     async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
-        const { entry, decision } = this.route(messages, options as any);
+        const { entry, decision } = this.route(messages, options);
         this.recordDecision(decision);
 
         const provider = entry.provider;
@@ -763,6 +763,11 @@ export class LLMRouter implements LLMProvider {
         // 4xx (bad request / auth / validation) fails identically on another
         // provider — re-sending wastes a call and money.
         const ee = err as { status?: number; statusCode?: number; code?: string; name?: string } | null;
+        // User cancellation is never transient — retrying on a fallback after
+        // an abort wastes a call and ignores the caller's intent. Rethrow as-is.
+        const aborted = (options as { signal?: AbortSignal } | undefined)?.signal?.aborted
+            || ee?.name === 'AbortError' || ee?.code === 'ABORT_ERR';
+        if (aborted) throw err;
         const status = ee?.status ?? ee?.statusCode;
         const transient =
             (typeof status === 'number' && (status === 429 || (status >= 500 && status <= 599))) ||

@@ -9,8 +9,11 @@ import {
 import type { MemoryStore } from '../memory/index.js';
 import type { ToolRegistry } from '../tools/index.js';
 import type { Planner } from '../planner/index.js';
-import { InMemoryStore } from '../memory/index.js';
-import { ToolRegistryImpl } from '../tools/index.js';
+// Sanctioned layering exception (see scripts/check-layering.mjs):
+// composition-root defaults for the fluent builder; override at any
+// call site via .withMemory()/.withTools().
+import { InMemoryStore } from '../memory/in-memory-store.js';
+import { ToolRegistryImpl } from '../tools/core/registry.js';
 
 // Cast helpers — AgentContext uses `unknown` to stay dep-free, but callers use typed stores
 type TypedAgentContext = Omit<AgentContext, 'memory' | 'tools' | 'planner'> & {
@@ -65,6 +68,10 @@ export class AgentContextBuilder {
      * Add metadata
      */
     withMetadata(key: string, value: unknown): this {
+        // Direct assignment with `__proto__` would pollute the prototype.
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+            throw new Error(`Invalid metadata key: ${JSON.stringify(key)}`);
+        }
         this.metadata[key] = value;
         return this;
     }

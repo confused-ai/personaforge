@@ -1,6 +1,9 @@
 /**
  * personaforge/guard — Production safety: budget, rate-limiting, circuit breakers, HITL.
  *
+ * For content safety (PII, prompt injection, moderation) use `personaforge/guardrails`.
+ * (`src/guard/` retry/timeout helpers are internal engine utilities, not a public subpath.)
+ *
  * ```ts
  * import { budget, rateLimiter, circuitBreaker, approval } from 'personaforge/guard'
  * ```

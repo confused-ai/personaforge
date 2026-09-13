@@ -14,6 +14,10 @@ export { createSupervisor } from './supervisor.js';
 export { createSwarm }      from './swarm.js';
 export type { PipelineStep, SupervisorOptions, SwarmOptions } from './types.js';
 
+// ── Fluent step-DAG chains (then/parallel/branch/foreach + suspend/resume) ──
+export { defineStep, defineWorkflow, WorkflowChain, WorkflowChainRun, WorkflowSuspended } from './chain.js';
+export type { ChainStep, ChainStepContext, DefineStepOptions, ChainSnapshot, ChainRunResult } from './chain.js';
+
 // ── Branching & loop primitives ───────────────────────────────────────────
 export { branch, loopUntil, forEach, race, retry } from './branching.js';
 export type {

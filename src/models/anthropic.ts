@@ -136,15 +136,22 @@ export function anthropic(config: ModelAdapterConfig = {}): LLMProvider {
       ...(opts?.signal && { signal: opts.signal }),
     }, opts?.headers ? { headers: opts.headers } : undefined);
 
+    const streamedTools: Array<{ id: string; name: string; json: string }> = [];
     for await (const event of stream as AsyncIterable<{
       type: string;
-      delta?: { type?: string; text?: string; stop_reason?: string };
+      delta?: { type?: string; text?: string; partial_json?: string; stop_reason?: string };
       message?: { usage?: { input_tokens?: number; output_tokens?: number } };
       usage?: { output_tokens?: number };
+      content_block?: { type?: string; id?: string; name?: string };
     }>) {
       if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta' && event.delta.text) {
         fullText += event.delta.text;
         opts?.onChunk?.(event.delta.text);
+      } else if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
+        streamedTools.push({ id: event.content_block.id ?? '', name: event.content_block.name ?? '', json: '' });
+      } else if (event.type === 'content_block_delta' && event.delta?.type === 'input_json_delta' && typeof event.delta.partial_json === 'string') {
+        const current = streamedTools[streamedTools.length - 1];
+        if (current) current.json += event.delta.partial_json;
       } else if (event.type === 'message_start' && event.message?.usage) {
         promptTokens = event.message.usage.input_tokens ?? 0;
         completionTokens = event.message.usage.output_tokens ?? 0;
@@ -154,9 +161,21 @@ export function anthropic(config: ModelAdapterConfig = {}): LLMProvider {
       }
     }
 
+    const toolCalls = streamedTools.length
+      ? streamedTools.map((t) => {
+          let args: Record<string, unknown> = {};
+          try {
+            const parsed: unknown = JSON.parse(t.json || '{}');
+            if (typeof parsed === 'object' && parsed !== null) args = parsed as Record<string, unknown>;
+          } catch { /* malformed partial JSON — arg validation flags it downstream */ }
+          return { id: t.id, name: t.name, arguments: args };
+        })
+      : undefined;
+
     return {
       text: fullText,
-      finishReason,
+      ...(toolCalls && { toolCalls }),
+      finishReason: toolCalls ? 'tool_calls' : finishReason,
       usage: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens },
     };
   }

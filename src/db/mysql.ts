@@ -7,13 +7,15 @@
 
 import { AgentDb, validateTableNames } from './base.js';
 import { DEFAULT_TABLE_NAMES } from './types.js';
-import { uuid, now } from './utils.js';
+import { uuid, now, assertScheduleColumn } from './utils.js';
 import type {
   SessionRow, MemoryRow, LearningRow, KnowledgeRow, TraceRow, ScheduleRow,
   SessionQuery, MemoryQuery, LearningQuery, KnowledgeQuery,
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] MysqlAgentDb requires mysql2.\n' +
@@ -56,7 +58,7 @@ export class MysqlAgentDb extends AgentDb {
   private pool(): MysqlPool {
     if (this._pool) return this._pool;
     let mysql2: MysqlPoolCreator;
-    try { mysql2 = (require('mysql2/promise') as MysqlPoolCreator); }
+    try { mysql2 = (_require('mysql2/promise') as MysqlPoolCreator); }
     catch { throw new Error(MISSING); }
     const { tables: _t, uri, ...poolConfig } = this.opts;
     void _t;
@@ -619,7 +621,7 @@ export class MysqlAgentDb extends AgentDb {
     const sets: string[] = ['updated_at = ?']; const params: unknown[] = [now()];
     for (const [k, v] of Object.entries(updates)) {
       if (k === 'created_at' || k === 'id') continue;
-      sets.push(`${k} = ?`);
+      sets.push(`${assertScheduleColumn(k)} = ?`);
       params.push(k === 'enabled' ? (v ? 1 : 0) : v);
     }
     params.push(id);

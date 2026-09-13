@@ -149,7 +149,7 @@ export function knowledgeAsTool(
             if (knowledge.ingest) {
                 await knowledge.ingest(addable);
             } else if (knowledge.addDocuments) {
-                await knowledge.addDocuments(addable.map((d, i) => ({ id: `doc-${i}-${Date.now()}`, ...d })));
+                await knowledge.addDocuments(addable.map((d, i) => ({ id: `doc-${i}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`, ...d })));
             } else {
                 throw new Error(`Knowledge tool "${name}": this knowledge base does not support adding documents.`);
             }

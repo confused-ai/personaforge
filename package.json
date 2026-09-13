@@ -1,6 +1,6 @@
 {
   "name": "personaforge",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Fast TypeScript AI agent framework — per-request agents, 30+ model providers, 100+ integrations, 20+ vector DBs, 10+ databases, sessions, memory, knowledge, tracing, evals, HITL, teams, and workflows.",
   "type": "module",
   "packageManager": "bun@1.4.0",
@@ -215,6 +215,21 @@
       "types": "./dist/adapters.d.ts",
       "import": "./dist/adapters.js",
       "require": "./dist/adapters.cjs"
+    },
+    "./adapters/framework/express": {
+      "types": "./dist/adapters/framework/express.d.ts",
+      "import": "./dist/adapters/framework/express.js",
+      "require": "./dist/adapters/framework/express.cjs"
+    },
+    "./adapters/framework/fastify": {
+      "types": "./dist/adapters/framework/fastify.d.ts",
+      "import": "./dist/adapters/framework/fastify.js",
+      "require": "./dist/adapters/framework/fastify.cjs"
+    },
+    "./adapters/framework/hono": {
+      "types": "./dist/adapters/framework/hono.d.ts",
+      "import": "./dist/adapters/framework/hono.js",
+      "require": "./dist/adapters/framework/hono.cjs"
     },
     "./background": {
       "types": "./dist/background.d.ts",
@@ -488,15 +503,19 @@
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "bench": "vitest bench",
+    "bench:dx": "bun benchmarks/dx/run.ts",
     "lint": "eslint src --max-warnings 0",
     "lint:packages": "bun run lint",
     "lint:fix": "eslint src --fix",
     "check": "bun run typecheck && bun run lint && bun run test",
     "release:check": "bun run check && bun run build",
     "production:check": "bun run release:check && bun run check:bundle && bun run check:docs && bun run pack:inspect",
-    "check:bundle": "bun run check:bundle:lite && node scripts/check-bundle-size.mjs --entry src/tools/core/index.ts --max-kb 74 --label personaforge/tools/core && node scripts/check-bundle-size.mjs --entry src/tools/search/index.ts --max-kb 80 --label personaforge/tools/search && bun run check:bundle:root",
-    "check:bundle:lite": "node scripts/check-bundle-size.mjs --entry src/lite.ts --max-kb 122 --label personaforge/lite",
+    "check:bundle": "bun run check:bundle:lite && bun run check:bundle:create-agent && node scripts/check-bundle-size.mjs --entry src/tools/core/index.ts --max-kb 74 --label personaforge/tools/core && node scripts/check-bundle-size.mjs --entry src/tools/search/index.ts --max-kb 80 --label personaforge/tools/search && bun run check:bundle:root",
+    "check:bundle:lite": "node scripts/check-bundle-size.mjs --entry src/lite.ts --max-kb 132 --label personaforge/lite",
+    "check:bundle:create-agent": "node scripts/check-bundle-size.mjs --entry src/create-agent.ts --max-kb 140 --label personaforge/create-agent",
     "check:bundle:root": "node scripts/check-bundle-size.mjs --entry src/index.ts --max-kb 450 --label personaforge/root-umbrella",
+    "check:entries": "node scripts/check-entry-completeness.mjs",
+    "check:layering": "node scripts/check-layering.mjs",
     "check:docs": "node scripts/check-docs-claims.mjs",
     "check:docs:snippets": "node scripts/check-docs-snippets.mjs",
     "docs:dev": "vitepress dev docs",

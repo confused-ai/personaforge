@@ -13,6 +13,8 @@ import type {
     EntityMemory, EntityFact, EntityEvent, EntityRelationship, EntityMemoryStore,
     DecisionLog, DecisionLogStore,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Shared SQLite bootstrap ────────────────────────────────────────────────────
 
@@ -25,7 +27,7 @@ interface Db { exec(sql: string): void; prepare<T = unknown>(sql: string): Stmt<
 type DbCtor = new (path: string) => Db;
 
 function loadSqlite(): DbCtor {
-    try { return require('better-sqlite3') as DbCtor; }
+    try { return _require('better-sqlite3') as DbCtor; }
     catch { throw new Error(MISSING_SDK); }
 }
 

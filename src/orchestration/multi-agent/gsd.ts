@@ -260,11 +260,19 @@ Write a brief report detailing verification outcome. Confirm with "[VERIFIED]" i
 
     /** Load current state from planning storage. */
     async loadState(): Promise<GSDState> {
+        let jsonText: string;
         try {
-            const jsonText = await this.storage.read('STATE.md');
-            return JSON.parse(jsonText);
+            jsonText = await this.storage.read('STATE.md');
         } catch {
+            // No stored state yet — start planning fresh.
             return { status: 'PLANNING', currentStepIndex: 0, tasks: [] };
+        }
+        try {
+            return JSON.parse(jsonText) as GSDState;
+        } catch (err) {
+            // Corrupt state must fail loud: silently resetting to PLANNING
+            // would abandon in-flight tasks without a trace.
+            throw new Error(`GSD: stored STATE.md is corrupt: ${err instanceof Error ? err.message : String(err)}`);
         }
     }
 

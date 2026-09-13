@@ -9,13 +9,15 @@
 
 import { AgentDb, validateTableNames } from './base.js';
 import { DEFAULT_TABLE_NAMES } from './types.js';
-import { uuid, now } from './utils.js';
+import { uuid, now, assertScheduleColumn } from './utils.js';
 import type {
   SessionRow, MemoryRow, LearningRow, KnowledgeRow, TraceRow, ScheduleRow,
   SessionQuery, MemoryQuery, LearningQuery, KnowledgeQuery,
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] TursoAgentDb requires @libsql/client.\n' +
@@ -59,7 +61,7 @@ export class TursoAgentDb extends AgentDb {
   private client(): LibSqlClient {
     if (this._client) return this._client;
     let libsql: LibSqlCreator;
-    try { libsql = require('@libsql/client') as LibSqlCreator; } catch { throw new Error(MISSING); }
+    try { libsql = _require('@libsql/client') as LibSqlCreator; } catch { throw new Error(MISSING); }
     const cfg: Record<string, unknown> = { url: this.opts.url };
     if (this.opts.authToken) cfg['authToken'] = this.opts.authToken;
     this._client = libsql.createClient(cfg);
@@ -530,7 +532,7 @@ export class TursoAgentDb extends AgentDb {
     const sets: string[] = ['updated_at = ?']; const args: unknown[] = [now()];
     for (const [k, v] of Object.entries(updates)) {
       if (k === 'created_at' || k === 'id') continue;
-      sets.push(`${k} = ?`);
+      sets.push(`${assertScheduleColumn(k)} = ?`);
       args.push(k === 'enabled' ? (v ? 1 : 0) : v);
     }
     args.push(id);

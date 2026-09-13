@@ -4,6 +4,12 @@
  * Delegates to AgenticRunner: a single production-grade engine powers both
  * core/runner and agentic/runner across the framework, so the two never
  * diverge in loop semantics, retry, or tool-dispatch behaviour.
+ *
+ * @remarks Layering exception (sanctioned, see scripts/check-layering.mjs):
+ * this facade is the only place in `core` that runtime-imports a leaf
+ * module. The canonical engine lives at `personaforge/agentic`; import
+ * `AgentRunner` from `personaforge/core` only for the contracts-level
+ * `RunnerConfig` surface.
  */
 
 import type { AgentRunResult } from '../types.js';
@@ -26,7 +32,14 @@ import { LoadShedError } from '../errors.js';
  */
 function adaptToolRegistry(registry: RunnerConfig['tools']): AgenticToolRegistry {
     const byName = new Map<string, AgenticTool>();
-    for (const t of registry.list()) byName.set(t.name, t as unknown as AgenticTool);
+    for (const t of registry.list()) {
+        // Fail fast on shape mismatch instead of hiding it behind a cast:
+        // the loop calls tool.execute(input, ctx) on every adapted tool.
+        if (typeof (t as { execute?: unknown }).execute !== 'function') {
+            throw new Error(`Cannot adapt tool "${t.name}": missing execute(input, ctx) function.`);
+        }
+        byName.set(t.name, t as unknown as AgenticTool);
+    }
     return {
         getByName: (name: string) => byName.get(name),
         list: () => Array.from(byName.values()),
