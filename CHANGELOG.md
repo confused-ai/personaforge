@@ -17,10 +17,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed (behavior on upgrade)
 - With the flag on (default), Anthropic 3.7 / 4.x / 5 models now request thinking and omit the caller's `temperature` whenever thinking is sent; thinking tokens are billed and add latency.
 - Gemini 2.5+/3 text models now request thought summaries (image/TTS/live/embedding/native-audio variants excluded).
-- OpenAI `o1/o3/o4/gpt-5` calls send `reasoning_effort: 'medium'`; tool-free calls on OpenAI's default endpoint with no `extraBody`/`stop` and text-only content go through the Responses API; everything else stays on Chat Completions.
+- Anthropic thinking (adaptive or budget) consumes part of `max_tokens`; older-model budget thinking uses at most half of `max_tokens` (capped at 4096) — raise `maxTokens` for long answers.
+- OpenAI `o1/o3/o4/gpt-5` tool-free calls on OpenAI's default endpoint with no `extraBody`/`stop` and text-only content go through the Responses API, which requests reasoning summaries and sets `store: false`; everything else stays on Chat Completions.
 
 ### Fixed
 - OpenAI reasoning-model ids no longer send `temperature` / `max_tokens` (use `max_completion_tokens`) — these calls previously failed, including Azure deployments and gateways.
+- Anthropic requests skip thinking when resuming a tool call whose assistant turn carries no signed thinking (approval/suspend resume), so these resumes keep working.
 - Gemini `thoughtSignature` is round-tripped on function calls, so Gemini 3 tool loops no longer fail on the second step.
 - Gemini SAFETY / RECITATION / LANGUAGE block errors still throw when a response contains thought parts.
 - Bedrock text extraction no longer assumes the first content block is text.
@@ -29,13 +31,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Known limitations
 - Reasoning is not persisted in session/memory stores between runs.
 - OpenAI Responses-API reasoning is delivered once per turn (not streamed); OpenAI reasoning models with tools get no reasoning text; OpenRouter-prefixed ids (e.g. `openai/o3`) aren't treated as reasoning models.
-- An Anthropic thinking request can fail when a prior assistant tool-use turn lacks a signed thinking block (e.g. history from another provider).
+- Anthropic reasoning is skipped (the request doesn't fail) when the last assistant tool-use turn has no signed thinking (e.g. history from another provider or a resumed tool call).
 - The suspend/approval store drops Gemini `thoughtSignature`, so a resumed Gemini 3 tool run may fail.
 - The standalone `anthropic()` adapter in `src/models/` has no reasoning (model strings use `AnthropicProvider`, which does); env auto-detect defaults (`claude-3-5-sonnet-20241022`, `gemini-2.0-flash`) don't think; unlisted Claude/Gemini/Ollama model names get no reasoning until the classifiers are extended.
 - `create-agent`'s `StreamChunk` is still a separate loose interface from the core `StreamChunk` union.
 
 ### Tests
-- New/extended suites: `tests/reasoning-types.test.ts`, `tests/reasoning-accumulator.test.ts`, `tests/anthropic-thinking.test.ts`, `tests/cli-chat-reasoning.test.ts`, plus reasoning coverage added to `agentic-runner`, `coverage-create-agent-core`, `serve`, `durable-agent`, `coverage-providers-classes`, `coverage-models`, `ai-sdk-provider` tests. Full suite: **203 files / 3242 tests passing** (4 skipped); `tsc --noEmit` and `eslint src --max-warnings 0` clean.
+- New/extended suites: `tests/reasoning-types.test.ts`, `tests/reasoning-accumulator.test.ts`, `tests/anthropic-thinking.test.ts`, `tests/cli-chat-reasoning.test.ts`, plus reasoning coverage added to `agentic-runner`, `coverage-create-agent-core`, `serve`, `durable-agent`, `coverage-providers-classes`, `coverage-models`, `ai-sdk-provider` tests. Full suite: **203 files / 3247 tests passing** (4 skipped); `tsc --noEmit` and `eslint src --max-warnings 0` clean.
 
 ---
 
