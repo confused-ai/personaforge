@@ -939,6 +939,23 @@ describe('AgenticRunner — streaming', () => {
         expect(result.reasoningText).toBe('A');
     });
 
+    it('prefers provider-returned reasoning blocks (with signatures) over streamed deltas', async () => {
+        const streamText = vi.fn(async (_messages: Message[], options?: GenerateOptions) => {
+            options?.onReasoning?.({ text: 'thi' });
+            options?.onReasoning?.({ text: 'nking' });
+            options?.onChunk?.('final answer');
+            return { text: 'final answer', finishReason: 'stop' as const, reasoning: [{ text: 'thinking', signature: 'sig-1' }] };
+        });
+
+        const llm = { generateText: vi.fn(), streamText };
+        const runner = new AgenticRunner(makeRunnerConfig({ llm }));
+
+        const result = await runner.run(makeRunConfig(), { onChunk: () => {} });
+
+        const assistantMsg = result.messages.find((m) => m.role === 'assistant');
+        expect(assistantMsg?.reasoning).toEqual([{ text: 'thinking', signature: 'sig-1' }]);
+    });
+
     it('discards a failed streaming attempt\'s reasoning on retry instead of leaking it into the retried attempt', async () => {
         let attempt = 0;
         const streamText = vi.fn(async (_messages: Message[], options?: GenerateOptions) => {

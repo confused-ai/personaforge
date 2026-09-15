@@ -59,7 +59,7 @@ export interface Message {
     tool_calls?: OpenAIToolCall[];
     name?: string;
     /** Reasoning/thinking blocks produced by the model alongside this message (assistant only). */
-    reasoning?: { text: string; title?: string }[];
+    reasoning?: { text: string; title?: string; signature?: string; redacted?: string }[];
 }
 
 // ── Run config & result ──────────────────────────────────────────────────────

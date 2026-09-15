@@ -1427,8 +1427,8 @@ export class AgenticRunner {
             if (useStreaming) {
                 // Per-attempt accumulator: a retried attempt gets its own instance so a
                 // failed attempt's deltas are discarded rather than leaking into the
-                // retry's (or a later step's) reasoning. Streamed blocks (when present)
-                // replace result.reasoning below, so double-counting isn't possible.
+                // retry's (or a later step's) reasoning. Provider-returned blocks win; streamed
+                // deltas are only a fallback below, so double-counting isn't possible.
                 const attemptReasoning = new ReasoningAccumulator();
                 // streamText is confirmed defined when useStreaming is true (checked by callers)
                 return provider.streamText!(llmMessages, {
@@ -1443,7 +1443,9 @@ export class AgenticRunner {
                     },
                 }).then((r) => {
                     const streamed = attemptReasoning.flush();
-                    return streamed.length ? { ...r, reasoning: streamed } : r;
+                    // Prefer provider-returned blocks: they carry signatures/redacted data
+                    // (Anthropic) that must round-trip unchanged; deltas are the fallback.
+                    return r.reasoning?.length ? r : (streamed.length ? { ...r, reasoning: streamed } : r);
                 });
             }
             return provider.generateText(llmMessages, baseOpts);

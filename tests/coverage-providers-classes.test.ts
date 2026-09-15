@@ -162,6 +162,91 @@ describe('providers/AnthropicProvider', () => {
         expect(result.text).toBe('a');
         expect(result.usage).toEqual({ promptTokens: 5, completionTokens: 9, totalTokens: 14 });
     });
+
+    it('streamText on an adaptive model sends thinking, omits temperature, streams + returns signed reasoning', async () => {
+        async function* gen() {
+            yield { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } };
+            yield { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'let me ' } };
+            yield { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'think' } };
+            yield { type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-1' } };
+            yield { type: 'content_block_start', index: 1, content_block: { type: 'text', text: '' } };
+            yield { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'answer' } };
+        }
+        const create = vi.fn().mockResolvedValue({ [Symbol.asyncIterator]: gen });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-opus-5' });
+        const deltas: { text: string }[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'x' }], {
+            temperature: 0.2,
+            onChunk: () => {},
+            onReasoning: (d) => deltas.push(d),
+        });
+        const body = create.mock.calls[0]![0];
+        expect(body.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
+        expect(body).not.toHaveProperty('temperature');
+        expect(deltas).toEqual([{ text: 'let me ' }, { text: 'think' }]);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'let me think', signature: 'sig-1' }]);
+    });
+
+    it('generateText on a budget model sends enabled thinking and returns thinking + redacted blocks', async () => {
+        const create = vi.fn().mockResolvedValue({
+            content: [
+                { type: 'thinking', thinking: 'hmm', signature: 'sig-2' },
+                { type: 'redacted_thinking', data: 'abc' },
+                { type: 'text', text: 'done' },
+            ],
+            stop_reason: 'end_turn',
+            usage: { input_tokens: 1, output_tokens: 1 },
+        });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-haiku-4-5' });
+        const result = await provider.generateText([{ role: 'user', content: 'x' }], { maxTokens: 8000, temperature: 0.3 });
+        const body = create.mock.calls[0]![0];
+        expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+        expect(body).not.toHaveProperty('temperature');
+        expect(result.text).toBe('done');
+        expect(result.reasoning).toEqual([{ text: 'hmm', signature: 'sig-2' }, { text: '', redacted: 'abc' }]);
+    });
+
+    it('default model sends no thinking and keeps caller temperature', async () => {
+        const create = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never });
+        const result = await provider.generateText([{ role: 'user', content: 'x' }], { temperature: 0.2 });
+        const body = create.mock.calls[0]![0];
+        expect(body).not.toHaveProperty('thinking');
+        expect(body.temperature).toBe(0.2);
+        expect(result).not.toHaveProperty('reasoning');
+    });
+
+    it('ENABLE_REASONING_STREAM=false sends no thinking even on an adaptive model', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            const create = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-opus-5' });
+            await provider.generateText([{ role: 'user', content: 'x' }], { temperature: 0.2 });
+            const body = create.mock.calls[0]![0];
+            expect(body).not.toHaveProperty('thinking');
+            expect(body.temperature).toBe(0.2);
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
+
+    it('round-trips signed + redacted reasoning before assistant text and drops unsigned blocks', async () => {
+        const create = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-opus-5' });
+        await provider.generateText([
+            { role: 'assistant', content: 'prev', reasoning: [{ text: 't', signature: 's' }, { text: '', redacted: 'r' }, { text: 'unsigned' }] },
+            { role: 'user', content: 'next' },
+        ]);
+        const body = create.mock.calls[0]![0];
+        expect(body.messages[0].content).toEqual([
+            { type: 'thinking', thinking: 't', signature: 's' },
+            { type: 'redacted_thinking', data: 'r' },
+            { type: 'text', text: 'prev' },
+        ]);
+    });
 });
 
 // ── GoogleProvider ──────────────────────────────────────────────────────────
