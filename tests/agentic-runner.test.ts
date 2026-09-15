@@ -884,6 +884,71 @@ describe('AgenticRunner — streaming', () => {
         expect(receivedChunks).toEqual(chunks);
         expect(result.text).toBe('Hello, world!');
     });
+
+    it('accumulates streamed reasoning into the assistant message, final result, and caller onReasoning hook', async () => {
+        const streamText = vi.fn(async (_messages: Message[], options?: GenerateOptions) => {
+            options?.onReasoning?.({ text: 'because X', title: 'Step 1' });
+            options?.onChunk?.('final answer');
+            return { text: 'final answer', finishReason: 'stop' as const };
+        });
+
+        const llm = { generateText: vi.fn(), streamText };
+        const runner = new AgenticRunner(makeRunnerConfig({ llm }));
+
+        const receivedReasoning: { text: string; title?: string }[] = [];
+        const result = await runner.run(makeRunConfig(), {
+            onChunk: () => {},
+            onReasoning: (d) => receivedReasoning.push(d),
+        });
+
+        const assistantMsg = result.messages.find((m) => m.role === 'assistant');
+        expect(assistantMsg?.reasoning).toEqual([{ text: 'because X', title: 'Step 1' }]);
+        expect(result.reasoningText).toBe('because X');
+        expect(receivedReasoning).toEqual([{ text: 'because X', title: 'Step 1' }]);
+    });
+
+    it('populates reasoning from a non-streamed generateText result', async () => {
+        const generateText = vi.fn(async () => ({
+            text: 'ok',
+            finishReason: 'stop' as const,
+            reasoning: [{ text: 'because Y' }],
+        }));
+
+        const llm = { generateText };
+        const runner = new AgenticRunner(makeRunnerConfig({ llm }));
+
+        const result = await runner.run(makeRunConfig());
+
+        const assistantMsg = result.messages.find((m) => m.role === 'assistant');
+        expect(assistantMsg?.reasoning).toEqual([{ text: 'because Y' }]);
+        expect(result.reasoningText).toBe('because Y');
+    });
+
+    it('does not double-count reasoning that is both streamed via onReasoning and returned on the result', async () => {
+        const streamText = vi.fn(async (_messages: Message[], options?: GenerateOptions) => {
+            options?.onReasoning?.({ text: 'A' });
+            options?.onChunk?.('final answer');
+            return { text: 'final answer', finishReason: 'stop' as const, reasoning: [{ text: 'A' }] };
+        });
+
+        const llm = { generateText: vi.fn(), streamText };
+        const runner = new AgenticRunner(makeRunnerConfig({ llm }));
+
+        const result = await runner.run(makeRunConfig(), { onChunk: () => {} });
+
+        expect(result.reasoningText).toBe('A');
+    });
+
+    it('does not add a reasoning key when no reasoning was produced', async () => {
+        const llm = makeMockLLM([makeSimpleResult('plain answer')]);
+        const runner = new AgenticRunner(makeRunnerConfig({ llm }));
+
+        const result = await runner.run(makeRunConfig());
+
+        const assistantMsg = result.messages.find((m) => m.role === 'assistant');
+        expect(assistantMsg).not.toHaveProperty('reasoning');
+        expect(result).not.toHaveProperty('reasoningText');
+    });
 });
 
 // ── Checkpoint store ──────────────────────────────────────────────────────────

@@ -43,6 +43,7 @@ import { estimateCost } from '../providers/cost-tracker.js';
 import { toolToLLMDef } from './_zod-to-schema.js';
 import { validateStructuredOutput, buildStructuredOutputPrompt, extractJson } from './_structured-output.js';
 import { withRetry as guardWithRetry, runToolWithTimeout, createDeadline } from '../guard/index.js';
+import { ReasoningAccumulator } from '../streaming/reasoning-accumulator.js';
 import type { RetryPolicy } from '../guard/index.js';
 import { withSpan, Metrics, genAiAttributes, recordLlmUsage } from '../observe/index.js';
 import { ReasoningManager, TreeOfThoughtEngine, ReflexionEngine, ReWooEngine, GotEngine } from '../reasoning/index.js';
@@ -573,8 +574,13 @@ export class AgenticRunner {
         }
 
         const resumeToolCallId = runConfig.resumePendingTool?.toolCall.id;
+        const reasoningAcc = new ReasoningAccumulator();
+        let allReasoningText = '';
+        const runStreamHooks: AgenticStreamHooks | undefined = streamHooks
+            ? { ...streamHooks, onReasoning: (d) => { reasoningAcc.push(d); streamHooks.onReasoning?.(d); } }
+            : undefined;
         const baseCtx: Omit<RunContext, 'step'> = {
-            agentId, sessionId, lifecycle, streamHooks,
+            agentId, sessionId, lifecycle, streamHooks: runStreamHooks,
             toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
             retry,
             allowedTools: runConfig.allowedTools,
@@ -818,6 +824,14 @@ export class AgenticRunner {
 
             const hasToolCalls = !!result.toolCalls?.length;
 
+            // Reasoning for this step: prefer what was streamed via onReasoning;
+            // fall back to a non-streamed result.reasoning. Flushed every step
+            // (even when no assistant message is pushed) so it never leaks into
+            // the next step.
+            const streamedReasoning = reasoningAcc.flush();
+            const stepReasoning = streamedReasoning.length ? streamedReasoning : (result.reasoning ?? []);
+            if (stepReasoning.length) allReasoningText += stepReasoning.map((b) => b.text).join('');
+
             // Append a SINGLE assistant message carrying both text and toolCalls.
             // (Previously this pushed text here and a second assistant message with
             //  toolCalls below — duplicating the turn in history.)
@@ -826,6 +840,7 @@ export class AgenticRunner {
                     role: 'assistant',
                     content: result.text ?? '',
                     ...(hasToolCalls && { toolCalls: result.toolCalls }),
+                    ...(stepReasoning.length && { reasoning: stepReasoning }),
                 } as Message & { toolCalls?: LLMToolCall[] });
             }
             if (result.text) {
@@ -1067,6 +1082,7 @@ export class AgenticRunner {
             ...(legacyStructured !== undefined && { structuredOutput: legacyStructured }),
             ...(tripwire && { tripwire }),
             ...(suspendPayload && { suspendPayload }),
+            ...(allReasoningText && { reasoningText: allReasoningText }),
         } as AgenticRunResult;
 
         if (lifecycle.afterRun) {
@@ -1422,6 +1438,7 @@ export class AgenticRunner {
                         const text = typeof chunk === 'string' ? chunk : chunk.text;
                         ctx.streamHooks!.onChunk!(text);
                     },
+                    onReasoning: ctx.streamHooks?.onReasoning,
                 });
             }
             return provider.generateText(llmMessages, baseOpts);
