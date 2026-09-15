@@ -145,6 +145,27 @@ describe('durable agent streams', () => {
         for await (const e of output.fullStream) events.push(e);
         expect(events).toHaveLength(3);
     });
+
+    it('replays a reasoning-delta event through the durable registry with no dedicated handling', async () => {
+        const { DurableRunRegistry, registryOutput } = await import('@personaforge/durable');
+        const cache = new InMemoryServerCache();
+        const registry = new DurableRunRegistry(cache);
+        const runId = 'run-reasoning';
+        const handle = registry.create({ runId, input: 'x' });
+        await registry.publish(runId, { type: 'reasoning-delta', reasoningDelta: 'because X', reasoningTitle: 'Step 1' });
+        await registry.publish(runId, delta('answer'));
+        await registry.publish(runId, done({ text: 'answer' }));
+        // Mark the run terminal so the event iterators terminate.
+        handle.closed = true;
+        handle.notify();
+
+        const output = registryOutput(registry, runId, Promise.resolve(makeResult({ text: 'answer' })));
+        const events = [];
+        for await (const e of output.fullStream) events.push(e);
+        expect(events).toContainEqual(
+            expect.objectContaining({ type: 'reasoning-delta', reasoningDelta: 'because X', reasoningTitle: 'Step 1' }),
+        );
+    });
 });
 
 // ── Error propagation ────────────────────────────────────────────────────────
