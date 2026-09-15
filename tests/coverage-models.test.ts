@@ -472,6 +472,74 @@ describe('models/bedrock adapter', () => {
         expect(result.text).toBe('');
         expect(result.usage).toEqual({ promptTokens: undefined, completionTokens: undefined, totalTokens: 0 });
     });
+
+    it('extracts text by block type (skips thinking) and returns reasoning with signature', async () => {
+        bedrockSendMock.mockResolvedValue({
+            body: new TextEncoder().encode(JSON.stringify({
+                content: [
+                    { type: 'thinking', thinking: 'because X', signature: 'sig' },
+                    { type: 'text', text: 'the answer' },
+                ],
+            })),
+        });
+        const provider = bedrock({ model: 'anthropic.claude-3-7-sonnet-20250219-v1:0' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }], { maxTokens: 8000 });
+
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X', signature: 'sig' }]);
+
+        const cmd = bedrockInvokeMock.mock.calls[0]![0] as { body: Uint8Array };
+        const sentBody = JSON.parse(new TextDecoder().decode(cmd.body)) as { thinking?: unknown };
+        expect(sentBody.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+    });
+
+    it('maps redacted_thinking blocks to reasoning with redacted data', async () => {
+        bedrockSendMock.mockResolvedValue({
+            body: new TextEncoder().encode(JSON.stringify({
+                content: [
+                    { type: 'redacted_thinking', data: 'abc' },
+                    { type: 'text', text: 'ok' },
+                ],
+            })),
+        });
+        const provider = bedrock({ model: 'anthropic.claude-3-7-sonnet-20250219-v1:0' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }], { maxTokens: 8000 });
+
+        expect(result.reasoning).toEqual([{ text: '', redacted: 'abc' }]);
+        expect(result.text).toBe('ok');
+    });
+
+    it('omits thinking param and reasoning for a non-thinking model', async () => {
+        bedrockSendMock.mockResolvedValue({
+            body: new TextEncoder().encode(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] })),
+        });
+        const provider = bedrock({ model: 'anthropic.claude-3-5-sonnet-20241022-v2:0' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }], { maxTokens: 8000 });
+
+        const cmd = bedrockInvokeMock.mock.calls[0]![0] as { body: Uint8Array };
+        const sentBody = JSON.parse(new TextDecoder().decode(cmd.body)) as Record<string, unknown>;
+        expect(sentBody).not.toHaveProperty('thinking');
+        expect(result).not.toHaveProperty('reasoning');
+    });
+
+    it('honors the ENABLE_REASONING_STREAM kill switch', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            bedrockSendMock.mockResolvedValue({
+                body: new TextEncoder().encode(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] })),
+            });
+            const provider = bedrock({ model: 'anthropic.claude-3-7-sonnet-20250219-v1:0' });
+            await provider.generateText([{ role: 'user', content: 'hi' }], { maxTokens: 8000 });
+
+            const cmd = bedrockInvokeMock.mock.calls[0]![0] as { body: Uint8Array };
+            const sentBody = JSON.parse(new TextDecoder().decode(cmd.body)) as Record<string, unknown>;
+            expect(sentBody).not.toHaveProperty('thinking');
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
 });
 
 describe('models/google adapter', () => {
