@@ -7,6 +7,38 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased] — native reasoning / thinking-token streaming
+
+### Added
+- **Reasoning surfaces across the stack** — `GenerateOptions.onReasoning`, `GenerateResult.reasoning` (`{ text, title?, signature?, redacted? }[]`), `Message.reasoning`, `AgentRunResult.reasoningText`, `reasoning-delta` stream events (`reasoningDelta` / `reasoningTitle`) through `streamEvents()`, the SSE data-stream wire format, and durable replay; CLI `chat` prints `[Reasoning: …]` before the reply.
+- **Provider support** — Anthropic extended thinking (adaptive + summarized display on current models, budget thinking on 3.7 / 4.0–4.5, signed/redacted thinking blocks round-tripped in tool loops); AWS Bedrock (same Anthropic thinking config); Google Gemini thought summaries (2.5+/3 text models); Ollama native `think` for known thinking families or `ollama({ think })`; OpenAI-compatible reasoning fields (`reasoning_content` / `reasoning`) for every `OpenAIProvider`-backed model string (`deepseek:`, `ollama:`, `groq:`, `openrouter:`, vLLM, Azure); OpenAI Responses-API reasoning summaries for tool-free `o1/o3/o4/gpt-5` calls on OpenAI's default endpoint; AI SDK v4 reasoning parts (`reasoning`, `reasoning-signature`, `redacted-reasoning`).
+- **`ENABLE_REASONING_STREAM` kill switch** (default on; set `false` to disable).
+
+### Changed (behavior on upgrade)
+- With the flag on (default), Anthropic 3.7 / 4.x / 5 models now request thinking and omit the caller's `temperature` whenever thinking is sent; thinking tokens are billed and add latency.
+- Gemini 2.5+/3 text models now request thought summaries (image/TTS/live/embedding/native-audio variants excluded).
+- OpenAI `o1/o3/o4/gpt-5` calls send `reasoning_effort: 'medium'`; tool-free calls on OpenAI's default endpoint with no `extraBody`/`stop` and text-only content go through the Responses API; everything else stays on Chat Completions.
+
+### Fixed
+- OpenAI reasoning-model ids no longer send `temperature` / `max_tokens` (use `max_completion_tokens`) — these calls previously failed, including Azure deployments and gateways.
+- Gemini `thoughtSignature` is round-tripped on function calls, so Gemini 3 tool loops no longer fail on the second step.
+- Gemini SAFETY / RECITATION / LANGUAGE block errors still throw when a response contains thought parts.
+- Bedrock text extraction no longer assumes the first content block is text.
+- The agentic runner discards reasoning captured during a failed/retried LLM attempt instead of leaking it into the next step.
+
+### Known limitations
+- Reasoning is not persisted in session/memory stores between runs.
+- OpenAI Responses-API reasoning is delivered once per turn (not streamed); OpenAI reasoning models with tools get no reasoning text; OpenRouter-prefixed ids (e.g. `openai/o3`) aren't treated as reasoning models.
+- An Anthropic thinking request can fail when a prior assistant tool-use turn lacks a signed thinking block (e.g. history from another provider).
+- The suspend/approval store drops Gemini `thoughtSignature`, so a resumed Gemini 3 tool run may fail.
+- The standalone `anthropic()` adapter in `src/models/` has no reasoning (model strings use `AnthropicProvider`, which does); env auto-detect defaults (`claude-3-5-sonnet-20241022`, `gemini-2.0-flash`) don't think; unlisted Claude/Gemini/Ollama model names get no reasoning until the classifiers are extended.
+- `create-agent`'s `StreamChunk` is still a separate loose interface from the core `StreamChunk` union.
+
+### Tests
+- New/extended suites: `tests/reasoning-types.test.ts`, `tests/reasoning-accumulator.test.ts`, `tests/anthropic-thinking.test.ts`, `tests/cli-chat-reasoning.test.ts`, plus reasoning coverage added to `agentic-runner`, `coverage-create-agent-core`, `serve`, `durable-agent`, `coverage-providers-classes`, `coverage-models`, `ai-sdk-provider` tests. Full suite: **203 files / 3242 tests passing** (4 skipped); `tsc --noEmit` and `eslint src --max-warnings 0` clean.
+
+---
+
 ## [Unreleased] — production-hardening audit sweep (items 1–24)
 
 ### Added
