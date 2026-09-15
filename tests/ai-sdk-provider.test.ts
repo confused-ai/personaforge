@@ -175,4 +175,104 @@ describe('createAiSdkProvider', () => {
         const provider = createAiSdkProvider(mockModel(), { modelId: 'custom-model' });
         expect((provider as any).name).toBe('openai:custom-model');
     });
+
+    // ── Reasoning ────────────────────────────────────────────────────────────
+
+    it('streamText maps reasoning parts to onReasoning + consolidated result.reasoning', async () => {
+        const provider = createAiSdkProvider(mockModel(undefined, async () => ({
+            stream: new ReadableStream({
+                start(controller: any) {
+                    controller.enqueue({ type: 'reasoning', textDelta: 'think ' });
+                    controller.enqueue({ type: 'reasoning', textDelta: 'more' });
+                    controller.enqueue({ type: 'reasoning-signature', signature: 'sig-1' });
+                    controller.enqueue({ type: 'redacted-reasoning', data: 'opaque' });
+                    controller.enqueue({ type: 'text-delta', textDelta: 'answer' });
+                    controller.enqueue({ type: 'finish', finishReason: 'stop', usage: { promptTokens: 1, completionTokens: 1 } });
+                    controller.close();
+                },
+            }),
+            rawCall: { rawPrompt: [], rawSettings: {} },
+        })));
+
+        const reasoningDeltas: { text: string; title?: string }[] = [];
+        const chunks: string[] = [];
+        const result = await provider.streamText!(mockMessages(), {
+            onChunk: (chunk: string) => chunks.push(chunk),
+            onReasoning: (delta) => reasoningDeltas.push(delta),
+        });
+
+        expect(reasoningDeltas).toEqual([{ text: 'think ' }, { text: 'more' }]);
+        expect(chunks).toEqual(['answer']);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([
+            { text: 'think more', signature: 'sig-1' },
+            { text: '', redacted: 'opaque' },
+        ]);
+    });
+
+    it('streamText starts a new reasoning block after a signature closes the previous one', async () => {
+        const provider = createAiSdkProvider(mockModel(undefined, async () => ({
+            stream: new ReadableStream({
+                start(controller: any) {
+                    controller.enqueue({ type: 'reasoning', textDelta: 'first ' });
+                    controller.enqueue({ type: 'reasoning', textDelta: 'block' });
+                    controller.enqueue({ type: 'reasoning-signature', signature: 'sig-a' });
+                    controller.enqueue({ type: 'reasoning', textDelta: 'second block' });
+                    controller.enqueue({ type: 'text-delta', textDelta: 'done' });
+                    controller.enqueue({ type: 'finish', finishReason: 'stop', usage: { promptTokens: 1, completionTokens: 1 } });
+                    controller.close();
+                },
+            }),
+            rawCall: { rawPrompt: [], rawSettings: {} },
+        })));
+
+        const result = await provider.streamText!(mockMessages());
+        expect(result.reasoning).toEqual([
+            { text: 'first block', signature: 'sig-a' },
+            { text: 'second block' },
+        ]);
+    });
+
+    it('generateText maps string reasoning to a single block', async () => {
+        const provider = createAiSdkProvider(mockModel(async () => ({
+            text: 'ok',
+            toolCalls: [],
+            finishReason: 'stop',
+            usage: { promptTokens: 1, completionTokens: 1 },
+            reasoning: 'because X',
+        })));
+        const result = await provider.generateText(mockMessages());
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+    });
+
+    it('generateText maps array reasoning (text + redacted) preserving order', async () => {
+        const provider = createAiSdkProvider(mockModel(async () => ({
+            text: 'ok',
+            toolCalls: [],
+            finishReason: 'stop',
+            usage: { promptTokens: 1, completionTokens: 1 },
+            reasoning: [
+                { type: 'text', text: 'a', signature: 's' },
+                { type: 'redacted', data: 'r' },
+                { type: 'text', text: 'b' },
+            ],
+        })));
+        const result = await provider.generateText(mockMessages());
+        expect(result.reasoning).toEqual([
+            { text: 'a', signature: 's' },
+            { text: '', redacted: 'r' },
+            { text: 'b' },
+        ]);
+        expect(result.reasoning![2]).not.toHaveProperty('signature');
+    });
+
+    it('has no reasoning key when the model returns none (generateText and streamText)', async () => {
+        const genProvider = createAiSdkProvider(mockModel());
+        const genResult = await genProvider.generateText(mockMessages());
+        expect(genResult).not.toHaveProperty('reasoning');
+
+        const streamProvider = createAiSdkProvider(mockModel());
+        const streamResult = await streamProvider.streamText!(mockMessages());
+        expect(streamResult).not.toHaveProperty('reasoning');
+    });
 });
