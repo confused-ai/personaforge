@@ -13,6 +13,7 @@ import type {
 } from './types.js';
 import { normalizeFinishReason } from './types.js';
 import { DebugLogger, createDebugLogger } from '../shared/index.js';
+import { isReasoningStreamEnabled } from '../streaming/reasoning-accumulator.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that
 // throws "Dynamic require not supported". createRequire restores sync peer-dep loading.
@@ -25,12 +26,18 @@ interface OpenAIClient {
             create(params: OpenAICreateParams, requestOptions?: { signal?: AbortSignal; headers?: Record<string, string> }): Promise<OpenAIResponse | AsyncIterable<OpenAIStreamChunk>>;
         };
     };
+    /** Responses API — only used for reasoning summaries on OpenAI reasoning models. */
+    responses?: {
+        create(params: unknown, requestOptions?: { signal?: AbortSignal; headers?: Record<string, string> }): Promise<unknown>;
+    };
 }
 interface OpenAICreateParams {
     model: string;
     messages: OpenAIMessageParam[];
     temperature?: number;
     max_tokens?: number;
+    max_completion_tokens?: number;
+    reasoning_effort?: 'low' | 'medium' | 'high';
     stop?: string[];
     tools?: OpenAITool[];
     tool_choice?: 'auto' | 'none';
@@ -65,13 +72,21 @@ interface OpenAITool {
     function: { name: string; description: string; parameters: Record<string, unknown> };
 }
 interface OpenAIResponse {
-    choices?: { message?: { content?: string | null; tool_calls?: { id: string; function?: { name?: string; arguments?: string } }[] }; finish_reason?: string }[];
+    choices?: { message?: { content?: string | null; reasoning_content?: string | null; reasoning?: string | null; tool_calls?: { id: string; function?: { name?: string; arguments?: string } }[] }; finish_reason?: string }[];
     usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+}
+interface OpenAIResponsesResult {
+    output_text?: string;
+    output?: { type: string; content?: { text?: string }[]; summary?: { type: string; text?: string }[] }[];
+    usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number };
 }
 interface OpenAIStreamChunk {
     choices?: {
         delta?: {
             content?: string | null;
+            // Non-standard reasoning fields from OpenAI-compatible servers (DeepSeek, vLLM, OpenRouter, …)
+            reasoning_content?: string | null;
+            reasoning?: string | null;
             tool_calls?: { index: number; id?: string; function?: { name?: string; arguments?: string } }[]
         };
         finish_reason?: string | null;
@@ -135,6 +150,30 @@ function toOpenAIMessages(messages: Message[]): OpenAIMessageParam[] {
         const normalized = Array.isArray(content) ? content : (content ?? null);
         return { role: m.role as 'system' | 'user' | 'assistant', content: normalized as OpenAIContent };
     });
+}
+
+/** OpenAI reasoning models (o-series, gpt-5*): reject temperature/max_tokens on Chat Completions. */
+export function isReasoningModel(model: string): boolean {
+    return /^(o1|o3|o4|gpt-5)/.test(model.toLowerCase());
+}
+
+/** Sampling/length params: reasoning models need max_completion_tokens and no temperature. */
+function samplingParams(model: string, options?: GenerateOptions): Record<string, unknown> {
+    if (!isReasoningModel(model)) {
+        return { temperature: options?.temperature ?? 0.7, max_tokens: options?.maxTokens };
+    }
+    return {
+        ...(options?.maxTokens !== undefined && { max_completion_tokens: options.maxTokens }),
+        ...(isReasoningStreamEnabled() && { reasoning_effort: 'medium' }),
+    };
+}
+
+function contentText(content: Message['content']): string {
+    if (typeof content === 'string') return content;
+    return (content as { type?: string; text?: unknown }[])
+        .filter((p) => p?.type === 'text' && typeof p.text === 'string')
+        .map((p) => p.text as string)
+        .join('');
 }
 
 /**
@@ -215,11 +254,12 @@ export class OpenAIProvider implements LLMProvider {
             model: this.model,
         });
 
+        if (this.useResponsesApi(messages, options)) return this.generateViaResponses(messages, options);
+
         const body: Record<string, unknown> = {
             model: this.model,
             messages: toOpenAIMessages(messages),
-            temperature: options?.temperature ?? 0.7,
-            max_tokens: options?.maxTokens,
+            ...samplingParams(this.model, options),
             stop: options?.stop,
             ...(this.extraBody && { ...this.extraBody }),
         };
@@ -251,6 +291,7 @@ export class OpenAIProvider implements LLMProvider {
 
         const msg = choice.message;
         let text = typeof msg.content === 'string' ? msg.content : '';
+        const reasoningText = msg.reasoning_content ?? msg.reasoning;
 
         const toolCalls: ToolCall[] | undefined = msg.tool_calls?.map((tc: { id: string; function?: { name?: string; arguments?: string } }) => ({
             id: tc.id,
@@ -273,6 +314,7 @@ export class OpenAIProvider implements LLMProvider {
 
         return {
             text,
+            ...(typeof reasoningText === 'string' && reasoningText && { reasoning: [{ text: reasoningText }] }),
             toolCalls: toolCalls?.length ? toolCalls : undefined,
             finishReason: normalizeFinishReason(choice.finish_reason),
             usage: response.usage
@@ -286,11 +328,19 @@ export class OpenAIProvider implements LLMProvider {
     }
 
     async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
+        if (this.useResponsesApi(messages, options)) {
+            // ponytail: non-streaming Responses call replayed as callbacks; stream
+            // response.reasoning_summary_text.delta events if latency matters.
+            const result = await this.generateViaResponses(messages, options);
+            for (const block of result.reasoning ?? []) options?.onReasoning?.({ text: block.text });
+            if (result.text) options?.onChunk?.(result.text);
+            return result;
+        }
+
         const body: Record<string, unknown> = {
             model: this.model,
             messages: toOpenAIMessages(messages),
-            temperature: options?.temperature ?? 0.7,
-            max_tokens: options?.maxTokens,
+            ...samplingParams(this.model, options),
             stop: options?.stop,
             stream: true,
             // Request the final usage chunk; without this streamed usage is never sent.
@@ -315,6 +365,7 @@ export class OpenAIProvider implements LLMProvider {
         ).catch(rethrowWithStatus) as AsyncIterable<OpenAIStreamChunk>;
 
         let fullText = '';
+        let reasoningText = '';
         const toolCallsMap = new Map<number, { id: string; name: string; args: string }>();
         let finishReason: GenerateResult['finishReason'];
         let usage: GenerateResult['usage'];
@@ -322,6 +373,13 @@ export class OpenAIProvider implements LLMProvider {
         for await (const chunk of stream) {
             const delta = chunk.choices?.[0]?.delta;
             if (!delta) continue;
+
+            // Compat reasoning fields — kept out of text/onChunk
+            const r = delta.reasoning_content ?? delta.reasoning;
+            if (typeof r === 'string' && r) {
+                reasoningText += r;
+                options?.onReasoning?.({ text: r });
+            }
 
             // Handle text content
             if (delta.content) {
@@ -377,9 +435,60 @@ export class OpenAIProvider implements LLMProvider {
 
         return {
             text: fullText,
+            ...(reasoningText && { reasoning: [{ text: reasoningText }] }),
             toolCalls: toolCalls.length ? toolCalls : undefined,
             finishReason,
             usage,
+        };
+    }
+
+    /** Responses API only for tool-free reasoning-model turns (it uses different tool item types). */
+    private useResponsesApi(messages: Message[], options?: GenerateOptions): boolean {
+        return isReasoningModel(this.model)
+            && isReasoningStreamEnabled()
+            && !options?.tools?.length
+            && !messages.some((m) => {
+                const tc = m as { toolCalls?: unknown[]; tool_calls?: unknown[] };
+                return m.role === 'tool' || !!tc.toolCalls?.length || !!tc.tool_calls?.length;
+            })
+            && !!this.getClient().responses;
+    }
+
+    private async generateViaResponses(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
+        const instructions = messages.filter((m) => m.role === 'system').map((m) => contentText(m.content)).join('\n\n');
+        const params = {
+            model: this.model,
+            input: messages
+                .filter((m) => m.role === 'user' || m.role === 'assistant')
+                .map((m) => ({ role: m.role, content: contentText(m.content) })),
+            reasoning: { effort: 'medium', summary: 'auto' },
+            ...(options?.maxTokens && { max_output_tokens: options.maxTokens }),
+            ...(instructions && { instructions }),
+        };
+        const mergedHeaders = { ...this.staticHeaders, ...(options?.headers ?? {}) };
+        const requestOpts = { ...(options?.signal && { signal: options.signal }), headers: mergedHeaders };
+        const res = await this.getClient().responses!.create(params, requestOpts).catch(rethrowWithStatus) as OpenAIResponsesResult;
+
+        const output = res.output ?? [];
+        const text = res.output_text
+            ?? output.filter((o) => o.type === 'message').flatMap((o) => o.content ?? []).map((c) => c.text ?? '').join('');
+        const reasoning = output
+            .filter((o) => o.type === 'reasoning')
+            .flatMap((o) => o.summary ?? [])
+            .filter((s) => s.type === 'summary_text' && typeof s.text === 'string')
+            .map((s) => ({ text: s.text as string }));
+        const u = res.usage;
+        return {
+            text,
+            ...(reasoning.length && { reasoning }),
+            finishReason: 'stop',
+            usage: u && (u.input_tokens !== undefined || u.output_tokens !== undefined)
+                ? {
+                    promptTokens: u.input_tokens,
+                    completionTokens: u.output_tokens,
+                    totalTokens: u.total_tokens ?? (u.input_tokens ?? 0) + (u.output_tokens ?? 0),
+                }
+                : undefined,
         };
     }
 }

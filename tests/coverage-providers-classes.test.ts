@@ -95,6 +95,148 @@ describe('providers/OpenAIProvider', () => {
         const result = await provider.streamText([{ role: 'user', content: 'x' }]);
         expect(result.toolCalls).toEqual([{ id: 't1', name: 'f', arguments: {} }]);
     });
+
+    // ── reasoning support ──
+    const chatOk = () => vi.fn().mockResolvedValue({ choices: [{ message: { content: 'chat' }, finish_reason: 'stop' }] });
+    const responsesOk = () => vi.fn().mockResolvedValue({
+        output_text: 'the answer',
+        output: [{ type: 'reasoning', summary: [{ type: 'summary_text', text: 'because X' }] }],
+        usage: { input_tokens: 3, output_tokens: 4 },
+    });
+
+    it('isReasoningModel matches o1/o3/o4/gpt-5 only', async () => {
+        const { isReasoningModel } = await import('../src/providers/openai-provider.js');
+        for (const m of ['o1', 'o3-mini', 'O4-mini', 'gpt-5', 'gpt-5-mini']) expect(isReasoningModel(m)).toBe(true);
+        for (const m of ['gpt-4o', 'gpt-4.1', 'gpt-4o-mini', 'deepseek-reasoner', 'openai/o3']) expect(isReasoningModel(m)).toBe(false);
+    });
+
+    it('gpt-4o body keeps temperature/max_tokens, no reasoning params', async () => {
+        const create = chatOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'gpt-4o' });
+        await provider.generateText([{ role: 'user', content: 'hi' }], { temperature: 0.2, maxTokens: 50 });
+        const body = create.mock.calls[0]![0];
+        expect(body.temperature).toBe(0.2);
+        expect(body.max_tokens).toBe(50);
+        expect('reasoning_effort' in body).toBe(false);
+        expect('max_completion_tokens' in body).toBe(false);
+    });
+
+    it('o4-mini with tools uses chat with reasoning body, not Responses', async () => {
+        const create = chatOk();
+        const responsesCreate = vi.fn();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        await provider.generateText([{ role: 'user', content: 'hi' }], { tools: [{ name: 'f', description: 'd', parameters: {} }], temperature: 0.2, maxTokens: 50 });
+        expect(create).toHaveBeenCalled();
+        expect(responsesCreate).not.toHaveBeenCalled();
+        const body = create.mock.calls[0]![0];
+        expect('temperature' in body).toBe(false);
+        expect('max_tokens' in body).toBe(false);
+        expect(body.max_completion_tokens).toBe(50);
+        expect(body.reasoning_effort).toBe('medium');
+    });
+
+    it('o4-mini without tools uses Responses API with reasoning summaries', async () => {
+        const create = chatOk();
+        const responsesCreate = responsesOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        const result = await provider.generateText([{ role: 'system', content: 'sys' }, { role: 'user', content: 'hi' }]);
+        expect(create).not.toHaveBeenCalled();
+        const params = responsesCreate.mock.calls[0]![0];
+        expect(params.instructions).toBe('sys');
+        expect(params.input).toEqual([{ role: 'user', content: 'hi' }]);
+        expect(params.reasoning).toEqual({ effort: 'medium', summary: 'auto' });
+        expect('temperature' in params).toBe(false);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(result.usage).toEqual({ promptTokens: 3, completionTokens: 4, totalTokens: 7 });
+    });
+
+    it('o4-mini without responses client falls back to chat', async () => {
+        const create = chatOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'o4-mini' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(create).toHaveBeenCalled();
+        expect(result.text).toBe('chat');
+    });
+
+    it('o4-mini with tool message in history uses chat', async () => {
+        const create = chatOk();
+        const responsesCreate = responsesOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        await provider.generateText([
+            { role: 'user', content: 'hi' },
+            { role: 'assistant', content: '', toolCalls: [{ id: 'x', name: 'f', arguments: {} }] },
+            { role: 'tool', content: 'out', toolCallId: 'x' },
+        ]);
+        expect(create).toHaveBeenCalled();
+        expect(responsesCreate).not.toHaveBeenCalled();
+    });
+
+    it('kill switch: o4-mini uses chat, no reasoning_effort, keeps reasoning-model body fix', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            const create = chatOk();
+            const responsesCreate = responsesOk();
+            const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+            await provider.generateText([{ role: 'user', content: 'hi' }], { temperature: 0.2, maxTokens: 50 });
+            expect(responsesCreate).not.toHaveBeenCalled();
+            const body = create.mock.calls[0]![0];
+            expect('reasoning_effort' in body).toBe(false);
+            expect('temperature' in body).toBe(false);
+            expect(body.max_completion_tokens).toBe(50);
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
+
+    it('compat generateText surfaces reasoning_content separately', async () => {
+        const create = vi.fn().mockResolvedValue({ choices: [{ message: { content: 'answer', reasoning_content: 'because X' }, finish_reason: 'stop' }] });
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'deepseek-reasoner' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }], { temperature: 0.2 });
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(create.mock.calls[0]![0].temperature).toBe(0.2);
+    });
+
+    it('compat streamText routes reasoning deltas to onReasoning only', async () => {
+        async function* stream() {
+            yield { choices: [{ delta: { reasoning: 'think ' } }] };
+            yield { choices: [{ delta: { reasoning_content: 'more' } }] };
+            yield { choices: [{ delta: { content: 'answer' } }] };
+        }
+        const create = vi.fn().mockResolvedValue(stream());
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'deepseek-reasoner' });
+        const reasoning: { text: string }[] = [];
+        const chunks: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'x' }], {
+            onReasoning: (d) => reasoning.push(d),
+            onChunk: (c) => chunks.push(c),
+        });
+        expect(reasoning).toEqual([{ text: 'think ' }, { text: 'more' }]);
+        expect(chunks).toEqual(['answer']);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'think more' }]);
+    });
+
+    it('o4-mini streamText without tools uses Responses and emits once', async () => {
+        const create = chatOk();
+        const responsesCreate = responsesOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        const reasoning: { text: string }[] = [];
+        const chunks: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'hi' }], {
+            onReasoning: (d) => reasoning.push(d),
+            onChunk: (c) => chunks.push(c),
+        });
+        expect(create).not.toHaveBeenCalled();
+        expect(reasoning).toEqual([{ text: 'because X' }]);
+        expect(chunks).toEqual(['the answer']);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(result.usage).toEqual({ promptTokens: 3, completionTokens: 4, totalTokens: 7 });
+    });
 });
 
 // ── AnthropicProvider ───────────────────────────────────────────────────────
