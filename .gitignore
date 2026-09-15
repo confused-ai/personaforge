@@ -60,3 +60,4 @@ docs/.vitepress/cache/
 docs/.vitepress/.temp/
 docs/.vitepress/dist/
 .env.integration.local
+.worktrees/
