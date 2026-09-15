@@ -26,6 +26,8 @@
  */
 
 export { createHarness, type AgentHarness, type HarnessConfig, type HarnessAsToolOptions, type HarnessRunOptions } from './create-harness.js';
+export { createRunJournal } from './journal.js';
+export type { RunJournal, RunJournalOptions, JournalRecordInput, RunTimeline, RunTimelineEvent } from './journal.js';
 export {
     createOrchestrator,
     multiAgentTool,

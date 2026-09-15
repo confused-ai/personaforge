@@ -13,8 +13,6 @@
 
 import { spawn } from 'node:child_process';
 import * as nodeVm from 'node:vm';
-import { createRequire } from 'node:module';
-const _require = createRequire(import.meta.url);
 
 export type ExternalCall = (args: unknown) => Promise<unknown>;
 
