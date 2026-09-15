@@ -162,10 +162,7 @@ function samplingParams(model: string, options?: GenerateOptions): Record<string
     if (!isReasoningModel(model)) {
         return { temperature: options?.temperature ?? 0.7, max_tokens: options?.maxTokens };
     }
-    return {
-        ...(options?.maxTokens !== undefined && { max_completion_tokens: options.maxTokens }),
-        ...(isReasoningStreamEnabled() && { reasoning_effort: 'medium' }),
-    };
+    return options?.maxTokens !== undefined ? { max_completion_tokens: options.maxTokens } : {};
 }
 
 function contentText(content: Message['content'] | null | undefined): string {
@@ -292,7 +289,7 @@ export class OpenAIProvider implements LLMProvider {
 
         const msg = choice.message;
         let text = typeof msg.content === 'string' ? msg.content : '';
-        const reasoningText = msg.reasoning_content ?? msg.reasoning;
+        const reasoningText = msg.reasoning_content || msg.reasoning;
 
         const toolCalls: ToolCall[] | undefined = msg.tool_calls?.map((tc: { id: string; function?: { name?: string; arguments?: string } }) => ({
             id: tc.id,
@@ -376,7 +373,7 @@ export class OpenAIProvider implements LLMProvider {
             if (!delta) continue;
 
             // Compat reasoning fields — kept out of text/onChunk
-            const r = delta.reasoning_content ?? delta.reasoning;
+            const r = delta.reasoning_content || delta.reasoning;
             if (typeof r === 'string' && r) {
                 reasoningText += r;
                 options?.onReasoning?.({ text: r });
@@ -485,7 +482,9 @@ export class OpenAIProvider implements LLMProvider {
             input: messages
                 .filter((m) => m.role === 'user' || m.role === 'assistant')
                 .map((m) => ({ role: m.role, content: contentText(m.content) })),
-            reasoning: { effort: 'medium', summary: 'auto' },
+            reasoning: { summary: 'auto' },
+            // Responses API stores by default; Chat Completions doesn't.
+            store: false,
             ...(options?.maxTokens && { max_output_tokens: options.maxTokens }),
             ...(instructions && { instructions }),
         };

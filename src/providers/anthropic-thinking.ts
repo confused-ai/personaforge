@@ -20,7 +20,8 @@ export function anthropicThinkingConfig(model: string, maxTokens: number): Anthr
     if (major >= 5 || (major === 4 && minor >= 6)) return { type: 'adaptive', display: 'summarized' };
     // 3.7 and 4.0–4.5: budget-based extended thinking. 3.5/3.0: none.
     if (major === 4 || (major === 3 && minor === 7)) {
-        const budget = Math.min(4096, maxTokens - 1);
+        // budget_tokens counts against max_tokens: leave at least half for the answer.
+        const budget = Math.min(4096, Math.floor(maxTokens / 2));
         return budget >= 1024 ? { type: 'enabled', budget_tokens: budget } : undefined;
     }
     return undefined;

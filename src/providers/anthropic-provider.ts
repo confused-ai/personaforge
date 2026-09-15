@@ -47,6 +47,21 @@ function rethrowWithStatus(err: unknown): never {
     throw err;
 }
 
+/**
+ * True when the last assistant tool-use turn has no signed/redacted thinking
+ * (e.g. an approval/suspend resume rebuilt without reasoning). Sending thinking
+ * then 400s ("a final assistant message must start with a thinking block").
+ */
+function hasUnsignedToolTurn(messages: Message[]): boolean {
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]!;
+        const tc = m as { toolCalls?: unknown[]; tool_calls?: unknown[] };
+        if (m.role !== 'assistant' || !(tc.toolCalls?.length || tc.tool_calls?.length)) continue;
+        return !m.reasoning?.some((r) => r.signature || r.redacted);
+    }
+    return false;
+}
+
 interface AnthropicCreateParams {
     model: string;
     max_tokens: number;
@@ -216,7 +231,7 @@ export class AnthropicProvider implements LLMProvider {
         const tools = toAnthropicTools(options?.tools);
 
         const maxTokens = options?.maxTokens ?? 4096;
-        const thinking = anthropicThinkingConfig(this.model, maxTokens);
+        const thinking = hasUnsignedToolTurn(messages) ? undefined : anthropicThinkingConfig(this.model, maxTokens);
         const reqParams = {
             model: this.model,
             max_tokens: maxTokens,
@@ -280,7 +295,7 @@ export class AnthropicProvider implements LLMProvider {
         const tools = toAnthropicTools(options?.tools);
 
         const maxTokens = options?.maxTokens ?? 4096;
-        const thinking = anthropicThinkingConfig(this.model, maxTokens);
+        const thinking = hasUnsignedToolTurn(messages) ? undefined : anthropicThinkingConfig(this.model, maxTokens);
         const streamParams = {
             model: this.model,
             max_tokens: maxTokens,

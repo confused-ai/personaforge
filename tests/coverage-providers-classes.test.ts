@@ -132,7 +132,7 @@ describe('providers/OpenAIProvider', () => {
         expect('temperature' in body).toBe(false);
         expect('max_tokens' in body).toBe(false);
         expect(body.max_completion_tokens).toBe(50);
-        expect(body.reasoning_effort).toBe('medium');
+        expect('reasoning_effort' in body).toBe(false);
     });
 
     it('o4-mini without tools uses Responses API with reasoning summaries', async () => {
@@ -144,7 +144,8 @@ describe('providers/OpenAIProvider', () => {
         const params = responsesCreate.mock.calls[0]![0];
         expect(params.instructions).toBe('sys');
         expect(params.input).toEqual([{ role: 'user', content: 'hi' }]);
-        expect(params.reasoning).toEqual({ effort: 'medium', summary: 'auto' });
+        expect(params.reasoning).toEqual({ summary: 'auto' });
+        expect(params.store).toBe(false);
         expect('temperature' in params).toBe(false);
         expect(result.text).toBe('the answer');
         expect(result.reasoning).toEqual([{ text: 'because X' }]);
@@ -255,6 +256,13 @@ describe('providers/OpenAIProvider', () => {
         expect(result.text).toBe('answer');
         expect(result.reasoning).toEqual([{ text: 'because X' }]);
         expect(create.mock.calls[0]![0].temperature).toBe(0.2);
+    });
+
+    it('compat generateText: empty reasoning_content does not hide reasoning', async () => {
+        const create = vi.fn().mockResolvedValue({ choices: [{ message: { content: 'answer', reasoning_content: '', reasoning: 'x' }, finish_reason: 'stop' }] });
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'deepseek-reasoner' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(result.reasoning).toEqual([{ text: 'x' }]);
     });
 
     it('compat streamText routes reasoning deltas to onReasoning only', async () => {
@@ -400,7 +408,7 @@ describe('providers/AnthropicProvider', () => {
         const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-haiku-4-5' });
         const result = await provider.generateText([{ role: 'user', content: 'x' }], { maxTokens: 8000, temperature: 0.3 });
         const body = create.mock.calls[0]![0];
-        expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+        expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4000 });
         expect(body).not.toHaveProperty('temperature');
         expect(result.text).toBe('done');
         expect(result.reasoning).toEqual([{ text: 'hmm', signature: 'sig-2' }, { text: '', redacted: 'abc' }]);
@@ -430,6 +438,53 @@ describe('providers/AnthropicProvider', () => {
             if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
             else process.env.ENABLE_REASONING_STREAM = saved;
         }
+    });
+
+    describe('skips thinking when the last assistant tool turn is unsigned (approval/suspend resume)', () => {
+        const okResponse = () => vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+        const toolTurn = (reasoning?: Message['reasoning']): Message[] => [
+            { role: 'assistant', content: '', toolCalls: [{ id: 't1', name: 'f', arguments: {} }], ...(reasoning && { reasoning }) } as unknown as Message,
+            { role: 'tool', content: 'out', toolCallId: 't1' } as unknown as Message,
+        ];
+        const user: Message = { role: 'user', content: 'go' };
+
+        it('generateText: unsigned tool turn → no thinking, caller temperature', async () => {
+            const create = okResponse();
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.generateText([user, ...toolTurn()], { temperature: 0.3 });
+            const body = create.mock.calls[0]![0];
+            expect(body).not.toHaveProperty('thinking');
+            expect(body.temperature).toBe(0.3);
+        });
+
+        it('generateText: signed tool turn → thinking, no temperature', async () => {
+            const create = okResponse();
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.generateText([user, ...toolTurn([{ text: 'x', signature: 's' }])], { temperature: 0.3 });
+            const body = create.mock.calls[0]![0];
+            expect(body).toHaveProperty('thinking');
+            expect(body).not.toHaveProperty('temperature');
+        });
+
+        it('streamText: unsigned tool turn → no thinking', async () => {
+            async function* gen() {
+                yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } };
+                yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'ok' } };
+            }
+            const create = vi.fn().mockResolvedValue({ [Symbol.asyncIterator]: gen });
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.streamText([user, ...toolTurn()], { temperature: 0.3, onChunk: () => {} });
+            const body = create.mock.calls[0]![0];
+            expect(body).not.toHaveProperty('thinking');
+            expect(body.temperature).toBe(0.3);
+        });
+
+        it('only the LAST assistant tool turn decides', async () => {
+            const create = okResponse();
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.generateText([user, ...toolTurn(), ...toolTurn([{ text: 'y', signature: 's2' }])], { temperature: 0.3 });
+            expect(create.mock.calls[0]![0]).toHaveProperty('thinking');
+        });
     });
 
     it('round-trips signed + redacted reasoning before assistant text and drops unsigned blocks', async () => {

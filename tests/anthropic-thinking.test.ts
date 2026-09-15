@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { anthropicThinkingConfig } from '../src/providers/anthropic-thinking.js';
 
 const ADAPTIVE = { type: 'adaptive', display: 'summarized' };
-const BUDGET = { type: 'enabled', budget_tokens: 4096 };
+const BUDGET = { type: 'enabled', budget_tokens: 4000 };
 
 const table: [string, unknown][] = [
     ['claude-opus-5', ADAPTIVE],
@@ -40,8 +40,13 @@ describe('anthropicThinkingConfig', () => {
         expect(anthropicThinkingConfig(model, 8000)).toEqual(expected);
     });
 
-    it('caps budget below maxTokens and skips thinking when budget < 1024', () => {
-        expect(anthropicThinkingConfig('claude-haiku-4-5', 2000)).toEqual({ type: 'enabled', budget_tokens: 1999 });
+    it('budget is at most half of maxTokens (cap 4096) and skipped when < 1024', () => {
+        expect(anthropicThinkingConfig('claude-haiku-4-5', 20000)).toEqual({ type: 'enabled', budget_tokens: 4096 });
+        expect(anthropicThinkingConfig('claude-haiku-4-5', 8000)).toEqual({ type: 'enabled', budget_tokens: 4000 });
+        expect(anthropicThinkingConfig('claude-haiku-4-5', 4096)).toEqual({ type: 'enabled', budget_tokens: 2048 });
+        expect(anthropicThinkingConfig('claude-haiku-4-5', 2048)).toEqual({ type: 'enabled', budget_tokens: 1024 });
+        expect(anthropicThinkingConfig('claude-haiku-4-5', 2047)).toBeUndefined();
+        expect(anthropicThinkingConfig('claude-haiku-4-5', 2000)).toBeUndefined();
         expect(anthropicThinkingConfig('claude-haiku-4-5', 1024)).toBeUndefined();
         expect(anthropicThinkingConfig('claude-opus-5', 1024)).toEqual(ADAPTIVE);
     });

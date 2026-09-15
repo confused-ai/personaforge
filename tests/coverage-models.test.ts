@@ -558,7 +558,7 @@ describe('models/bedrock adapter', () => {
 
         const cmd = bedrockInvokeMock.mock.calls[0]![0] as { body: Uint8Array };
         const sentBody = JSON.parse(new TextDecoder().decode(cmd.body)) as { thinking?: unknown };
-        expect(sentBody.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+        expect(sentBody.thinking).toEqual({ type: 'enabled', budget_tokens: 4000 });
     });
 
     it('maps redacted_thinking blocks to reasoning with redacted data', async () => {
