@@ -939,6 +939,31 @@ describe('AgenticRunner — streaming', () => {
         expect(result.reasoningText).toBe('A');
     });
 
+    it('discards a failed streaming attempt\'s reasoning on retry instead of leaking it into the retried attempt', async () => {
+        let attempt = 0;
+        const streamText = vi.fn(async (_messages: Message[], options?: GenerateOptions) => {
+            attempt++;
+            if (attempt === 1) {
+                options?.onReasoning?.({ text: 'stale' });
+                const err = new Error('service unavailable') as Error & { status: number };
+                err.status = 503;
+                throw err;
+            }
+            options?.onReasoning?.({ text: 'fresh' });
+            options?.onChunk?.('final answer');
+            return { text: 'final answer', finishReason: 'stop' as const };
+        });
+
+        const llm = { generateText: vi.fn(), streamText };
+        const runner = new AgenticRunner(makeRunnerConfig({ llm, retry: { maxRetries: 1, backoffMs: 0 } }));
+
+        const result = await runner.run(makeRunConfig(), { onChunk: () => {} });
+
+        const assistantMsg = result.messages.find((m) => m.role === 'assistant');
+        expect(assistantMsg?.reasoning).toEqual([{ text: 'fresh' }]);
+        expect(result.reasoningText).toBe('fresh');
+    });
+
     it('does not add a reasoning key when no reasoning was produced', async () => {
         const llm = makeMockLLM([makeSimpleResult('plain answer')]);
         const runner = new AgenticRunner(makeRunnerConfig({ llm }));

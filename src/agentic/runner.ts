@@ -574,13 +574,9 @@ export class AgenticRunner {
         }
 
         const resumeToolCallId = runConfig.resumePendingTool?.toolCall.id;
-        const reasoningAcc = new ReasoningAccumulator();
         let allReasoningText = '';
-        const runStreamHooks: AgenticStreamHooks | undefined = streamHooks
-            ? { ...streamHooks, onReasoning: (d) => { reasoningAcc.push(d); streamHooks.onReasoning?.(d); } }
-            : undefined;
         const baseCtx: Omit<RunContext, 'step'> = {
-            agentId, sessionId, lifecycle, streamHooks: runStreamHooks,
+            agentId, sessionId, lifecycle, streamHooks,
             toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
             retry,
             allowedTools: runConfig.allowedTools,
@@ -824,12 +820,10 @@ export class AgenticRunner {
 
             const hasToolCalls = !!result.toolCalls?.length;
 
-            // Reasoning for this step: prefer what was streamed via onReasoning;
-            // fall back to a non-streamed result.reasoning. Flushed every step
-            // (even when no assistant message is pushed) so it never leaks into
-            // the next step.
-            const streamedReasoning = reasoningAcc.flush();
-            const stepReasoning = streamedReasoning.length ? streamedReasoning : (result.reasoning ?? []);
+            // Reasoning for this step: _invokeLlm's runLlm already merges streamed
+            // onReasoning deltas into result.reasoning per-attempt (discarding any
+            // failed/retried attempt's deltas), so this is never double-counted.
+            const stepReasoning = result.reasoning ?? [];
             if (stepReasoning.length) allReasoningText += stepReasoning.map((b) => b.text).join('');
 
             // Append a SINGLE assistant message carrying both text and toolCalls.
@@ -1431,6 +1425,11 @@ export class AgenticRunner {
 
         const runLlm = () => {
             if (useStreaming) {
+                // Per-attempt accumulator: a retried attempt gets its own instance so a
+                // failed attempt's deltas are discarded rather than leaking into the
+                // retry's (or a later step's) reasoning. Streamed blocks (when present)
+                // replace result.reasoning below, so double-counting isn't possible.
+                const attemptReasoning = new ReasoningAccumulator();
                 // streamText is confirmed defined when useStreaming is true (checked by callers)
                 return provider.streamText!(llmMessages, {
                     ...baseOpts,
@@ -1438,7 +1437,13 @@ export class AgenticRunner {
                         const text = typeof chunk === 'string' ? chunk : chunk.text;
                         ctx.streamHooks!.onChunk!(text);
                     },
-                    onReasoning: ctx.streamHooks?.onReasoning,
+                    onReasoning: (d: { text: string; title?: string }) => {
+                        attemptReasoning.push(d);
+                        ctx.streamHooks?.onReasoning?.(d);
+                    },
+                }).then((r) => {
+                    const streamed = attemptReasoning.flush();
+                    return streamed.length ? { ...r, reasoning: streamed } : r;
                 });
             }
             return provider.generateText(llmMessages, baseOpts);
