@@ -58,6 +58,8 @@ export interface Message {
     tool_call_id?: string;
     tool_calls?: OpenAIToolCall[];
     name?: string;
+    /** Reasoning/thinking blocks produced by the model alongside this message (assistant only). */
+    reasoning?: { text: string; title?: string }[];
 }
 
 // ── Run config & result ──────────────────────────────────────────────────────
@@ -112,6 +114,8 @@ export interface AgentRunResult {
     /** Structured error code if the run failed */
     readonly errorCode?: string;
     readonly runId?: string;
+    /** Accumulated reasoning text for the whole run, flattened across steps. */
+    readonly reasoningText?: string;
 }
 
 // ── Lifecycle hooks ──────────────────────────────────────────────────────────
@@ -154,6 +158,7 @@ export interface AgentLifecycleHooks {
  */
 export type StreamChunk =
     | { type: 'text-delta';   delta: string }
+    | { type: 'reasoning-delta'; reasoningDelta: string; reasoningTitle?: string }
     | { type: 'tool-call';    tool: { name: string; input: unknown } }
     | { type: 'tool-result';  tool: { name: string; input: unknown; output: unknown } }
     | { type: 'step-finish';  stepNumber: number }
