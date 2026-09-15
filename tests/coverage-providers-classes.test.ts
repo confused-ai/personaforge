@@ -172,6 +172,63 @@ describe('providers/OpenAIProvider', () => {
         expect(responsesCreate).not.toHaveBeenCalled();
     });
 
+    describe('Responses routing guards (o4-mini, otherwise eligible)', () => {
+        const route = async (
+            messages: Message[],
+            opts: { options?: Record<string, unknown>; extraBody?: Record<string, unknown>; baseURL?: string } = {},
+        ) => {
+            const create = chatOk();
+            const responsesCreate = responsesOk();
+            const client = { chat: { completions: { create } }, responses: { create: responsesCreate }, ...(opts.baseURL && { baseURL: opts.baseURL }) };
+            const provider = new OpenAIProvider({ client: client as never, model: 'o4-mini', ...(opts.extraBody && { extraBody: opts.extraBody }) });
+            await provider.generateText(messages, opts.options as never);
+            return { create, responsesCreate, path: responsesCreate.mock.calls.length ? 'responses' : 'chat' };
+        };
+        const hi: Message[] = [{ role: 'user', content: 'hi' }];
+
+        it('tools present -> chat', async () => {
+            expect((await route(hi, { options: { tools: [{ name: 'f', description: 'd', parameters: {} }] } })).path).toBe('chat');
+        });
+        it('role tool message only -> chat', async () => {
+            expect((await route([...hi, { role: 'tool', content: 'out', toolCallId: 'x' }])).path).toBe('chat');
+        });
+        it('assistant toolCalls only -> chat', async () => {
+            expect((await route([...hi, { role: 'assistant', content: '', toolCalls: [{ id: 'x', name: 'f', arguments: {} }] } as Message])).path).toBe('chat');
+        });
+        it('assistant snake_case tool_calls only -> chat', async () => {
+            expect((await route([...hi, { role: 'assistant', content: '', tool_calls: [{ id: 'x' }] } as unknown as Message])).path).toBe('chat');
+        });
+        it('extraBody -> chat and caller reasoning_effort wins', async () => {
+            const r = await route(hi, { extraBody: { reasoning_effort: 'high' } });
+            expect(r.path).toBe('chat');
+            expect(r.create.mock.calls[0]![0].reasoning_effort).toBe('high');
+        });
+        it('stop -> chat', async () => {
+            expect((await route(hi, { options: { stop: ['END'] } })).path).toBe('chat');
+        });
+        it('image_url part -> chat', async () => {
+            const msg = { role: 'user', content: [{ type: 'text', text: 'see' }, { type: 'image_url', image_url: { url: 'https://x/y.png' } }] } as Message;
+            expect((await route([msg])).path).toBe('chat');
+        });
+        it('Azure baseURL -> chat', async () => {
+            expect((await route(hi, { baseURL: 'https://my-res.openai.azure.com/openai/deployments/o4-mini' })).path).toBe('chat');
+        });
+        it('api.openai.com baseURL -> responses', async () => {
+            expect((await route(hi, { baseURL: 'https://api.openai.com/v1' })).path).toBe('responses');
+        });
+        it('no baseURL -> responses', async () => {
+            expect((await route(hi)).path).toBe('responses');
+        });
+        it('text-only array content -> responses', async () => {
+            expect((await route([{ role: 'user', content: [{ type: 'text', text: 'hi' }] } as Message])).path).toBe('responses');
+        });
+        it('null-content assistant message does not throw', async () => {
+            const r = await route([...hi, { role: 'assistant', content: null } as unknown as Message, { role: 'user', content: 'again' }]);
+            expect(r.path).toBe('responses');
+            expect(r.responsesCreate.mock.calls[0]![0].input[1]).toEqual({ role: 'assistant', content: '' });
+        });
+    });
+
     it('kill switch: o4-mini uses chat, no reasoning_effort, keeps reasoning-model body fix', async () => {
         const saved = process.env.ENABLE_REASONING_STREAM;
         process.env.ENABLE_REASONING_STREAM = 'false';

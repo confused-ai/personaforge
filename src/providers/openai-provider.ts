@@ -168,7 +168,8 @@ function samplingParams(model: string, options?: GenerateOptions): Record<string
     };
 }
 
-function contentText(content: Message['content']): string {
+function contentText(content: Message['content'] | null | undefined): string {
+    if (content == null) return '';
     if (typeof content === 'string') return content;
     return (content as { type?: string; text?: unknown }[])
         .filter((p) => p?.type === 'text' && typeof p.text === 'string')
@@ -442,16 +443,39 @@ export class OpenAIProvider implements LLMProvider {
         };
     }
 
-    /** Responses API only for tool-free reasoning-model turns (it uses different tool item types). */
+    /**
+     * Responses API only when nothing the chat path carries would be lost:
+     * OpenAI's own endpoint, reasoning model, no tools/tool history, no extraBody,
+     * no stop, text-only content. Everything else stays on Chat Completions.
+     */
     private useResponsesApi(messages: Message[], options?: GenerateOptions): boolean {
         return isReasoningModel(this.model)
             && isReasoningStreamEnabled()
             && !options?.tools?.length
-            && !messages.some((m) => {
+            && !Object.keys(this.extraBody ?? {}).length
+            && !options?.stop?.length
+            && messages.every((m) => {
                 const tc = m as { toolCalls?: unknown[]; tool_calls?: unknown[] };
-                return m.role === 'tool' || !!tc.toolCalls?.length || !!tc.tool_calls?.length;
+                const c = m.content as unknown;
+                return m.role !== 'tool'
+                    && !tc.toolCalls?.length
+                    && !tc.tool_calls?.length
+                    && (c == null || typeof c === 'string'
+                        || (Array.isArray(c) && c.every((p) => (p as { type?: string })?.type === 'text')));
             })
+            && this.isDefaultOpenAIEndpoint()
             && !!this.getClient().responses;
+    }
+
+    /** Built client: configured/env baseURL; injected client: its `baseURL`. Undefined or api.openai.com = default. */
+    private isDefaultOpenAIEndpoint(): boolean {
+        const baseURL = this.clientOpts ? this.clientOpts.baseURL : (this.client as { baseURL?: string } | null)?.baseURL;
+        if (baseURL === undefined) return true;
+        try {
+            return new URL(baseURL).hostname === 'api.openai.com';
+        } catch {
+            return false;
+        }
     }
 
     private async generateViaResponses(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
