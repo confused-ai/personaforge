@@ -116,7 +116,8 @@ type GeminiToolCall = ToolCall & { thoughtSignature?: string };
 /** Thought summaries (includeThoughts) exist on Gemini 2.5+ only; older models reject the field. */
 export function supportsGeminiThinking(model: string): boolean {
     const m = /gemini-(\d+)(?:\.(\d+))?/.exec(model);
-    if (!m) return false;
+    // Image/TTS/live/audio/embedding variants reject any thinkingConfig with HTTP 400.
+    if (!m || /-(image|tts|live|embedding)\b|native-audio/i.test(model)) return false;
     const major = Number(m[1]);
     const minor = Number(m[2] ?? 0);
     return major > 2 || (major === 2 && minor >= 5);
@@ -310,9 +311,11 @@ export class GoogleProvider implements LLMProvider {
         // SDK text() concatenates every part.text, thoughts included — split manually when thoughts are present.
         const parts = response.candidates?.[0]?.content?.parts ?? [];
         const thoughts = parts.filter((p): p is { text: string; thought: true } => 'text' in p && p.thought === true);
+        // Always call text(): it throws GoogleGenerativeAIResponseError on SAFETY/RECITATION/LANGUAGE blocks.
+        const sdkText = response.text() ?? '';
         const text = thoughts.length
             ? parts.map((p) => ('text' in p && !p.thought ? p.text : '')).join('')
-            : response.text() ?? '';
+            : sdkText;
         const reasoning = thoughts.filter((p) => p.text).map((p) => ({ text: p.text }));
         const toolCalls = extractToolCalls(response.candidates);
         const finishReason = normalizeFinishReason(response.candidates?.[0]?.finishReason) ?? 'stop';
@@ -378,7 +381,8 @@ export class GoogleProvider implements LLMProvider {
         for await (const chunk of streamResult.stream) {
             const parts = chunk.candidates?.[0]?.content?.parts ?? [];
             if (parts.some((p) => 'text' in p && p.thought === true)) {
-                // Never call chunk.text() here — it would leak thought text into the answer.
+                // chunk.text() leaks thoughts into its return value, so discard it — call it only for its block-error throw.
+                chunk.text();
                 for (const p of parts) {
                     if (!('text' in p) || !p.text) continue;
                     if (p.thought) {

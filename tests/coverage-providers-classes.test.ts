@@ -364,6 +364,29 @@ describe('providers/GoogleProvider', () => {
         expect(client.getGenerativeModel.mock.calls[0][0].generationConfig.thinkingConfig).toEqual({ includeThoughts: true });
     });
 
+    it('generateText still throws SDK block error when thought parts present', async () => {
+        const generateContent = vi.fn().mockResolvedValue({
+            response: {
+                text: () => { throw new Error('Candidate was blocked due to SAFETY'); },
+                candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'x', thought: true }, { text: 'y' }] } }],
+            },
+        });
+        const provider = new GoogleProvider({ client: mockGoogleClient(generateContent) as never, model: 'gemini-2.5-flash' });
+        await expect(provider.generateText([{ role: 'user', content: 'hi' }])).rejects.toThrow(/SAFETY/);
+    });
+
+    it('streamText still throws SDK block error on thought-containing chunk', async () => {
+        async function* stream() {
+            yield {
+                text: () => { throw new Error('Candidate was blocked due to SAFETY'); },
+                candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'x', thought: true }] } }],
+            };
+        }
+        const generateContentStream = vi.fn().mockResolvedValue({ stream: stream() });
+        const provider = new GoogleProvider({ client: mockGoogleClient(vi.fn(), generateContentStream) as never, model: 'gemini-2.5-flash' });
+        await expect(provider.streamText([{ role: 'user', content: 'hi' }])).rejects.toThrow(/SAFETY/);
+    });
+
     it('no thinkingConfig for default model (gemini-2.0-flash)', async () => {
         const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
         const client = mockGoogleClient(generateContent);
@@ -395,6 +418,11 @@ describe('providers/GoogleProvider', () => {
         ['gemini-1.5-pro', false],
         ['gemini-2.0-flash-thinking-exp', false],
         ['not-a-gemini-model', false],
+        ['gemini-2.5-flash-image', false],
+        ['gemini-2.5-flash-preview-tts', false],
+        ['gemini-2.5-flash-native-audio-preview', false],
+        ['gemini-2.5-flash-live', false],
+        ['gemini-embedding-2.5', false],
     ])('thinking gate: %s -> %s', async (model, expected) => {
         const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
         const client = mockGoogleClient(generateContent);
