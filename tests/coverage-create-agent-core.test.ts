@@ -24,6 +24,19 @@ const toolCallResult = (name: string, args: Record<string, unknown>): GenerateRe
     finishReason: 'tool_calls',
 });
 
+function reasoningLLM(title?: string): LLMProvider {
+    return {
+        async generateText(): Promise<GenerateResult> {
+            return textResult('answer');
+        },
+        async streamText(_messages: Message[], options?: { onChunk?: (chunk: string) => void; onReasoning?: (delta: { text: string; title?: string }) => void }): Promise<GenerateResult> {
+            options?.onReasoning?.({ text: 'thinking...', ...(title && { title }) });
+            options?.onChunk?.('answer');
+            return textResult('answer');
+        },
+    };
+}
+
 function echoTool() {
     return {
         name: 'echo',
@@ -88,6 +101,45 @@ describe('createAgent core', () => {
         }
         expect(types).toContain('text-delta');
         expect(types).toContain('run-finish');
+    });
+
+    it('streamEvents() yields reasoning-delta chunks and includes reasoningText in run-finish', async () => {
+        const agent = createAgent({
+            name: 'reasoner',
+            instructions: 'i',
+            llm: reasoningLLM('Step 1'),
+        });
+        const events: unknown[] = [];
+        for await (const evt of agent.streamEvents('hi')) events.push(evt);
+        expect(events).toContainEqual(
+            expect.objectContaining({ type: 'reasoning-delta', reasoningDelta: 'thinking...', reasoningTitle: 'Step 1' }),
+        );
+        const finish = events.find((e) => (e as { type: string }).type === 'run-finish') as { run: { reasoningText?: string } } | undefined;
+        expect(finish?.run.reasoningText).toBe('thinking...');
+    });
+
+    it('streamEvents() omits reasoningTitle when the provider gives no title', async () => {
+        const agent = createAgent({
+            name: 'reasoner-no-title',
+            instructions: 'i',
+            llm: reasoningLLM(),
+        });
+        const events: unknown[] = [];
+        for await (const evt of agent.streamEvents('hi')) events.push(evt);
+        const reasoningEvt = events.find((e) => (e as { type: string }).type === 'reasoning-delta') as Record<string, unknown> | undefined;
+        expect(reasoningEvt).toBeDefined();
+        expect(reasoningEvt).not.toHaveProperty('reasoningTitle');
+    });
+
+    it('run() invokes the caller onReasoning hook during a streamed run', async () => {
+        const agent = createAgent({
+            name: 'reasoner-run',
+            instructions: 'i',
+            llm: reasoningLLM('Step 1'),
+        });
+        const onReasoning = vi.fn();
+        await agent.run('hi', { onChunk: () => {}, onReasoning });
+        expect(onReasoning).toHaveBeenCalledWith({ text: 'thinking...', title: 'Step 1' });
     });
 
     it('createSession / getSessionMessages / resume with session store', async () => {

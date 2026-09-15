@@ -853,6 +853,10 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     runLogger?.debug('agent.run: step', { agentId: name }, { step });
                     runOptions?.onStep?.(step);
                 },
+                onReasoning: (delta: { text: string; title?: string }) => {
+                    runLogger?.debug('agent.run: reasoning', { agentId: name }, { length: delta.text.length });
+                    runOptions?.onReasoning?.(delta);
+                },
                 onApproval: (req) => { runOptions?.onApproval?.(req); },
                 onSuspended: (req) => { runOptions?.onSuspended?.(req); },
                 onTripwire: (info) => { runOptions?.onTripwire?.(info); },
@@ -1291,6 +1295,17 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     },
                     onStep: (stepNumber: number) => {
                         const evt: StreamChunk = { type: 'step-finish', stepNumber };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onReasoning: (delta: { text: string; title?: string }) => {
+                        const evt: StreamChunk = {
+                            type: 'reasoning-delta',
+                            reasoningDelta: delta.text,
+                            ...(delta.title && { reasoningTitle: delta.title }),
+                        };
                         queue.push(evt);
                         publish(evt);
                         notify?.();
