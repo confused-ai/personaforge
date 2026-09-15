@@ -222,6 +222,74 @@ describe('models/ollama adapter', () => {
         await provider.generateText([{ role: 'user', content: 'x' }]);
         expect(ollamaChatMock.mock.calls[0]![0]).toMatchObject({ model: 'llama3.2' });
     });
+
+    it('generateText surfaces thinking for a thinking-capable model', async () => {
+        ollamaChatMock.mockResolvedValue({
+            message: { content: 'the answer', thinking: 'because X' },
+            prompt_eval_count: 1,
+            eval_count: 1,
+        });
+        const provider = ollama({ model: 'deepseek-r1:14b' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(ollamaChatMock.mock.calls[0]![0].think).toBe(true);
+    });
+
+    it('default model omits think and reasoning', async () => {
+        ollamaChatMock.mockResolvedValue({ message: { content: 'ok' }, prompt_eval_count: 1, eval_count: 1 });
+        const provider = ollama({});
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        const req = ollamaChatMock.mock.calls[0]![0];
+        expect('think' in req).toBe(false);
+        expect('reasoning' in result).toBe(false);
+    });
+
+    it('explicit config.think overrides model-based inference', async () => {
+        ollamaChatMock.mockResolvedValue({ message: { content: 'ok' }, prompt_eval_count: 1, eval_count: 1 });
+
+        await ollama({ model: 'llama3.2', think: true }).generateText([{ role: 'user', content: 'x' }]);
+        expect(ollamaChatMock.mock.calls[0]![0].think).toBe(true);
+
+        ollamaChatMock.mockClear();
+        await ollama({ model: 'qwen3', think: false }).generateText([{ role: 'user', content: 'x' }]);
+        expect('think' in ollamaChatMock.mock.calls[0]![0]).toBe(false);
+
+        ollamaChatMock.mockClear();
+        await ollama({ model: 'gpt-oss', think: 'high' }).generateText([{ role: 'user', content: 'x' }]);
+        expect(ollamaChatMock.mock.calls[0]![0].think).toBe('high');
+    });
+
+    it('kill switch suppresses think even for a thinking-capable model', async () => {
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            ollamaChatMock.mockResolvedValue({ message: { content: 'ok' }, prompt_eval_count: 1, eval_count: 1 });
+            await ollama({ model: 'deepseek-r1' }).generateText([{ role: 'user', content: 'x' }]);
+            expect('think' in ollamaChatMock.mock.calls[0]![0]).toBe(false);
+        } finally {
+            delete process.env.ENABLE_REASONING_STREAM;
+        }
+    });
+
+    it('streamText surfaces thinking deltas and consolidated reasoning', async () => {
+        async function* stream() {
+            yield { message: { content: '', thinking: 'think ' } };
+            yield { message: { content: '', thinking: 'more' } };
+            yield { message: { content: 'answer' } };
+        }
+        ollamaChatMock.mockResolvedValue(stream());
+        const provider = ollama({ model: 'qwen3:8b' });
+        const reasoningDeltas: { text: string; title?: string }[] = [];
+        const chunks: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'x' }], {
+            onChunk:     (c) => chunks.push(c),
+            onReasoning: (d) => reasoningDeltas.push(d),
+        });
+        expect(reasoningDeltas).toEqual([{ text: 'think ' }, { text: 'more' }]);
+        expect(chunks).toEqual(['answer']);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'think more' }]);
+    });
 });
 
 describe('models/multimodal builders', () => {
