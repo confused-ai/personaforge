@@ -318,4 +318,116 @@ describe('providers/GoogleProvider', () => {
         expect(chunks).toEqual(['x', 'y']);
         expect(result.usage).toEqual({ promptTokens: 1, completionTokens: 2, totalTokens: 3 });
     });
+
+    function mockGoogleClient(generateContent: unknown = vi.fn(), generateContentStream: unknown = vi.fn()) {
+        return { getGenerativeModel: vi.fn().mockReturnValue({ generateContent, generateContentStream }) };
+    }
+
+    it('generateText separates thought parts from answer and returns reasoning', async () => {
+        const generateContent = vi.fn().mockResolvedValue({
+            response: {
+                text: () => 'because Xthe answer',
+                candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'because X', thought: true }, { text: 'the answer' }] } }],
+            },
+        });
+        const client = mockGoogleClient(generateContent);
+        const provider = new GoogleProvider({ client: client as never, model: 'gemini-2.5-flash' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(client.getGenerativeModel.mock.calls[0][0].generationConfig.thinkingConfig).toEqual({ includeThoughts: true });
+    });
+
+    it('streamText routes thought parts to onReasoning, not onChunk', async () => {
+        const mk = (parts: Array<{ text: string; thought?: boolean }>) => ({
+            text: () => parts.map((p) => p.text).join(''),
+            candidates: [{ content: { parts } }],
+        });
+        async function* stream() {
+            yield mk([{ text: 'think ', thought: true }]);
+            yield mk([{ text: 'more', thought: true }]);
+            yield mk([{ text: 'answer' }]);
+        }
+        const generateContentStream = vi.fn().mockResolvedValue({ stream: stream() });
+        const client = mockGoogleClient(vi.fn(), generateContentStream);
+        const provider = new GoogleProvider({ client: client as never, model: 'gemini-2.5-flash' });
+        const chunks: string[] = [];
+        const thoughts: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'hi' }], {
+            onChunk: (c) => chunks.push(c),
+            onReasoning: (d) => thoughts.push(d.text),
+        });
+        expect(thoughts).toEqual(['think ', 'more']);
+        expect(chunks).toEqual(['answer']);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'think more' }]);
+        expect(client.getGenerativeModel.mock.calls[0][0].generationConfig.thinkingConfig).toEqual({ includeThoughts: true });
+    });
+
+    it('no thinkingConfig for default model (gemini-2.0-flash)', async () => {
+        const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
+        const client = mockGoogleClient(generateContent);
+        await new GoogleProvider({ client: client as never }).generateText([{ role: 'user', content: 'hi' }]);
+        expect(client.getGenerativeModel.mock.calls[0][0].generationConfig).not.toHaveProperty('thinkingConfig');
+    });
+
+    it('no thinkingConfig when ENABLE_REASONING_STREAM=false', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
+            const client = mockGoogleClient(generateContent);
+            await new GoogleProvider({ client: client as never, model: 'gemini-2.5-flash' }).generateText([{ role: 'user', content: 'hi' }]);
+            expect(client.getGenerativeModel.mock.calls[0][0].generationConfig).not.toHaveProperty('thinkingConfig');
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
+
+    it.each([
+        ['gemini-2.5-flash', true],
+        ['gemini-2.5-pro-preview-05-06', true],
+        ['models/gemini-2.5-pro', true],
+        ['gemini-3-pro-preview', true],
+        ['gemini-3.1-flash', true],
+        ['gemini-2.0-flash', false],
+        ['gemini-1.5-pro', false],
+        ['gemini-2.0-flash-thinking-exp', false],
+        ['not-a-gemini-model', false],
+    ])('thinking gate: %s -> %s', async (model, expected) => {
+        const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
+        const client = mockGoogleClient(generateContent);
+        await new GoogleProvider({ client: client as never, model }).generateText([{ role: 'user', content: 'hi' }]);
+        expect('thinkingConfig' in client.getGenerativeModel.mock.calls[0][0].generationConfig).toBe(expected);
+    });
+
+    it('round-trips part-level thoughtSignature on functionCall parts', async () => {
+        const generateContent = vi.fn()
+            .mockResolvedValueOnce({
+                response: {
+                    text: () => '',
+                    candidates: [{
+                        finishReason: 'STOP',
+                        content: { parts: [{ functionCall: { name: 'fn', args: { a: 1 } }, thoughtSignature: 'sig-abc' }] },
+                    }],
+                },
+            })
+            .mockResolvedValueOnce({ response: { text: () => 'done' } });
+        const client = mockGoogleClient(generateContent);
+        const provider = new GoogleProvider({ client: client as never, model: 'gemini-3-pro-preview' });
+        const tools = [{ name: 'fn', description: 'd', parameters: {} }];
+        const first = await provider.generateText([{ role: 'user', content: 'hi' }], { tools });
+        const calls = first.toolCalls as Array<{ id: string; thoughtSignature?: string }>;
+        expect(calls[0].thoughtSignature).toBe('sig-abc');
+
+        await provider.generateText([
+            { role: 'user', content: 'hi' },
+            { role: 'assistant', content: '', toolCalls: first.toolCalls },
+            { role: 'tool', content: 'out', toolCallId: calls[0].id, toolName: 'fn' },
+        ] as Message[], { tools });
+        const contents = generateContent.mock.calls[1][0].contents as Array<{ role: string; parts: unknown[] }>;
+        const modelTurn = contents.find((c) => c.role === 'model');
+        expect(modelTurn?.parts).toContainEqual({ functionCall: { name: 'fn', args: { a: 1 } }, thoughtSignature: 'sig-abc' });
+    });
 });
