@@ -221,6 +221,7 @@ Built-in AgentOS dashboard served by `createControlPlane()`:
 - **Runnable / LCEL** — `pipe()`, `batch()`, `stream()`, `withRetry()`, `withFallbacks()`, `assign()`
 - **Event streaming** — LangGraph-style `values | updates | messages | debug | custom` modes
 - **Reasoning tools** — Agno-style `think` / `analyze` scratchpad tools
+- **Native reasoning streaming** — `onReasoning`, `result.reasoning`, `reasoning-delta` stream events for Anthropic, Bedrock, Gemini, Ollama, and OpenAI-compatible thinking models
 - **Deep research agent** — `createDeepAgent` plan-research-synthesize recipe
 
 ---

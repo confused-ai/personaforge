@@ -503,6 +503,37 @@ const provider = createAiSdkProvider(model, {
 
 ---
 
+## Reasoning / thinking-token streaming
+
+Providers that expose native chain-of-thought (Anthropic extended thinking, Bedrock, Gemini thought summaries, Ollama `think`, OpenAI-compatible `reasoning_content`, OpenAI Responses-API reasoning summaries) surface it through the same `LLMProvider` interface — no separate API.
+
+```ts
+const result = await agent.run('Prove that sqrt(2) is irrational.', {
+  onReasoning: (delta) => process.stdout.write(delta.text),
+});
+
+console.log(result.reasoningText);      // full reasoning, accumulated
+console.log(result.reasoning);          // { text, title?, signature?, redacted? }[]
+```
+
+- `streamEvents()` and the SSE data-stream wire format emit `reasoning-delta` events (`reasoningDelta` / `reasoningTitle`).
+- `Message.reasoning` and `AgentRunResult.reasoningText` carry reasoning through the agentic runner and durable replay.
+- The CLI `chat` command prints `[Reasoning: …]` before the assistant reply.
+- Anthropic and Bedrock round-trip signed/redacted thinking blocks so tool loops keep working; Gemini round-trips `thoughtSignature` on function calls.
+
+| Provider | Native reasoning source | Notes |
+|---|---|---|
+| Anthropic | Extended thinking (adaptive + summarized on current models; budget thinking on 3.7 / 4.0–4.5) | Omits caller `temperature` whenever thinking is requested; skipped on tool-call resume with no signed thinking |
+| Amazon Bedrock | Same Anthropic thinking config | |
+| Google Gemini | Thought summaries (2.5+/3 text models) | Excludes image/TTS/live/embedding/native-audio variants |
+| Ollama | Native `think` for known thinking-capable model families, or `ollama({ think: true })` | |
+| OpenAI-compatible (`deepseek:`, `ollama:`, `groq:`, `openrouter:`, vLLM, Azure) | `reasoning_content` / `reasoning` fields | Any model string backed by `OpenAIProvider` |
+| OpenAI (default endpoint) | Responses API reasoning summaries | Only for tool-free `o1`/`o3`/`o4`/`gpt-5` calls; delivered once per turn, not streamed |
+
+Disable the whole feature with the `ENABLE_REASONING_STREAM` flag (default on). See the [changelog](../changelog) for the full list of fixes and known limitations, including that reasoning isn't persisted in session/memory stores between runs.
+
+---
+
 ## Bring your own provider
 
 Any object that satisfies this interface works:
