@@ -4,6 +4,7 @@
 
 import type { LLMProvider, Message, GenerateOptions, GenerateResult } from '../core/index.js';
 import type { ModelAdapterConfig } from './types.js';
+import { anthropicThinkingConfig } from '../providers/anthropic-thinking.js';
 
 const MISSING_SDK_MSG =
   '[personaforge] Bedrock adapter requires @aws-sdk/client-bedrock-runtime.\n' +
@@ -32,24 +33,45 @@ export function bedrock(config: ModelAdapterConfig & { region?: string } = {}): 
     const client = await getClient();
     const { InvokeModelCommand } = await import('@aws-sdk/client-bedrock-runtime').catch(() => { throw new Error(MISSING_SDK_MSG); });
 
+    const maxTokens = opts?.maxTokens ?? config.maxTokens ?? 4096;
+    const thinking  = anthropicThinkingConfig(model, maxTokens);
+
     const body = JSON.stringify({
       anthropic_version: 'bedrock-2023-05-31',
-      max_tokens:        opts?.maxTokens ?? config.maxTokens ?? 4096,
+      max_tokens:        maxTokens,
       messages:          messages.filter((m) => m.role !== 'system').map((m) => ({ role: m.role, content: m.content })),
       system:            messages.find((m) => m.role === 'system')?.content,
+      ...(thinking && { thinking }),
     });
 
     const res = await client.send(new InvokeModelCommand({ modelId: model, body: new TextEncoder().encode(body), contentType: 'application/json', accept: 'application/json' }));
-    const decoded = JSON.parse(new TextDecoder().decode(res.body)) as { content: Array<{ text: string }>; usage: { input_tokens: number; output_tokens: number } };
+    const decoded = JSON.parse(new TextDecoder().decode(res.body)) as {
+      content?: Array<{ type?: string; text?: string; thinking?: string; signature?: string; data?: string }>;
+      usage: { input_tokens: number; output_tokens: number };
+    };
+    const blocks = decoded.content ?? [];
+
+    const text = blocks
+      .filter((b) => b.type !== 'thinking' && b.type !== 'redacted_thinking' && typeof b.text === 'string')
+      .map((b) => b.text)
+      .join('');
+
+    type ReasoningItem = NonNullable<GenerateResult['reasoning']>[number];
+    const reasoning: ReasoningItem[] = blocks.flatMap((b): ReasoningItem[] => {
+      if (b.type === 'thinking') return [{ text: b.thinking ?? '', signature: b.signature }];
+      if (b.type === 'redacted_thinking') return [{ text: '', redacted: b.data }];
+      return [];
+    });
 
     return {
-      text:         decoded.content[0]?.text ?? '',
+      text,
       finishReason: 'stop',
       usage: {
         promptTokens:     decoded.usage?.input_tokens,
         completionTokens: decoded.usage?.output_tokens,
         totalTokens:      (decoded.usage?.input_tokens ?? 0) + (decoded.usage?.output_tokens ?? 0),
       },
+      ...(reasoning.length && { reasoning }),
     };
   }
 

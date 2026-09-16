@@ -43,6 +43,7 @@ import { estimateCost } from '../providers/cost-tracker.js';
 import { toolToLLMDef } from './_zod-to-schema.js';
 import { validateStructuredOutput, buildStructuredOutputPrompt, extractJson } from './_structured-output.js';
 import { withRetry as guardWithRetry, runToolWithTimeout, createDeadline } from '../guard/index.js';
+import { ReasoningAccumulator } from '../streaming/reasoning-accumulator.js';
 import type { RetryPolicy } from '../guard/index.js';
 import { withSpan, Metrics, genAiAttributes, recordLlmUsage } from '../observe/index.js';
 import { ReasoningManager, TreeOfThoughtEngine, ReflexionEngine, ReWooEngine, GotEngine } from '../reasoning/index.js';
@@ -573,6 +574,7 @@ export class AgenticRunner {
         }
 
         const resumeToolCallId = runConfig.resumePendingTool?.toolCall.id;
+        let allReasoningText = '';
         const baseCtx: Omit<RunContext, 'step'> = {
             agentId, sessionId, lifecycle, streamHooks,
             toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
@@ -818,6 +820,12 @@ export class AgenticRunner {
 
             const hasToolCalls = !!result.toolCalls?.length;
 
+            // Reasoning for this step: _invokeLlm's runLlm already merges streamed
+            // onReasoning deltas into result.reasoning per-attempt (discarding any
+            // failed/retried attempt's deltas), so this is never double-counted.
+            const stepReasoning = result.reasoning ?? [];
+            if (stepReasoning.length) allReasoningText += stepReasoning.map((b) => b.text).join('');
+
             // Append a SINGLE assistant message carrying both text and toolCalls.
             // (Previously this pushed text here and a second assistant message with
             //  toolCalls below — duplicating the turn in history.)
@@ -826,6 +834,7 @@ export class AgenticRunner {
                     role: 'assistant',
                     content: result.text ?? '',
                     ...(hasToolCalls && { toolCalls: result.toolCalls }),
+                    ...(stepReasoning.length && { reasoning: stepReasoning }),
                 } as Message & { toolCalls?: LLMToolCall[] });
             }
             if (result.text) {
@@ -1067,6 +1076,7 @@ export class AgenticRunner {
             ...(legacyStructured !== undefined && { structuredOutput: legacyStructured }),
             ...(tripwire && { tripwire }),
             ...(suspendPayload && { suspendPayload }),
+            ...(allReasoningText && { reasoningText: allReasoningText }),
         } as AgenticRunResult;
 
         if (lifecycle.afterRun) {
@@ -1415,6 +1425,11 @@ export class AgenticRunner {
 
         const runLlm = () => {
             if (useStreaming) {
+                // Per-attempt accumulator: a retried attempt gets its own instance so a
+                // failed attempt's deltas are discarded rather than leaking into the
+                // retry's (or a later step's) reasoning. Provider-returned blocks win; streamed
+                // deltas are only a fallback below, so double-counting isn't possible.
+                const attemptReasoning = new ReasoningAccumulator();
                 // streamText is confirmed defined when useStreaming is true (checked by callers)
                 return provider.streamText!(llmMessages, {
                     ...baseOpts,
@@ -1422,6 +1437,15 @@ export class AgenticRunner {
                         const text = typeof chunk === 'string' ? chunk : chunk.text;
                         ctx.streamHooks!.onChunk!(text);
                     },
+                    onReasoning: (d: { text: string; title?: string }) => {
+                        attemptReasoning.push(d);
+                        ctx.streamHooks?.onReasoning?.(d);
+                    },
+                }).then((r) => {
+                    const streamed = attemptReasoning.flush();
+                    // Prefer provider-returned blocks: they carry signatures/redacted data
+                    // (Anthropic) that must round-trip unchanged; deltas are the fallback.
+                    return r.reasoning?.length ? r : (streamed.length ? { ...r, reasoning: streamed } : r);
                 });
             }
             return provider.generateText(llmMessages, baseOpts);

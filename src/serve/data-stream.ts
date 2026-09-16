@@ -33,6 +33,8 @@ import type { StreamChunk } from '../create-agent/types.js';
 export interface DataStreamEvent {
     type: StreamChunk['type'];
     delta?: string;
+    reasoningDelta?: string;
+    reasoningTitle?: string;
     tool?: { name: string; input: unknown; output?: unknown };
     stepNumber?: number;
     run?: StreamChunk['run'];
@@ -51,6 +53,8 @@ const SSE_HEADERS: Record<string, string> = {
 function toWire(chunk: StreamChunk): DataStreamEvent {
     const ev: DataStreamEvent = { type: chunk.type };
     if (chunk.delta !== undefined) ev.delta = chunk.delta;
+    if (chunk.reasoningDelta !== undefined) ev.reasoningDelta = chunk.reasoningDelta;
+    if (chunk.reasoningTitle !== undefined) ev.reasoningTitle = chunk.reasoningTitle;
     if (chunk.tool !== undefined) ev.tool = chunk.tool;
     if (chunk.stepNumber !== undefined) ev.stepNumber = chunk.stepNumber;
     if (chunk.run !== undefined) ev.run = chunk.run;
@@ -62,6 +66,8 @@ function toWire(chunk: StreamChunk): DataStreamEvent {
 function fromWire(ev: DataStreamEvent): StreamChunk {
     const chunk: StreamChunk = { type: ev.type };
     if (ev.delta !== undefined) chunk.delta = ev.delta;
+    if (ev.reasoningDelta !== undefined) chunk.reasoningDelta = ev.reasoningDelta;
+    if (ev.reasoningTitle !== undefined) chunk.reasoningTitle = ev.reasoningTitle;
     if (ev.tool !== undefined) chunk.tool = ev.tool;
     if (ev.stepNumber !== undefined) chunk.stepNumber = ev.stepNumber;
     if (ev.run !== undefined) chunk.run = ev.run;

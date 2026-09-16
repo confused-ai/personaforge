@@ -21,6 +21,22 @@ function printLine(msg: string): void {
     process.stdout.write(msg + '\n');
 }
 
+/** Lines printed for one chat turn: optional reasoning, then the assistant reply. */
+export function formatChatTurn(result: unknown): string[] {
+    const text = (typeof result === 'object' && result !== null && 'text' in result)
+        ? String((result as { text: unknown }).text)
+        : typeof result === 'string'
+            ? result
+            : JSON.stringify(result, null, 2);
+    const reasoningText = (typeof result === 'object' && result !== null && 'reasoningText' in result)
+        ? String((result as { reasoningText?: unknown }).reasoningText ?? '')
+        : '';
+    const lines: string[] = [];
+    if (reasoningText) lines.push(`\n[Reasoning: ${reasoningText}]`);
+    lines.push(`\nAssistant: ${text}\n`);
+    return lines;
+}
+
 const QUIT_COMMANDS = new Set(['/exit', '/quit', '/q', 'exit', 'quit']);
 
 export function registerChatCommand(program: Command): void {
@@ -78,13 +94,7 @@ export function registerChatCommand(program: Command): void {
 
                     // The default agent (no handler/LLM) echoes validated input as output.
                     // When a real LLM provider is configured the result will contain `text`.
-                    const text = (typeof result === 'object' && result !== null && 'text' in result)
-                        ? String((result as { text: unknown }).text)
-                        : typeof result === 'string'
-                            ? result
-                            : JSON.stringify(result, null, 2);
-
-                    printLine(`\nAssistant: ${text}\n`);
+                    for (const line of formatChatTurn(result)) printLine(line);
                 } catch (err) {
                     const msg = err instanceof Error ? err.message : String(err);
                     printLine(`\n[error] ${msg}\n`);
