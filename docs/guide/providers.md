@@ -505,7 +505,7 @@ const provider = createAiSdkProvider(model, {
 
 ## Reasoning / thinking-token streaming
 
-Providers that expose native chain-of-thought (Anthropic extended thinking, Bedrock, Gemini thought summaries, Ollama `think`, OpenAI-compatible `reasoning_content`, OpenAI Responses-API reasoning summaries) surface it through the same `LLMProvider` interface — no separate API.
+Providers that expose native chain-of-thought (Anthropic extended thinking, Bedrock, Gemini thought summaries, Ollama `think`, OpenAI-compatible `reasoning_content`, OpenAI Responses-API reasoning summaries) surface it through the same `LLMProvider` interface — no separate API. Full details, the kill switch, and cost implications: [Native Reasoning Streaming](./reasoning-streaming).
 
 ```ts
 const result = await agent.run('Prove that sqrt(2) is irrational.', {

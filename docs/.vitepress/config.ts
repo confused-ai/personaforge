@@ -168,6 +168,7 @@ export default defineConfig({
                     collapsed: false,
                     items: [
                         { text: 'Providers (40+)', link: '/guide/providers' },
+                        { text: 'Native Reasoning Streaming', link: '/guide/reasoning-streaming' },
                         { text: 'LLM Router', link: '/guide/llm-router' },
                         { text: 'Model Fallbacks & Retry', link: '/guide/model-fallbacks' },
                     ],

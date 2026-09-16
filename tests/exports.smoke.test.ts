@@ -11,7 +11,12 @@
  * Covers: root ('.'), all named subpaths from package.json#exports.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// The root barrel pulls in the whole framework; its transform cost alone can
+// exceed the default 30s test timeout when this file runs alongside the rest
+// of the suite under CPU contention. Give every test in this file headroom.
+vi.setConfig({ testTimeout: 60000 });
 
 // ── Root entry point ─────────────────────────────────────────────────────────
 
