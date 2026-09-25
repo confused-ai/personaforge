@@ -7,6 +7,10 @@
  * are still judged when a new message arrives mid-run.
  */
 
+import { createRequire } from 'node:module';
+
+const _require = createRequire(import.meta.url);
+
 export type GoalStatus = 'active' | 'done' | 'paused';
 
 export interface GoalEvaluation {
@@ -104,7 +108,7 @@ export class SqliteGoalStore implements GoalStore {
     static create(filePath: string): SqliteGoalStore {
         let Database: (p: string) => SqliteGoalStore['db'];
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error('SqliteGoalStore requires better-sqlite3. Install: npm install better-sqlite3');
         }

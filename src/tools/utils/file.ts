@@ -30,7 +30,7 @@ const WriteFileParameters = z.object({
     fileName: z.string().describe('The name of the file to save to'),
     contents: z.string().describe('The contents to save'),
     overwrite: z.boolean().default(true).describe('Overwrite the file if it already exists'),
-    encoding: z.string().default('utf-8').describe('Encoding to use'),
+    encoding: z.enum(['utf-8', 'utf8', 'ascii', 'latin1', 'binary', 'base64', 'base64url', 'hex', 'utf16le', 'ucs2']).default('utf-8').describe('Encoding to use'),
 });
 
 export class WriteFileTool extends BaseTool<typeof WriteFileParameters, string> {
@@ -82,7 +82,7 @@ export class WriteFileTool extends BaseTool<typeof WriteFileParameters, string> 
 
 const ReadFileParameters = z.object({
     fileName: z.string().describe('The name of the file to read'),
-    encoding: z.string().default('utf-8').describe('Encoding to use'),
+    encoding: z.enum(['utf-8', 'utf8', 'ascii', 'latin1', 'binary', 'base64', 'base64url', 'hex', 'utf16le', 'ucs2']).default('utf-8').describe('Encoding to use'),
 });
 
 export class ReadFileTool extends BaseTool<typeof ReadFileParameters, string> {
@@ -122,7 +122,7 @@ const ReadFileChunkParameters = z.object({
     fileName: z.string().describe('The name of the file to read'),
     startLine: z.number().int().min(0).describe('Number of first line in the returned chunk'),
     endLine: z.number().int().min(0).describe('Number of the last line in the returned chunk'),
-    encoding: z.string().default('utf-8').describe('Encoding to use'),
+    encoding: z.enum(['utf-8', 'utf8', 'ascii', 'latin1', 'binary', 'base64', 'base64url', 'hex', 'utf16le', 'ucs2']).default('utf-8').describe('Encoding to use'),
 });
 
 export class ReadFileChunkTool extends BaseTool<typeof ReadFileChunkParameters, string> {
@@ -172,7 +172,7 @@ const ReplaceFileChunkParameters = z.object({
     startLine: z.number().int().min(0).describe('Number of first line in the replaced chunk'),
     endLine: z.number().int().min(0).describe('Number of the last line in the replaced chunk'),
     chunk: z.string().describe('String to be inserted instead of lines from start_line to end_line'),
-    encoding: z.string().default('utf-8').describe('Encoding to use'),
+    encoding: z.enum(['utf-8', 'utf8', 'ascii', 'latin1', 'binary', 'base64', 'base64url', 'hex', 'utf16le', 'ucs2']).default('utf-8').describe('Encoding to use'),
 });
 
 export class UpdateFileChunkTool extends BaseTool<typeof ReplaceFileChunkParameters, string> {
@@ -373,10 +373,11 @@ export class SearchFilesTool extends BaseTool<typeof SearchFilesParameters, stri
     }
 
     private matches(text: string, pattern: string): boolean {
-        // Very basic wildcard support
-        // Convert glob to regex: . -> \., * -> .*, ? -> .
+        // Very basic wildcard support: escape every regex metacharacter
+        // first, then restore glob `*`/`?` — an unescaped `(` or `[` in the
+        // pattern must not throw or change matching semantics.
         const regexString = pattern
-            .replace(/\./g, '\\.')
+            .replace(/[.+^${}()|[\]\\]/g, '\\$&')
             .replace(/\*/g, '.*')
             .replace(/\?/g, '.');
         const regex = new RegExp(`^${regexString}$`);

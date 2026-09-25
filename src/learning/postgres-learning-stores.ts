@@ -13,6 +13,8 @@ import type {
     EntityMemory, EntityFact, EntityEvent, EntityRelationship, EntityMemoryStore,
     DecisionLog, DecisionLogStore,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Minimal pg typing (avoids hard compile dep) ───────────────────────────────
 
@@ -29,7 +31,7 @@ type PgPoolCtor = new (config: PgPoolConfig) => PgPool;
 
 function loadPg(): PgPoolCtor {
     try {
-        const pg = require('pg') as { Pool: PgPoolCtor };
+        const pg = _require('pg') as { Pool: PgPoolCtor };
         return pg.Pool;
     } catch {
         throw new Error(MISSING_SDK);

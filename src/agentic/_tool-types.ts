@@ -34,6 +34,12 @@ export interface ToolResult<T = unknown> {
     readonly error?: ToolError;
     readonly executionTimeMs: number;
     readonly metadata: ToolExecutionMetadata;
+    /**
+     * UI/transcript-facing shape of `data`/`error`, when the tool defines
+     * `toDisplayOutput`/`toDisplayError`. Independent of `data` — `data` still
+     * shapes what the LLM sees. Absent when the tool has no display hook.
+     */
+    readonly display?: unknown;
 }
 
 export interface ToolContext {
@@ -94,6 +100,18 @@ export interface Tool<TParams extends ToolParameters = ToolParameters, TOutput =
     readonly suspendSchema?: SchemaInput;
     /** Schema for the data accepted when resuming a suspended call. */
     readonly resumeSchema?: SchemaInput;
+
+    /**
+     * UI/transcript-facing shaping hooks — independent of the model-facing
+     * feedback loop (`execute()`'s return value / `toModelOutput` on the
+     * tool builder). Runner emits these shapes to `streamHooks` instead of
+     * the raw args/output/error/suspend payload when defined. Absent =
+     * runner falls back to the raw value, so untouched tools are unaffected.
+     */
+    readonly toDisplayInput?: (input: InferOutput<TParams & AnySchema>) => unknown;
+    readonly toDisplayOutput?: (output: TOutput) => unknown;
+    readonly toDisplayError?: (error: Error) => unknown;
+    readonly toDisplaySuspendPayload?: (payload: unknown) => unknown;
 
     execute(params: InferOutput<TParams & AnySchema>, context: ToolContext): Promise<ToolResult<TOutput>>;
     validate(params: unknown): params is InferOutput<TParams & AnySchema>;
@@ -197,6 +215,13 @@ function adaptTool(raw: Partial<Tool> & { name: string; description: string; par
         ...(raw.author && { author: raw.author }),
         ...(raw.tags   && { tags:   raw.tags }),
         ...(raw.idempotent !== undefined && { idempotent: raw.idempotent }),
+        ...(raw.suspendSchema !== undefined && { suspendSchema: raw.suspendSchema }),
+        ...(raw.resumeSchema !== undefined && { resumeSchema: raw.resumeSchema }),
+        ...(raw.requireApproval !== undefined && { requireApproval: raw.requireApproval }),
+        ...(raw.toDisplayInput !== undefined && { toDisplayInput: raw.toDisplayInput }),
+        ...(raw.toDisplayOutput !== undefined && { toDisplayOutput: raw.toDisplayOutput }),
+        ...(raw.toDisplayError !== undefined && { toDisplayError: raw.toDisplayError }),
+        ...(raw.toDisplaySuspendPayload !== undefined && { toDisplaySuspendPayload: raw.toDisplaySuspendPayload }),
     };
 }
 

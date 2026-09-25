@@ -15,6 +15,17 @@ const MISSING_SDK_MSG =
 
 const DEFAULT_MODEL = 'gpt-4o';
 
+/** Parse model-supplied tool args without throwing — malformed JSON yields {}. */
+function safeParseToolArgs(raw: string | undefined | null): Record<string, unknown> {
+    if (!raw) return {};
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    } catch {
+        return {};
+    }
+}
+
 /**
  * Create an OpenAI LLMProvider.
  *
@@ -65,9 +76,22 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
       ...((opts?.temperature ?? config.temperature) !== undefined && { temperature: opts?.temperature ?? config.temperature }),
     };
     const openaiClient = client as import('openai').default;
+    type ChatResponse = Awaited<ReturnType<typeof openaiClient.chat.completions.create>>;
     const createChat = openaiClient.chat.completions.create.bind(openaiClient.chat.completions) as
-      (body: unknown, options?: { headers?: Record<string, string> }) => Promise<import('openai').OpenAI.Chat.ChatCompletion>;
-    const res = await createChat(request, opts?.headers ? { headers: opts.headers } : undefined);
+      (body: unknown, options?: { headers?: Record<string, string>; signal?: AbortSignal }) => Promise<ChatResponse>;
+    const res = (await createChat(request, {
+      ...(opts?.headers ? { headers: opts.headers } : {}),
+      ...(opts?.signal ? { signal: opts.signal } : {}),
+    })) as {
+      choices: Array<{
+        message: {
+          content?: string | null;
+          tool_calls?: Array<{ id: string; function: { name: string; arguments?: string } }>;
+        };
+        finish_reason?: string | null;
+      }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
 
     const choice = res.choices[0];
     const text   = choice?.message.content ?? '';
@@ -76,7 +100,9 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
       .map((tc) => ({
         id:        tc.id,
         name:      tc.function.name,
-        arguments: JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>,
+        // Model-supplied args are not guaranteed JSON — a crash here would
+        // take down generateText, so fall back to {} and let arg validation flag it.
+        arguments: safeParseToolArgs(tc.function.arguments),
       }));
     const usage = res.usage ? {
       promptTokens:     res.usage.prompt_tokens,
@@ -151,7 +177,7 @@ export function openai(config: ModelAdapterConfig = {}): LLMProvider {
       ? Array.from(toolCallAccum.values()).map((tc) => ({
           id:        tc.id,
           name:      tc.name,
-          arguments: JSON.parse(tc.args || '{}') as Record<string, unknown>,
+          arguments: safeParseToolArgs(tc.args),
         }))
       : undefined;
 

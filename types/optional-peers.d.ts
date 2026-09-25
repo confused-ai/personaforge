@@ -77,6 +77,7 @@ declare module 'ollama' {
   export type Message = {
     role: 'system' | 'user' | 'assistant' | 'tool';
     content: string;
+    thinking?: string;
   };
 
   export class Ollama {
@@ -85,8 +86,9 @@ declare module 'ollama' {
       model: string;
       messages: Message[];
       stream?: false;
+      think?: boolean | 'high' | 'medium' | 'low';
     }): Promise<{
-      message: { content: string };
+      message: { content: string; thinking?: string };
       prompt_eval_count: number;
       eval_count: number;
     }>;
@@ -94,7 +96,8 @@ declare module 'ollama' {
       model: string;
       messages: Message[];
       stream: true;
-    }): Promise<AsyncIterable<{ message: { content: string } }>>;
+      think?: boolean | 'high' | 'medium' | 'low';
+    }): Promise<AsyncIterable<{ message: { content: string; thinking?: string } }>>;
   }
 }
 

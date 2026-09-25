@@ -1,0 +1,81 @@
+# Design: Native Reasoning (Thinking-Token) Streaming
+
+**Date:** 2026-09-15
+**Status:** Design — awaiting review before planning.
+
+---
+
+## 1. Goal
+
+Give agents production-grade support for provider-native "reasoning"/"thinking" tokens — Anthropic extended thinking, OpenAI reasoning (Responses API) + `reasoning_effort` (Chat Completions), Gemini thinking config, Bedrock Claude thinking, and Ollama's native `think` field — plus the Vercel `ai` SDK path (`ai-sdk-provider.ts`), which already normalizes reasoning across the providers it wraps. Reasoning surfaces as a first-class `StreamDelta`/`StreamChunk` variant while streaming and as a `GenerateResult`/`AgentRunResult` field for non-streaming calls; the SSE wire format and durable replay carry it automatically once the type exists, and the CLI prints the final accumulated text. A repo-convention kill switch (`ENABLE_REASONING_STREAM`) turns it off everywhere with one flag.
+
+This is **not** the same thing as `src/reasoning/*` (the ReWOO/ToT/GoT chain-of-thought *prompting* scaffold) or `ReasoningArtifact` (persisted thought storage). Those are unrelated and untouched by this work.
+
+## 2. Non-goals (YAGNI)
+
+- No new "governed HTTP" gateway. Investigation found none exists for outbound provider calls — each provider adapter already owns its own SDK client and HTTP path. Nothing to bypass; nothing to build to avoid a bypass.
+- No changes to `src/reasoning/*` (CoT scaffold) or `ReasoningArtifact`. Naming collision is cosmetic — no code sharing.
+- No redaction/decoding of Anthropic's `redacted_thinking` blocks. They pass through opaquely and get echoed back verbatim on the next turn, per Anthropic's API contract. We never attempt to render or interpret their content.
+- No reasoning support for providers without a native reasoning API and not covered by the `ai` SDK (e.g. no fabricated reasoning for models that don't expose it).
+
+## 3. Key findings (grounded in code)
+
+1. **Two incompatible `StreamChunk` types share a name.** [`src/core/types.ts:155`](../../../src/core/types.ts#L155) is a real 6-variant discriminated union used by the abstract `Agent` interface. [`src/create-agent/types.ts:393`](../../../src/create-agent/types.ts#L393) is a looser 11-variant string union — the one actually implemented by `streamEvents()` and wired to SSE (`src/serve/data-stream.ts`) and durable replay (`src/durable/registry.ts`). No exhaustive switch/`never` guard enforces parity between them today — they have already silently drifted.
+2. **No single outbound "governed HTTP" layer exists.** `src/gateway/` is inbound-only (exposes agents to callers, not the reverse). Each provider adapter (`anthropic-provider.ts`, `openai-provider.ts`, `google-provider.ts`, etc.) builds its own SDK client and calls it directly.
+3. **Zero native reasoning support today.** No `thinking` param in `AnthropicCreateParams` ([`anthropic-provider.ts:50`](../../../src/providers/anthropic-provider.ts#L50)); OpenAI adapter only has a generic `extraBody` escape hatch; `ai-sdk-provider.ts` has no reasoning wiring despite the underlying `ai` package supporting reasoning parts.
+4. **No `AI_*` env flags exist anywhere.** Convention is `ENABLE_<FEATURE>`, default-on via `!== 'false'`, centralized in [`src/config/loader.ts:86`](../../../src/config/loader.ts#L86) (`ENABLE_METRICS`, `ENABLE_GUARDRAILS`, `ENABLE_RATE_LIMITING`, `CIRCUIT_BREAKER_ENABLED`).
+5. **No transcript/activity accumulator exists.** CLI chat ([`src/cli/commands/chat.ts:20`](../../../src/cli/commands/chat.ts#L20)) does raw `readline`/`stdout` writes. Nothing buffers streamed content into an assembled shape today outside of the final `AgentRunResult`.
+
+## 4. Data model
+
+Reasoning has two carriers, matching the two existing result shapes in the codebase:
+
+- **Streaming carrier — `StreamDelta`** ([`src/core/llm-types.ts:74`](../../../src/core/llm-types.ts#L74)): add a `ReasoningStreamChunk` variant, `{ readonly type: 'reasoning'; readonly text: string; readonly title?: string }`. This is the low-level provider→runner delta a provider's `streamText` emits mid-response.
+- **Non-streaming carrier — `GenerateResult`** ([`src/contracts/interfaces.ts:74`](../../../src/contracts/interfaces.ts#L74)): add `reasoning?: { text: string; title?: string }[]`, populated by `generateText` (and by providers with no streaming reasoning path at all, e.g. Bedrock).
+- **Unify `StreamChunk`.** `src/core/types.ts`'s 6-variant union becomes the single source of truth; `src/create-agent/types.ts`'s 11-variant copy re-exports/extends it instead of duplicating. Add one new variant: `'reasoning-delta'`, carrying `reasoningDelta?: string` and `reasoningTitle?: string`.
+- **`Message`** ([`src/core/types.ts:55`](../../../src/core/types.ts#L55)) gains `reasoning?: { text: string; title?: string }[]` — an array because providers can emit multiple thinking blocks per turn, and because Anthropic requires reasoning blocks to be echoed back verbatim on subsequent turns for tool-use continuation.
+- **`AgentRunResult`** — both copies (core's, [`src/core/types.ts:90`](../../../src/core/types.ts#L90), and agentic's `AgenticRunResult` that create-agent's extends, [`src/agentic/types.ts:145`](../../../src/agentic/types.ts#L145)) gain `readonly reasoningText?: string`.
+- **New internal hook**, threaded alongside the existing `onChunk`/`onStep`/etc pattern (not overloading `onChunk`'s plain-`string` contract): `onReasoning?: (delta: { text: string; title?: string }) => void`, added to `RunnerStreamHooks` ([`src/core/runner/types.ts:21`](../../../src/core/runner/types.ts#L21)), `GenerateOptions` ([`src/contracts/interfaces.ts:47`](../../../src/contracts/interfaces.ts#L47)), `AgenticStreamHooks` ([`src/agentic/types.ts`](../../../src/agentic/types.ts), same block as `onGoal`/`onObject`), and `AgentRunOptions` ([`src/create-agent/types.ts:323`](../../../src/create-agent/types.ts#L323), same block as `onStep`).
+
+These three Message-shaped types (`core/types.ts`, `contracts/interfaces.ts`, `llm-types.ts`'s message-adjacent types) are pre-existing, un-unified duplicates in this codebase — out of scope to fix here. `Message.reasoning` is added only to the one copy that actually flows through the provider adapters (`core/types.ts`'s `Message`, re-exported via `providers/types.ts`).
+
+## 5. Provider wiring
+
+All providers gate reasoning at the **request-building step** — one check per provider, reading `ENABLE_REASONING_STREAM`, deciding whether to ask for thinking at all.
+
+| Provider | Mechanism | Notes |
+|---|---|---|
+| `ai-sdk-provider.ts` | Map the `ai` SDK's native reasoning-part stream events to our `reasoning` `StreamDelta` | Thin translation only — reuses the SDK's existing cross-provider normalization. **Known risk:** an open upstream Vercel `ai` issue reports `response.reasoning_summary_text.delta` (OpenAI-via-Responses path) being silently dropped by the SDK — verify in the integration test rather than assume it works. |
+| `anthropic-provider.ts` | Add `thinking: { type: 'enabled', budget_tokens }` to `AnthropicCreateParams` ([`anthropic-provider.ts:49`](../../../src/providers/anthropic-provider.ts#L49)); handle `content_block_delta` events where `delta.type === 'thinking_delta'` (field is `delta.thinking`, not `delta.text`) alongside the existing `text_delta` branch ([`anthropic-provider.ts:294`](../../../src/providers/anthropic-provider.ts#L294)) | **Anthropic requires `temperature: 1` when thinking is enabled** (no custom temperature/top_p) — both `generateText` and `streamText` currently always send `temperature: options?.temperature ?? 0.7` ([lines 215](../../../src/providers/anthropic-provider.ts#L215), [270](../../../src/providers/anthropic-provider.ts#L270)); must override to `1` when thinking is on. `redacted_thinking` blocks arrive whole in `content_block_start` (no delta events) — store the raw block opaquely on the message, never render. `toAnthropicMessages` ([line 107](../../../src/providers/anthropic-provider.ts#L107)) must re-emit `Message.reasoning` blocks as `thinking`/`redacted_thinking` content blocks, ordered *before* other content in the assistant turn, or the next tool-use turn fails Anthropic's validation. |
+| `openai-provider.ts` | **Verified via docs:** the Chat Completions API this provider uses (`chat.completions.create`) has no reasoning-content field at all — only `reasoning_effort` (behavior-only, no visible text) and a token *count*. Actual reasoning text requires the Responses API (`client.responses.create`, streaming event `response.reasoning_summary_text.delta` with a `summary_index`). Ship both: `reasoning_effort` passthrough on the existing Chat Completions path for models that don't need visible text, **and** a second code path using `responses.create` for models where `ENABLE_REASONING_STREAM` is on — new request/response conversion, not a param tweak. | `summary_index` maps to `title` (e.g. `"summary 0"`) when multiple summary parts are returned. |
+| `google-provider.ts` | Add `generationConfig.thinkingConfig: { includeThoughts: true, thinkingBudget }` ([`google-provider.ts:274`](../../../src/providers/google-provider.ts#L274) and [320](../../../src/providers/google-provider.ts#L320)) | Thought text arrives as parts of `candidates[0].content.parts[]` with `part.thought === true` — must iterate `parts` directly and branch on `.thought`, **not** rely on the SDK's `.text()` / `chunk.text()` helper ([lines 295](../../../src/providers/google-provider.ts#L295), [346](../../../src/providers/google-provider.ts#L346)), whose behavior with thought parts mixed in is undocumented. |
+| `src/models/bedrock.ts` | Add `thinking: { type: 'enabled', budget_tokens }` to the Bedrock Anthropic body ([`bedrock.ts:35`](../../../src/models/bedrock.ts#L35)) | No streaming here at all (`InvokeModelCommand`, not the streaming variant) — reasoning surfaces only via `GenerateResult.reasoning`, never a delta. **Pre-existing latent bug this feature would trip over:** `decoded.content[0]?.text` ([line 46](../../../src/models/bedrock.ts#L46)) assumes index 0 is always the text block; with thinking enabled the thinking block comes first, so this must iterate `content[]` by `.type` instead of indexing. |
+| `src/models/ollama.ts` | Ollama has a **native** `think: true` request field (not tag-parsing) — the server returns reasoning separately as `message.thinking` (chat endpoint), distinct from `message.content`. Add `think: true` to the request in both `generateText` and `streamText` ([`ollama.ts:38`](../../../src/models/ollama.ts#L38), [55](../../../src/models/ollama.ts#L55)); in `streamText`'s loop ([line 62](../../../src/models/ollama.ts#L62)), check `chunk.message.thinking` alongside the existing `chunk.message.content` check. | Original design assumed `<think>` tag-parsing — verified wrong; no tag parsing needed. |
+
+## 6. Accumulator
+
+**Revised from the original design after reading the actual streaming path.** `create-agent/factory.ts`'s `streamEvents()` generator ([`factory.ts:1258`](../../../src/create-agent/factory.ts#L1258)) doesn't consume provider deltas directly — it relays callbacks (`onChunk`, `onStep`, etc.) that the agentic runner (`src/agentic/runner.ts`) already fires per-step. And the CLI (`src/cli/commands/chat.ts`) doesn't stream at all today — it calls blocking `agent.run()` and prints the final text once. So:
+
+- Small utility `src/streaming/reasoning-accumulator.ts`: one class `ReasoningAccumulator`, `push({ text, title? })` / `flush(): { text, title? }[]`. Instantiated fresh per call site (no run-id keying — each caller already owns one run's scope), used **once**, inside `AgenticRunner.run()` in `src/agentic/runner.ts`: reset per step near where `result.text`/`toolCalls` are consumed (~[line 819](../../../src/agentic/runner.ts#L819)), fed by the new `onReasoning` hook wired through `runLlm`'s `streamText` call (~[line 1419](../../../src/agentic/runner.ts#L1419)) and by non-streaming `result.reasoning` (from `GenerateResult`), flushed into the assistant message push (~[line 825](../../../src/agentic/runner.ts#L825): `messages.push({ role: 'assistant', ..., reasoning: stepBlocks })`) and accumulated further into `finalResult.reasoningText` at the `AgenticRunResult` construction site ([line 1050](../../../src/agentic/runner.ts#L1050)).
+- `factory.ts`'s `streamEvents()` generator gets one more callback, `onReasoning`, exactly mirroring the existing `onStep` block ([line 1292](../../../src/create-agent/factory.ts#L1292)), producing `{ type: 'reasoning-delta', reasoningDelta, reasoningTitle }`.
+- **SSE** ([`data-stream.ts:33`](../../../src/serve/data-stream.ts#L33)): `DataStreamEvent` and `toWire`/`fromWire` get `reasoningDelta`/`reasoningTitle` fields alongside `delta` — this file does no per-type switch, it's generic field-copying, so this is additive.
+- **Durable replay** ([`registry.ts:148`](../../../src/durable/registry.ts#L148), [`durable/types.ts:7`](../../../src/durable/types.ts#L7)): `DurableRunEvent extends StreamChunk` and `publish()` is fully generic — no separate change needed once `StreamChunk` carries the new variant.
+- **CLI**: no live streaming to hook into. After `agent.run()` resolves, print `result.reasoningText` (when present) before the `Assistant:` line — no accumulator needed on the CLI side at all.
+
+## 7. Kill switch
+
+`ENABLE_REASONING_STREAM`, same `!== 'false'` default-on convention as `ENABLE_METRICS`/`ENABLE_GUARDRAILS`. Not routed through `src/config/loader.ts` — that file is server-config-only (`ServerGuardrailsConfig` etc.) and providers/the runner run in library mode without a server. Instead: one small exported helper, `isReasoningStreamEnabled()` in `src/streaming/reasoning-accumulator.ts`, reading `process.env.ENABLE_REASONING_STREAM !== 'false'` directly — imported by each provider and by the runner, so the env read itself isn't duplicated five times.
+
+## 8. Testing
+
+- Per-provider unit tests: mocked SDK response with thinking/reasoning content → correct `reasoning` `StreamDelta` / `GenerateResult.reasoning`; flag off → no thinking param sent, no reasoning output. Anthropic gets an explicit test that `temperature` is forced to `1` when thinking is enabled even if the caller passed a different value. Bedrock gets a test that a thinking-enabled response with the thinking block first still extracts the correct text block (guards the latent index-0 bug).
+- Accumulator unit test: sequential `push()` calls → `flush()` returns the assembled array and a subsequent `flush()` returns empty (buffer cleared).
+- One integration test extending `tests/streaming.test.ts` / `tests/learning-reasoning-context.test.ts`: full run with a mocked reasoning-capable provider → `AgentRunResult.reasoningText` and `Message.reasoning` populated; `streamEvents()` yields a `reasoning-delta` chunk; SSE wire round-trips it; durable replay reconstructs it.
+- ai-sdk-provider integration test explicitly asserts a reasoning delta is *not* silently dropped (regression guard for the upstream issue noted in Section 5).
+
+## 9. Migration & compatibility
+
+- `StreamChunk` unification is additive from the consumer side (new variant, no existing variants removed/renamed) but is a structural change to where the type is defined — anything importing the `create-agent/types.ts` copy directly needs to resolve to the unified type instead. No public API behavior change.
+- `Message.reasoning`, `GenerateResult.reasoning`, and `AgentRunResult.reasoningText` are new optional fields — existing callers unaffected.
+- Default-on flag means reasoning-capable providers start requesting thinking tokens on upgrade unless `ENABLE_REASONING_STREAM=false` is set — this has a cost/latency impact (thinking tokens are billed and add latency) worth calling out in the changelog, not just the flag docs. It also silently forces `temperature: 1` on Anthropic calls that previously used a custom temperature — a behavior change for existing callers who upgrade with the flag defaulted on, worth flagging prominently in the changelog.
+- OpenAI's Responses-API path is a genuinely separate request/response shape from the existing Chat Completions path — this is the one piece of the feature that isn't a small param addition, and it only activates for reasoning-capable OpenAI models when the flag is on.

@@ -51,6 +51,14 @@ export interface ToolResult<T = unknown> {
     readonly error?: ToolError;
     readonly executionTimeMs: number;
     readonly metadata: ToolExecutionMetadata;
+    /**
+     * UI/transcript-facing shape of `data` (or `error`, on failure), when the
+     * tool defines `toDisplayOutput`/`toDisplayError`. Independent of `data` —
+     * `data` (and `toModelOutput`) still shapes what the LLM sees; `display`
+     * shapes what a browser stream or transcript renders. Absent when the
+     * tool defines no display hook — callers should fall back to `data`.
+     */
+    readonly display?: unknown;
 }
 
 /**

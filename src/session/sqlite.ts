@@ -10,6 +10,8 @@
  */
 
 import type { SessionStore, SessionData, SessionMessage } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING_SDK_MSG =
   '[personaforge] SQLite session store requires better-sqlite3.\n' +
@@ -37,7 +39,7 @@ export function createSqliteStore(opts: SqliteSessionStoreOptions = {}): Session
 
   let Database: SqliteConstructor;
   try {
-    Database = require('better-sqlite3') as SqliteConstructor;
+    Database = _require('better-sqlite3') as SqliteConstructor;
   } catch {
     throw new Error(MISSING_SDK_MSG);
   }

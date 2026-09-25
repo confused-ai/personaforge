@@ -4,6 +4,9 @@
  * rediscover a pending run and approve/decline/resume it.
  */
 
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+
 export interface SuspendedToolCall {
     readonly toolCallId: string;
     readonly toolName: string;
@@ -121,7 +124,7 @@ export class SqliteSuspendedRunStore implements SuspendedRunStore {
     static create(filePath: string): SqliteSuspendedRunStore {
         let Database: (p: string) => SqliteSuspendedRunStore['db'];
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error(
                 'SqliteSuspendedRunStore requires better-sqlite3. Install: npm install better-sqlite3'

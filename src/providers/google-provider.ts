@@ -15,6 +15,7 @@ import type {
 } from './types.js';
 import { normalizeFinishReason } from './types.js';
 import { createDebugLogger, type DebugLogger } from '../shared/index.js';
+import { isReasoningStreamEnabled } from '../streaming/reasoning-accumulator.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that
 // throws "Dynamic require not supported". createRequire restores sync peer-dep loading.
@@ -37,6 +38,7 @@ interface GenerationConfig {
     temperature?: number;
     maxOutputTokens?: number;
     stopSequences?: string[];
+    thinkingConfig?: { includeThoughts: boolean };
 }
 
 interface GoogleModel {
@@ -56,8 +58,8 @@ interface GoogleContent {
 }
 
 type GooglePart =
-    | { text: string }
-    | { functionCall: { name: string; args: Record<string, unknown> } }
+    | { text: string; thought?: boolean; thoughtSignature?: string }
+    | { functionCall: { name: string; args: Record<string, unknown> }; thoughtSignature?: string }
     | { functionResponse: { name: string; response: { output: unknown } } }
     | { inlineData: { mimeType: string; data: string } };
 
@@ -108,6 +110,19 @@ export interface GoogleProviderConfig {
     debug?: boolean;
 }
 
+/** Tool call carrying Gemini's opaque thoughtSignature for history round-trip. */
+type GeminiToolCall = ToolCall & { thoughtSignature?: string };
+
+/** Thought summaries (includeThoughts) exist on Gemini 2.5+ only; older models reject the field. */
+export function supportsGeminiThinking(model: string): boolean {
+    const m = /gemini-(\d+)(?:\.(\d+))?/.exec(model);
+    // Image/TTS/live/audio/embedding variants reject any thinkingConfig with HTTP 400.
+    if (!m || /-(image|tts|live|embedding)\b|native-audio/i.test(model)) return false;
+    const major = Number(m[1]);
+    const minor = Number(m[2] ?? 0);
+    return major > 2 || (major === 2 && minor >= 5);
+}
+
 // ── Message conversion ──
 
 function toGeminiContents(messages: Message[]): GoogleContent[] {
@@ -135,11 +150,11 @@ function toGeminiContents(messages: Message[]): GoogleContent[] {
         }
 
         if (m.role === 'assistant') {
-            const asst = m as Message & { toolCalls?: ToolCall[]; tool_calls?: Array<{ id: string; type?: string; function?: { name?: string; arguments?: string } }> };
+            const asst = m as Message & { toolCalls?: GeminiToolCall[]; tool_calls?: Array<{ id: string; type?: string; function?: { name?: string; arguments?: string } }> };
             const parts: GooglePart[] = [];
             const textContent = typeof asst.content === 'string' ? asst.content : '';
             if (textContent) parts.push({ text: textContent });
-            const calls = Array.isArray(asst.toolCalls)
+            const calls: GeminiToolCall[] = Array.isArray(asst.toolCalls)
                 ? asst.toolCalls
                 : (asst.tool_calls ?? []).map((tc) => {
                       let args: Record<string, unknown> = {};
@@ -150,7 +165,11 @@ function toGeminiContents(messages: Message[]): GoogleContent[] {
                       return { id: tc.id, name: tc.function?.name ?? 'unknown', arguments: args };
                   });
             for (const tc of calls) {
-                parts.push({ functionCall: { name: tc.name, args: tc.arguments } });
+                // Gemini 2.5+/3 require the part-level thoughtSignature echoed back (HTTP 400 otherwise).
+                parts.push({
+                    functionCall: { name: tc.name, args: tc.arguments },
+                    ...(tc.thoughtSignature && { thoughtSignature: tc.thoughtSignature }),
+                });
             }
             if (parts.length > 0) contents.push({ role: 'model', parts });
             continue;
@@ -214,9 +233,9 @@ function toGeminiToolConfig(toolChoice: GenerateOptions['toolChoice']): GoogleRe
 // model emits multiple parallel calls with the same name in one response.
 let toolCallSeq = 0;
 
-function extractToolCalls(candidates: GoogleResponse['candidates']): ToolCall[] {
+function extractToolCalls(candidates: GoogleResponse['candidates']): GeminiToolCall[] {
     if (!candidates?.length) return [];
-    const calls: ToolCall[] = [];
+    const calls: GeminiToolCall[] = [];
     for (const candidate of candidates) {
         for (const part of candidate.content?.parts ?? []) {
             if ('functionCall' in part) {
@@ -224,6 +243,7 @@ function extractToolCalls(candidates: GoogleResponse['candidates']): ToolCall[] 
                     id: `${part.functionCall.name}-${toolCallSeq++}`,
                     name: part.functionCall.name,
                     arguments: part.functionCall.args,
+                    ...(part.thoughtSignature && { thoughtSignature: part.thoughtSignature }),
                 });
             }
         }
@@ -271,11 +291,7 @@ export class GoogleProvider implements LLMProvider {
         const geminiModel = this.client.getGenerativeModel({
             model: this.model,
             ...(systemInstruction && { systemInstruction }),
-            generationConfig: {
-                temperature: options?.temperature ?? 0.7,
-                ...(options?.maxTokens && { maxOutputTokens: options.maxTokens }),
-                ...(options?.stop?.length && { stopSequences: options.stop }),
-            },
+            generationConfig: this.generationConfig(options),
             ...(geminiTools && { tools: geminiTools }),
         });
 
@@ -292,7 +308,15 @@ export class GoogleProvider implements LLMProvider {
         );
         const response = result.response;
 
-        const text = response.text() ?? '';
+        // SDK text() concatenates every part.text, thoughts included — split manually when thoughts are present.
+        const parts = response.candidates?.[0]?.content?.parts ?? [];
+        const thoughts = parts.filter((p): p is { text: string; thought: true } => 'text' in p && p.thought === true);
+        // Always call text(): it throws GoogleGenerativeAIResponseError on SAFETY/RECITATION/LANGUAGE blocks.
+        const sdkText = response.text() ?? '';
+        const text = thoughts.length
+            ? parts.map((p) => ('text' in p && !p.thought ? p.text : '')).join('')
+            : sdkText;
+        const reasoning = thoughts.filter((p) => p.text).map((p) => ({ text: p.text }));
         const toolCalls = extractToolCalls(response.candidates);
         const finishReason = normalizeFinishReason(response.candidates?.[0]?.finishReason) ?? 'stop';
         const usage = response.usageMetadata ? {
@@ -304,7 +328,22 @@ export class GoogleProvider implements LLMProvider {
         const duration = Date.now() - startTime;
         this.logger.logComplete('Gemini generateText', duration, { textLength: text.length, toolCallsCount: toolCalls.length });
 
-        return { text, toolCalls: toolCalls.length ? toolCalls : undefined, finishReason, usage };
+        return {
+            text,
+            toolCalls: toolCalls.length ? toolCalls : undefined,
+            finishReason,
+            usage,
+            ...(reasoning.length && { reasoning }),
+        };
+    }
+
+    private generationConfig(options?: GenerateOptions): GenerationConfig {
+        return {
+            temperature: options?.temperature ?? 0.7,
+            ...(options?.maxTokens && { maxOutputTokens: options.maxTokens }),
+            ...(options?.stop?.length && { stopSequences: options.stop }),
+            ...(isReasoningStreamEnabled() && supportsGeminiThinking(this.model) && { thinkingConfig: { includeThoughts: true } }),
+        };
     }
 
     async streamText(messages: Message[], options?: GenerateOptions): Promise<GenerateResult> {
@@ -317,11 +356,7 @@ export class GoogleProvider implements LLMProvider {
         const geminiModel = this.client.getGenerativeModel({
             model: this.model,
             ...(systemInstruction && { systemInstruction }),
-            generationConfig: {
-                temperature: options?.temperature ?? 0.7,
-                ...(options?.maxTokens && { maxOutputTokens: options.maxTokens }),
-                ...(options?.stop?.length && { stopSequences: options.stop }),
-            },
+            generationConfig: this.generationConfig(options),
             ...(geminiTools && { tools: geminiTools }),
         });
 
@@ -338,15 +373,32 @@ export class GoogleProvider implements LLMProvider {
         );
 
         let fullText = '';
+        let thinking = '';
         const toolCalls: ToolCall[] = [];
         let finishReason: GenerateResult['finishReason'];
         let usage: GenerateResult['usage'];
 
         for await (const chunk of streamResult.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-                fullText += chunkText;
-                options?.onChunk?.(chunkText);
+            const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+            if (parts.some((p) => 'text' in p && p.thought === true)) {
+                // chunk.text() leaks thoughts into its return value, so discard it — call it only for its block-error throw.
+                chunk.text();
+                for (const p of parts) {
+                    if (!('text' in p) || !p.text) continue;
+                    if (p.thought) {
+                        thinking += p.text;
+                        options?.onReasoning?.({ text: p.text });
+                    } else {
+                        fullText += p.text;
+                        options?.onChunk?.(p.text);
+                    }
+                }
+            } else {
+                const chunkText = chunk.text();
+                if (chunkText) {
+                    fullText += chunkText;
+                    options?.onChunk?.(chunkText);
+                }
             }
 
             const chunkToolCalls = extractToolCalls(chunk.candidates as GoogleResponse['candidates']);
@@ -367,6 +419,12 @@ export class GoogleProvider implements LLMProvider {
         const duration = Date.now() - startTime;
         this.logger.logComplete('Gemini streamText', duration, { textLength: fullText.length, toolCallsCount: toolCalls.length });
 
-        return { text: fullText, toolCalls: toolCalls.length ? toolCalls : undefined, finishReason, usage };
+        return {
+            text: fullText,
+            toolCalls: toolCalls.length ? toolCalls : undefined,
+            finishReason,
+            usage,
+            ...(thinking && { reasoning: [{ text: thinking }] }),
+        };
     }
 }

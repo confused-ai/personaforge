@@ -669,6 +669,12 @@ export class SwarmOrchestrator {
                 instances.push(existing);
             } else {
                 // Create new subagent instance
+                if (this.subagents.size >= this.config.maxSubagents) {
+                    throw new Error(
+                        `Swarm subagent limit reached (${this.config.maxSubagents}); ` +
+                        `increase maxSubagents or raise template maxConcurrentTasks to favor reuse.`,
+                    );
+                }
                 this.logger.debug(`Creating new subagent (${template.name}) for ${subtask.id}`);
                 const instance = await this.createSubagent(template, subtask);
                 instances.push(instance);

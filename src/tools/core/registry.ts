@@ -17,19 +17,31 @@ export function toToolRegistry(tools: ToolProvider): ToolRegistry {
         return reg;
     }
     if (tools && typeof tools === "object") {
-        const regObj = tools as any;
-        if (typeof regObj.getByName !== "function") {
-            regObj.getByName = (name: string) => {
-                if (typeof regObj.get === "function") {
-                    const found = regObj.get(name);
-                    if (found) return found;
-                }
-                if (typeof regObj.list === "function") {
-                    return regObj.list().find((t: any) => t.name === name);
-                }
-                return undefined;
-            };
-        }
+        const regObj = tools as {
+            getByName?: (name: string) => unknown;
+            get?: (name: string) => unknown;
+            list?: () => Array<{ name: string }>;
+        };
+        if (typeof regObj.getByName === "function") return tools;
+        // Foreign registry without getByName: wrap instead of mutating the
+        // caller's object — assigning methods onto it breaks identity and
+        // surprises owners that freeze their registries.
+        const getByName = (name: string): unknown => {
+            if (typeof regObj.get === "function") {
+                const found = regObj.get(name);
+                if (found) return found;
+            }
+            if (typeof regObj.list === "function") {
+                return regObj.list().find((t) => t.name === name);
+            }
+            return undefined;
+        };
+        return new Proxy(tools, {
+            get(target, prop, receiver) {
+                if (prop === "getByName") return getByName;
+                return Reflect.get(target, prop, receiver);
+            },
+        }) as ToolRegistry;
     }
     return tools;
 }

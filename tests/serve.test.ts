@@ -10,7 +10,8 @@
 import { describe, it, expect } from 'vitest';
 import { signJwt, verifyJwt } from '../src/serve/auth.js';
 import { PrometheusRegistry } from '../src/serve/prometheus.js';
-import { encodeSSE } from '../src/serve/data-stream.js';
+import { encodeSSE, toDataStream, readDataStream } from '../src/serve/data-stream.js';
+import type { StreamChunk } from '../src/create-agent/types.js';
 
 describe('signJwt / verifyJwt', () => {
     const SECRET = 'test-secret-that-is-at-least-32-chars-long!!';
@@ -114,5 +115,29 @@ describe('encodeSSE', () => {
         expect(frame.endsWith('\n\n')).toBe(true);
         const payload = JSON.parse(frame.slice('data: '.length, -2));
         expect(payload.type).toBe('run-finish');
+    });
+
+    it('includes reasoningDelta/reasoningTitle in the wire payload when present', () => {
+        const chunk: StreamChunk = { type: 'reasoning-delta', reasoningDelta: 'because X', reasoningTitle: 'Step 1' };
+        const frame = encodeSSE(chunk);
+        expect(frame).toContain('"reasoningDelta":"because X"');
+        expect(frame).toContain('"reasoningTitle":"Step 1"');
+    });
+
+    it('omits reasoningDelta/reasoningTitle from the wire payload when absent', () => {
+        const frame = encodeSSE({ type: 'text-delta', delta: 'hi' } as StreamChunk);
+        const payload = JSON.parse(frame.slice('data: '.length, -2));
+        expect(payload).not.toHaveProperty('reasoningDelta');
+        expect(payload).not.toHaveProperty('reasoningTitle');
+    });
+
+    it('round-trips a reasoning-delta chunk through toDataStream -> readDataStream', async () => {
+        async function* source(): AsyncIterable<StreamChunk> {
+            yield { type: 'reasoning-delta', reasoningDelta: 'because X', reasoningTitle: 'Step 1' };
+        }
+        const stream = toDataStream(source());
+        const events: StreamChunk[] = [];
+        for await (const ev of readDataStream(stream)) events.push(ev);
+        expect(events).toEqual([{ type: 'reasoning-delta', reasoningDelta: 'because X', reasoningTitle: 'Step 1' }]);
     });
 });

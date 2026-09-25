@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../core/base-tool.js';
 import { ToolCategory, type ToolContext } from '../core/types.js';
+import { assertIdentifier } from './sql-guard.js';
 
 export interface Neo4jToolConfig {
     /** Neo4j HTTP endpoint (or NEO4J_URL env var, default: http://localhost:7474) */
@@ -131,7 +132,7 @@ export class Neo4jCreateNodeTool extends BaseTool<typeof CreateNodeSchema, { id:
     }
 
     protected async performExecute(input: z.infer<typeof CreateNodeSchema>, _ctx: ToolContext) {
-        const labelStr = input.labels.map((l) => `:${l}`).join('');
+        const labelStr = input.labels.map((l) => `:${assertIdentifier(l, 'label')}`).join('');
         const cypher = `CREATE (n${labelStr} $props) RETURN id(n) as id, labels(n) as labels, properties(n) as props`;
         const results = await neo4jQuery(getCreds(this.config), cypher, { props: input.properties }) as Array<{ columns: string[]; data: Array<{ row: unknown[] }> }>;
         const rows = parseResults(results);
@@ -155,12 +156,14 @@ export class Neo4jCreateRelationshipTool extends BaseTool<typeof CreateRelations
     protected async performExecute(input: z.infer<typeof CreateRelationshipSchema>, _ctx: ToolContext) {
         let cypher: string;
         let params: Record<string, unknown>;
+        const relType = assertIdentifier(input.type, 'relationship type');
         if (input.matchByProperty) {
-            const { label, property } = input.matchByProperty;
-            cypher = `MATCH (a:${label} {${property}: $fromId}), (b:${label} {${property}: $toId}) CREATE (a)-[r:${input.type} $props]->(b) RETURN type(r) as type, properties(r) as props`;
+            const label = assertIdentifier(input.matchByProperty.label, 'label');
+            const property = assertIdentifier(input.matchByProperty.property, 'property');
+            cypher = `MATCH (a:${label} {${property}: $fromId}), (b:${label} {${property}: $toId}) CREATE (a)-[r:${relType} $props]->(b) RETURN type(r) as type, properties(r) as props`;
             params = { fromId: input.fromNodeId, toId: input.toNodeId, props: input.properties ?? {} };
         } else {
-            cypher = `MATCH (a), (b) WHERE id(a) = $fromId AND id(b) = $toId CREATE (a)-[r:${input.type} $props]->(b) RETURN type(r) as type, properties(r) as props`;
+            cypher = `MATCH (a), (b) WHERE id(a) = $fromId AND id(b) = $toId CREATE (a)-[r:${relType} $props]->(b) RETURN type(r) as type, properties(r) as props`;
             params = { fromId: Number(input.fromNodeId), toId: Number(input.toNodeId), props: input.properties ?? {} };
         }
         const results = await neo4jQuery(getCreds(this.config), cypher, params) as Array<{ columns: string[]; data: Array<{ row: unknown[] }> }>;
@@ -184,9 +187,12 @@ export class Neo4jFindNodesTool extends BaseTool<typeof FindNodesSchema, { nodes
 
     protected async performExecute(input: z.infer<typeof FindNodesSchema>, _ctx: ToolContext) {
         const props = input.properties ?? {};
-        const whereClauses = Object.keys(props).map((k) => `n.${k} = $${k}`);
+        const whereClauses = Object.keys(props).map((k) => {
+            const key = assertIdentifier(k, 'property');
+            return `n.${key} = $${key}`;
+        });
         const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
-        const cypher = `MATCH (n:${input.label}) ${where} RETURN id(n) as id, labels(n) as labels, properties(n) as props SKIP ${input.skip ?? 0} LIMIT ${input.limit ?? 25}`;
+        const cypher = `MATCH (n:${assertIdentifier(input.label, 'label')}) ${where} RETURN id(n) as id, labels(n) as labels, properties(n) as props SKIP ${input.skip ?? 0} LIMIT ${input.limit ?? 25}`;
         const results = await neo4jQuery(getCreds(this.config), cypher, props) as Array<{ columns: string[]; data: Array<{ row: unknown[] }> }>;
         const rows = parseResults(results);
         const nodes = rows.map((r) => ({ id: r['id'], labels: r['labels'], ...(r['props'] as Record<string, unknown>) }));
@@ -208,7 +214,7 @@ export class Neo4jDeleteNodeTool extends BaseTool<typeof DeleteNodeSchema, { del
 
     protected async performExecute(input: z.infer<typeof DeleteNodeSchema>, _ctx: ToolContext) {
         const deleteClause = input.detach ? 'DETACH DELETE n' : 'DELETE n';
-        const cypher = `MATCH (n:${input.label} {${input.property}: $value}) ${deleteClause} RETURN count(*) as deleted`;
+        const cypher = `MATCH (n:${assertIdentifier(input.label, 'label')} {${assertIdentifier(input.property, 'property')}: $value}) ${deleteClause} RETURN count(*) as deleted`;
         const results = await neo4jQuery(getCreds(this.config), cypher, { value: input.value }) as Array<{ columns: string[]; data: Array<{ row: unknown[] }> }>;
         const rows = parseResults(results);
         return { deleted: rows[0]?.['deleted'] as number ?? 0 };

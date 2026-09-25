@@ -133,6 +133,12 @@ jobs:
       - name: Build root package
         run: bun run build
 
+      - name: Verify entry/exports/types completeness
+        run: bun run check:entries
+
+      - name: Verify core layering boundary
+        run: bun run check:layering
+
       - name: Build all workspace packages
         run: |
           FAILED=()

@@ -79,6 +79,10 @@ interface AiSdkCallResult {
         promptTokens: number;
         completionTokens: number;
     };
+    reasoning?: string | Array<
+        | { type: 'text'; text: string; signature?: string }
+        | { type: 'redacted'; data: string }
+    >;
 }
 
 interface AiSdkStreamResult {
@@ -88,6 +92,9 @@ interface AiSdkStreamResult {
 
 type AiSdkStreamChunk =
     | { type: 'text-delta'; textDelta: string }
+    | { type: 'reasoning'; textDelta: string }
+    | { type: 'reasoning-signature'; signature: string }
+    | { type: 'redacted-reasoning'; data: string }
     | { type: 'tool-call-delta'; toolCallId: string; toolName: string; argsTextDelta: string }
     | { type: 'tool-call'; toolCallId: string; toolName: string; args: Record<string, unknown> }
     | { type: 'finish'; finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'unknown'; usage?: { promptTokens: number; completionTokens: number } }
@@ -157,6 +164,8 @@ export function createAiSdkProvider(
             ...(pfOpts?.headers && { headers: pfOpts.headers }),
         });
 
+        const reasoning = aiToPfReasoning(result.reasoning);
+
         return {
             text: result.text ?? '',
             toolCalls: result.toolCalls?.map((tc) => ({
@@ -170,6 +179,7 @@ export function createAiSdkProvider(
                 completionTokens: result.usage?.completionTokens,
                 totalTokens: (result.usage?.promptTokens ?? 0) + (result.usage?.completionTokens ?? 0),
             },
+            ...(reasoning.length > 0 && { reasoning }),
         };
     };
 
@@ -196,7 +206,7 @@ export function createAiSdkProvider(
             ...(pfOpts?.headers && { headers: pfOpts.headers }),
         });
 
-        return collectStreamToResult(stream, pfOpts?.onChunk);
+        return collectStreamToResult(stream, pfOpts?.onChunk, pfOpts?.onReasoning);
     };
 
     return {
@@ -382,11 +392,26 @@ function aiToPfFinishReason(
     }
 }
 
+// ── Reasoning conversion ─────────────────────────────────────────────────────
+
+/** Map a `doGenerate` result's `reasoning` field to personaforge's consolidated block shape. */
+function aiToPfReasoning(reasoning: AiSdkCallResult['reasoning']): NonNullable<GenerateResult['reasoning']> {
+    if (!reasoning) return [];
+    if (typeof reasoning === 'string') {
+        return reasoning ? [{ text: reasoning }] : [];
+    }
+    return reasoning.map((block) => {
+        if (block.type === 'redacted') return { text: '', redacted: block.data };
+        return { text: block.text, ...(block.signature && { signature: block.signature }) };
+    });
+}
+
 // ── Stream result collection ────────────────────────────────────────────────
 
 async function collectStreamToResult(
     stream: ReadableStream<AiSdkStreamChunk>,
     onChunk?: (text: string) => void,
+    onReasoning?: (delta: { text: string; title?: string }) => void,
 ): Promise<GenerateResult> {
     const reader = stream.getReader();
 
@@ -395,6 +420,11 @@ async function collectStreamToResult(
     // parsed once at the end, exactly like the OpenAI/Anthropic adapters, so
     // incremental argument fragments never hit the JSON parser mid-stream).
     const toolBlocks = new Map<string, { name: string; argsRaw: string }>();
+    const reasoningBlocks: NonNullable<GenerateResult['reasoning']> = [];
+    // The currently-open reasoning block, or undefined when the previous block
+    // was closed by a signature/redacted chunk. A closed block never receives
+    // further deltas — the next `reasoning` delta opens a fresh one.
+    let openReasoning: NonNullable<GenerateResult['reasoning']>[number] | undefined;
     let finishReason: GenerateResult['finishReason'] = 'stop';
     let usage: GenerateResult['usage'] = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
@@ -408,6 +438,28 @@ async function collectStreamToResult(
                 case 'text-delta':
                     text += value.textDelta;
                     onChunk?.(value.textDelta);
+                    break;
+                case 'reasoning': {
+                    if (!openReasoning) {
+                        openReasoning = { text: '' };
+                        reasoningBlocks.push(openReasoning);
+                    }
+                    openReasoning.text += value.textDelta;
+                    if (value.textDelta) onReasoning?.({ text: value.textDelta });
+                    break;
+                }
+                case 'reasoning-signature': {
+                    if (!openReasoning) {
+                        openReasoning = { text: '' };
+                        reasoningBlocks.push(openReasoning);
+                    }
+                    openReasoning.signature = value.signature;
+                    openReasoning = undefined;
+                    break;
+                }
+                case 'redacted-reasoning':
+                    openReasoning = undefined;
+                    reasoningBlocks.push({ text: '', redacted: value.data });
                     break;
                 case 'tool-call': {
                     // Some providers send a complete tool call in one chunk.
@@ -470,5 +522,6 @@ async function collectStreamToResult(
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         finishReason,
         usage,
+        ...(reasoningBlocks.length > 0 && { reasoning: reasoningBlocks }),
     };
 }

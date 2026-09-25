@@ -50,6 +50,8 @@ export interface ExecuteOptions {
   signal?: AbortSignal;
   /** Event store for durability */
   eventStore?: EventStore;
+  /** Called when a non-blocking event-store append fails (default: silent) */
+  onPersistenceError?: (err: unknown) => void;
   /** Checkpoint interval (every N events) */
   checkpointInterval?: number;
   /** Plugins */
@@ -94,6 +96,7 @@ export class DAGEngine {
   private checkpointInterval: number;
   private loggerFactory: (nodeId: NodeId, nodeName: string) => NodeLogger;
   private maxConcurrency: number;
+  private onPersistenceError?: (err: unknown) => void;
   private abortController: AbortController;
   private eventListeners: Map<string, Set<(event: GraphEvent) => void>> = new Map();
   private pendingSignals: Map<string, (value?: unknown) => void> = new Map();
@@ -129,6 +132,7 @@ export class DAGEngine {
       options.signal.addEventListener('abort', () => this.abortController.abort());
     }
     if (options.eventStore) this.eventStore = options.eventStore;
+    if (options.onPersistenceError) this.onPersistenceError = options.onPersistenceError;
     if (options.checkpointInterval) this.checkpointInterval = options.checkpointInterval;
     if (options.plugins) this.plugins = options.plugins;
     if (options.loggerFactory) this.loggerFactory = options.loggerFactory;
@@ -913,9 +917,15 @@ export class DAGEngine {
       p.onEvent?.(event);
     }
 
-    // Persist to event store
-    this.eventStore?.append([event]).catch(() => {
-      // Non-blocking — log error but don't fail execution
+    // Persist to event store. Non-blocking — a failing store must not fail
+    // execution, but the failure is surfaced via onPersistenceError so
+    // durability loss is observable instead of silently dropped.
+    this.eventStore?.append([event]).catch((err: unknown) => {
+      try {
+        this.onPersistenceError?.(err);
+      } catch {
+        // Listener errors never propagate into the engine loop.
+      }
     });
   }
 

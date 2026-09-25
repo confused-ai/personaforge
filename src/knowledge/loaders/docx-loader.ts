@@ -8,6 +8,8 @@
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import type { Document } from '../types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 export interface DocxLoaderOptions { metadata?: Record<string, unknown> }
 
@@ -28,7 +30,7 @@ export async function loadDocx(filePath: string, opts: DocxLoaderOptions = {}): 
 function extractTextFromDocxBuffer(buf: Buffer): string {
   // A .docx is a ZIP. We look for the word/document.xml entry.
   // This is a very minimal ZIP reader — just enough for docx text extraction.
-  const AdmZip = require('adm-zip') as { new(buf: Buffer): { getEntries(): Array<{ entryName: string; getData(): Buffer }>; getEntry(name: string): { getData(): Buffer } | null } };
+  const AdmZip = _require('adm-zip') as { new(buf: Buffer): { getEntries(): Array<{ entryName: string; getData(): Buffer }>; getEntry(name: string): { getData(): Buffer } | null } };
   try {
     const zip = new AdmZip(buf);
     const entry = zip.getEntry('word/document.xml');

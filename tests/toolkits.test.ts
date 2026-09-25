@@ -20,7 +20,7 @@ describe('sqlToolkit', () => {
       describeTable: () => [],
     });
     const query = kit.tools.find((t) => t.name === 'sql_query')!;
-    await expect(query.execute({ query: 'DROP TABLE users' })).rejects.toThrow('destructive');
+    await expect(query.execute({ query: 'DROP TABLE users' })).rejects.toThrow('read-only');
   });
 
   it('sql_list_tables returns list', async () => {

@@ -328,6 +328,8 @@ export interface AgentRunOptions extends AgentContextOptions {
     onToolCall?: (name: string, args: Record<string, unknown>) => void;
     onToolResult?: (name: string, result: unknown) => void;
     onStep?: (step: number) => void;
+    /** Emitted for each reasoning/thinking delta during a streamed run. */
+    onReasoning?: (delta: { text: string; title?: string }) => void;
     /** Emitted when a tool call requires human approval (requireApproval). */
     onApproval?: (req: { toolCallId: string; toolName: string; args: Record<string, unknown>; requiresApproval: boolean }) => void;
     /** Emitted when a tool self-suspends via `context.agent.suspend(...)`. */
@@ -389,10 +391,17 @@ export interface AgentRunOptions extends AgentContextOptions {
  *
  * Richer than the `string` chunks of `agent.stream()` — callers can differentiate
  * text deltas, tool calls, tool results, step completions, and the final run result.
+ *
+ * Kept as a loose interface (not the core `StreamChunk` union) for now: unifying
+ * it broke `src/serve/data-stream.ts` (toWire/fromWire copy fields generically
+ * across variants) and `src/durable/types.ts` (`DurableRunEvent extends StreamChunk`
+ * — an interface cannot extend a union). Those get their own fix in a later task;
+ * this task only adds the `reasoning-delta` variant's fields.
  */
 export interface StreamChunk {
     type:
         | 'text-delta'
+        | 'reasoning-delta'
         | 'tool-call'
         | 'tool-result'
         | 'step-finish'
@@ -405,6 +414,10 @@ export interface StreamChunk {
         | 'object-result';
     /** Present when type is 'text-delta'. */
     delta?: string;
+    /** Present when type is 'reasoning-delta'. */
+    reasoningDelta?: string;
+    /** Present when type is 'reasoning-delta', if the provider titled this block. */
+    reasoningTitle?: string;
     /** Present when type is 'tool-call' or 'tool-result'. */
     tool?: { name: string; input: unknown; output?: unknown };
     /** Present when type is 'step-finish'. */

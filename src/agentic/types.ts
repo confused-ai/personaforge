@@ -184,6 +184,8 @@ export interface AgenticRunResult {
     readonly runId?: string;
     /** Trace ID when provided in config */
     readonly traceId?: string;
+    /** Accumulated reasoning text for the whole run, flattened across steps. */
+    readonly reasoningText?: string;
 }
 
 /** Retry policy for LLM and tool calls in the agentic loop */
@@ -199,6 +201,8 @@ export interface AgenticStreamHooks {
     onToolCall?: (name: string, args: Record<string, unknown>) => void;
     onToolResult?: (name: string, result: unknown) => void;
     onStep?: (step: number) => void;
+    /** Emitted for each reasoning/thinking delta during a streamed step. */
+    onReasoning?: (delta: { text: string; title?: string }) => void;
     /** Emitted after each goal evaluation with the verdict/status. */
     onGoal?: (evaluation: import('../goals/store.js').GoalEvaluation) => void;
     /** Emitted when a tool call requires human approval. */

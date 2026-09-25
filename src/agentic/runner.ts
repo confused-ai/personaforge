@@ -43,6 +43,7 @@ import { estimateCost } from '../providers/cost-tracker.js';
 import { toolToLLMDef } from './_zod-to-schema.js';
 import { validateStructuredOutput, buildStructuredOutputPrompt, extractJson } from './_structured-output.js';
 import { withRetry as guardWithRetry, runToolWithTimeout, createDeadline } from '../guard/index.js';
+import { ReasoningAccumulator } from '../streaming/reasoning-accumulator.js';
 import type { RetryPolicy } from '../guard/index.js';
 import { withSpan, Metrics, genAiAttributes, recordLlmUsage } from '../observe/index.js';
 import { ReasoningManager, TreeOfThoughtEngine, ReflexionEngine, ReWooEngine, GotEngine } from '../reasoning/index.js';
@@ -523,7 +524,7 @@ export class AgenticRunner {
         // ── Pre-run reasoning enrichment ──────────────────────────────────────
         // Only run on a fresh session (no checkpoint restore) to avoid double-enrichment.
         if (steps === 0 && this.config.reasoning?.enabled) {
-            const enriched = await this._applyReasoning(prompt, systemPrompt);
+            const enriched = await this._applyReasoning(prompt, systemPrompt, effectiveRunConfig.requireToolApproval);
             if (enriched) {
                 // Inject as an extra assistant message so the LLM sees its own chain-of-thought
                 messages = [
@@ -573,6 +574,7 @@ export class AgenticRunner {
         }
 
         const resumeToolCallId = runConfig.resumePendingTool?.toolCall.id;
+        let allReasoningText = '';
         const baseCtx: Omit<RunContext, 'step'> = {
             agentId, sessionId, lifecycle, streamHooks,
             toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
@@ -654,13 +656,14 @@ export class AgenticRunner {
             } catch (err) {
                 if (isApprovalRequiredError(err) || isToolSuspendedError(err)) {
                     const p = this._suspensionPayload(err);
+                    const displayed = this._displaySuspension(p);
                     if (isApprovalRequiredError(err)) {
                         streamHooks?.onApproval?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, requiresApproval: true,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, requiresApproval: true,
                         });
                     } else {
                         streamHooks?.onSuspended?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, suspendPayload: p.suspendPayload,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, suspendPayload: displayed.suspendPayload,
                         });
                     }
                     return this._suspendedResult(runConfig, messages, p, agentId, sessionId);
@@ -817,6 +820,12 @@ export class AgenticRunner {
 
             const hasToolCalls = !!result.toolCalls?.length;
 
+            // Reasoning for this step: _invokeLlm's runLlm already merges streamed
+            // onReasoning deltas into result.reasoning per-attempt (discarding any
+            // failed/retried attempt's deltas), so this is never double-counted.
+            const stepReasoning = result.reasoning ?? [];
+            if (stepReasoning.length) allReasoningText += stepReasoning.map((b) => b.text).join('');
+
             // Append a SINGLE assistant message carrying both text and toolCalls.
             // (Previously this pushed text here and a second assistant message with
             //  toolCalls below — duplicating the turn in history.)
@@ -825,6 +834,7 @@ export class AgenticRunner {
                     role: 'assistant',
                     content: result.text ?? '',
                     ...(hasToolCalls && { toolCalls: result.toolCalls }),
+                    ...(stepReasoning.length && { reasoning: stepReasoning }),
                 } as Message & { toolCalls?: LLMToolCall[] });
             }
             if (result.text) {
@@ -945,13 +955,14 @@ export class AgenticRunner {
                             updatedAt: new Date().toISOString(),
                         }).catch((e: unknown) => { this._softFail(e, { op: 'suspendedRun.persist', step: steps }); });
                     }
+                    const displayed = this._displaySuspension(p);
                     if (isApprovalRequiredError(err)) {
                         streamHooks?.onApproval?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, requiresApproval: true,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, requiresApproval: true,
                         });
                     } else {
                         streamHooks?.onSuspended?.({
-                            toolCallId: p.toolCallId, toolName: p.toolName, args: p.args, suspendPayload: p.suspendPayload,
+                            toolCallId: p.toolCallId, toolName: p.toolName, args: displayed.args, suspendPayload: displayed.suspendPayload,
                         });
                     }
                     suspendPayload = p;
@@ -1065,6 +1076,7 @@ export class AgenticRunner {
             ...(legacyStructured !== undefined && { structuredOutput: legacyStructured }),
             ...(tripwire && { tripwire }),
             ...(suspendPayload && { suspendPayload }),
+            ...(allReasoningText && { reasoningText: allReasoningText }),
         } as AgenticRunResult;
 
         if (lifecycle.afterRun) {
@@ -1098,7 +1110,11 @@ export class AgenticRunner {
      * Runs a CoT or ToT reasoning pass and returns the enriched reasoning text
      * to prepend to the conversation. Returns `undefined` if reasoning yields nothing.
      */
-    private async _applyReasoning(prompt: string, systemPrompt: string): Promise<string | undefined> {
+    private async _applyReasoning(
+        prompt: string,
+        systemPrompt: string,
+        requireToolApproval?: AgenticRunConfig['requireToolApproval'],
+    ): Promise<string | undefined> {
         // reasoning is guaranteed non-null here: _applyReasoning is only called
         // when this.config.reasoning is set (checked by callers).
 
@@ -1167,9 +1183,17 @@ export class AgenticRunner {
                     if (!tool) {
                         return `Tool ${name} not found. Available: ${this.config.tools.list().map((t) => t.name).join(', ')}`;
                     }
+                    // ReWOO returns strings, so approval suspension cannot pause
+                    // here — fail closed instead of silently bypassing approval.
+                    if (tool.requireApproval) {
+                        return `Tool ${name} requires approval and cannot run in ReWOO mode.`;
+                    }
+                    let parsedArgs: unknown = input;
+                    try { parsedArgs = JSON.parse(input); } catch { parsedArgs = { query: input, input }; }
+                    if (await this._rewooNeedsApproval(name, parsedArgs, requireToolApproval)) {
+                        return `Tool ${name} requires approval and cannot run in ReWOO mode.`;
+                    }
                     try {
-                        let parsedArgs: unknown = input;
-                        try { parsedArgs = JSON.parse(input); } catch { parsedArgs = { query: input, input }; }
                         const res = await tool.execute(parsedArgs as any, {
                             toolId: tool.id,
                             agentId: this.config.agentId ?? 'agent',
@@ -1382,7 +1406,11 @@ export class AgenticRunner {
         // the W3C spec so the provider request joins the caller's trace.
         let traceHeaders: Record<string, string> | undefined;
         if (ctx.traceId && /^[0-9a-f]{32}$/i.test(ctx.traceId)) {
-            const spanId = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            // Crypto-random span ids (W3C: 16 hex chars); Math.random fallback
+            // only where WebCrypto is unavailable.
+            const spanId = typeof globalThis.crypto?.randomUUID === 'function'
+                ? globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+                : Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
             traceHeaders = { traceparent: `00-${ctx.traceId.toLowerCase()}-${spanId}-01` };
         }
 
@@ -1397,6 +1425,11 @@ export class AgenticRunner {
 
         const runLlm = () => {
             if (useStreaming) {
+                // Per-attempt accumulator: a retried attempt gets its own instance so a
+                // failed attempt's deltas are discarded rather than leaking into the
+                // retry's (or a later step's) reasoning. Provider-returned blocks win; streamed
+                // deltas are only a fallback below, so double-counting isn't possible.
+                const attemptReasoning = new ReasoningAccumulator();
                 // streamText is confirmed defined when useStreaming is true (checked by callers)
                 return provider.streamText!(llmMessages, {
                     ...baseOpts,
@@ -1404,6 +1437,15 @@ export class AgenticRunner {
                         const text = typeof chunk === 'string' ? chunk : chunk.text;
                         ctx.streamHooks!.onChunk!(text);
                     },
+                    onReasoning: (d: { text: string; title?: string }) => {
+                        attemptReasoning.push(d);
+                        ctx.streamHooks?.onReasoning?.(d);
+                    },
+                }).then((r) => {
+                    const streamed = attemptReasoning.flush();
+                    // Prefer provider-returned blocks: they carry signatures/redacted data
+                    // (Anthropic) that must round-trip unchanged; deltas are the fallback.
+                    return r.reasoning?.length ? r : (streamed.length ? { ...r, reasoning: streamed } : r);
                 });
             }
             return provider.generateText(llmMessages, baseOpts);
@@ -1582,7 +1624,10 @@ export class AgenticRunner {
             }
         }
 
-        streamHooks?.onToolCall?.(tc.name, effectiveArgs);
+        streamHooks?.onToolCall?.(
+            tc.name,
+            (tool.toDisplayInput ? tool.toDisplayInput(effectiveArgs) : effectiveArgs) as Record<string, unknown>,
+        );
 
         const toolContext = this._buildToolContext(tool, agentId, sessionId, ctx, tc.id);
         // toolMiddleware is initialised to [] in the constructor; the ! is safe.
@@ -1656,6 +1701,10 @@ export class AgenticRunner {
                 if (m.onError) await m.onError(tool, error, toolContext);
             }
             await lifecycle.onError?.(error, step);
+            streamHooks?.onToolResult?.(
+                tc.name,
+                tool.toDisplayError ? tool.toDisplayError(error) : { error: error.message },
+            );
             return this._toolErrorMessage(tc.id, tc.name, error.message);
         }
 
@@ -1677,7 +1726,12 @@ export class AgenticRunner {
         // Memoize the successful output for later identical calls in this run.
         if (memoKey !== undefined) ctx.memo.set(memoKey, toolResult);
 
-        streamHooks?.onToolResult?.(tc.name, toolResult);
+        // UI/transcript display shape, independent of the model-facing `toolResult`.
+        // Sourced from the tool's own toDisplayOutput (computed in tool-helper.ts
+        // from the validated output), not re-derived from lifecycle/guardrail
+        // post-processing of toolResult — a tool opting into display shaping is
+        // expected to own that shape end-to-end.
+        streamHooks?.onToolResult?.(tc.name, toolResultObj?.display ?? toolResult);
 
         const content = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult);
         return { role: 'tool', content, toolCallId: tc.id, tool_call_id: tc.id, name: tc.name } as Message & { toolCallId: string; name: string };
@@ -1739,6 +1793,29 @@ export class AgenticRunner {
     }
 
     // ── Private: small builders ───────────────────────────────────────────────
+
+    /** Run-level approval policy check for the ReWOO path (no suspension possible there). */
+    private async _rewooNeedsApproval(
+        toolName: string,
+        args: unknown,
+        policy: AgenticRunConfig['requireToolApproval'],
+    ): Promise<boolean> {
+        if (!policy) return false;
+        try {
+            if (policy === true) return true;
+            if (typeof policy === 'function') {
+                return await policy({
+                    toolName,
+                    args: (args ?? {}) as Record<string, unknown>,
+                    agentId: this.config.agentId,
+                    sessionId: this.config.sessionId,
+                });
+            }
+            return false;
+        } catch {
+            return true; // fails closed
+        }
+    }
 
     private async _requiresApproval(tc: LLMToolCall, ctx: RunContext): Promise<boolean> {
         const tool = this.config.tools.getByName(tc.name);
@@ -1968,6 +2045,25 @@ export class AgenticRunner {
             };
         }
         return { toolCallId: '', toolName: '', args: {}, requiresApproval: false };
+    }
+
+    /**
+     * UI/transcript-facing shape of an approval/suspension payload, via the
+     * tool's own `toDisplayInput`/`toDisplaySuspendPayload` hooks. Used only
+     * for `streamHooks.onApproval`/`onSuspended` — never for what gets
+     * persisted to `suspendedRunStore` or replayed on resume, which always
+     * keep the raw `args`/`suspendPayload`.
+     */
+    private _displaySuspension(
+        p: NonNullable<AgenticRunResult['suspendPayload']>,
+    ): { args: Record<string, unknown>; suspendPayload?: unknown } {
+        const tool = this.config.tools.getByName(p.toolName);
+        return {
+            args: (tool?.toDisplayInput ? tool.toDisplayInput(p.args) : p.args) as Record<string, unknown>,
+            suspendPayload: tool?.toDisplaySuspendPayload && p.suspendPayload !== undefined
+                ? tool.toDisplaySuspendPayload(p.suspendPayload)
+                : p.suspendPayload,
+        };
     }
 
     private _tripwireResult(

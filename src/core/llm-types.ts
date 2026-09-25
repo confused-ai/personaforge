@@ -70,8 +70,15 @@ export interface StreamToolCallChunk {
     readonly argsDelta: string;
 }
 
+/** A reasoning/thinking-token delta chunk from a streaming LLM response. */
+export interface ReasoningStreamChunk {
+    readonly type: 'reasoning';
+    readonly text: string;
+    readonly title?: string;
+}
+
 /** Union of all streaming delta types from an LLM provider. */
-export type StreamDelta = TextStreamChunk | StreamToolCallChunk;
+export type StreamDelta = TextStreamChunk | StreamToolCallChunk | ReasoningStreamChunk;
 
 // ── Stream options ────────────────────────────────────────────────────────────
 

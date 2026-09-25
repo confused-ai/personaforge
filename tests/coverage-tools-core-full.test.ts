@@ -719,6 +719,57 @@ describe('defineTool() / ToolBuilder', () => {
     });
 });
 
+describe('display() — UI/transcript output shaping, independent of transform()/toModelOutput', () => {
+    it('keeps the model-facing result and the display shape independent', async () => {
+        const t = defineTool()
+            .name('lookup')
+            .description('d')
+            .parameters(z.object({ id: z.number() }))
+            .execute(async ({ id }) => ({ id, secret: 'sk-raw-key', label: `record-${id}` }))
+            .transform((full) => ({ id: full.id, label: full.label, secret: full.secret })) // model path: full shape
+            .display((full) => ({ label: full.label })) // UI/transcript path: redacted shape
+            .build();
+
+        const result = await t.execute({ id: 7 });
+
+        expect(result.success).toBe(true);
+        // Model-facing data still carries the full transform() output.
+        expect(result.data).toEqual({ id: 7, label: 'record-7', secret: 'sk-raw-key' });
+        // Display shape is independently redacted — no secret leaks to UI/transcript.
+        expect(result.display).toEqual({ label: 'record-7' });
+    });
+
+    it('leaves display undefined when the tool defines no display hook', async () => {
+        const t = defineTool()
+            .name('plain')
+            .description('d')
+            .parameters(z.object({ n: z.number() }))
+            .execute(async ({ n }) => n * 2)
+            .build();
+
+        const result = await t.execute({ n: 3 });
+        expect(result.data).toBe(6);
+        expect(result.display).toBeUndefined();
+    });
+
+    it('displayError() shapes only the display path on failure, model error message is untouched', async () => {
+        const t = defineTool()
+            .name('boom')
+            .description('d')
+            .parameters(z.object({}))
+            .execute(async () => { throw new Error('db connection string: postgres://user:pass@host/db'); })
+            .displayError(() => ({ message: 'Something went wrong' }))
+            .build();
+
+        const result = await t.execute({});
+        expect(result.success).toBe(false);
+        // Model still sees the real error message (unredacted feedback loop).
+        expect(result.error?.message).toContain('postgres://user:pass@host/db');
+        // Display path is independently redacted.
+        expect(result.display).toEqual({ message: 'Something went wrong' });
+    });
+});
+
 describe('extendTool()', () => {
     it('overrides name/description and merges tags/category/timeout', () => {
         const base = tool({

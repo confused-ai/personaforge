@@ -18,12 +18,27 @@ import type { EntityId } from '../../core/index.js';
 /**
  * Message bus implementation
  */
+export interface MessageBusOptions {
+    /** Called when a subscriber handler throws (delivery to others continues). Default: console.error. */
+    onSubscriberError?: (err: unknown, message: AgentMessage) => void;
+}
+
 export class MessageBusImpl implements MessageBus {
+    constructor(private readonly opts: MessageBusOptions = {}) {}
     private messages: AgentMessage[] = [];
     private static readonly MAX_HISTORY = 10_000; // cap to prevent unbounded growth
     private subscriptions: Map<EntityId, Set<SubscriptionImpl>> = new Map();
     private pendingRequests: Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }> = new Map();
     private messageCounter = 0;
+
+    private reportSubscriberError(error: unknown, message: AgentMessage): void {
+        try {
+            if (this.opts.onSubscriberError) this.opts.onSubscriberError(error, message);
+            else console.error('Error handling message:', error);
+        } catch {
+            // Error hook must never break delivery.
+        }
+    }
 
     async send(message: Omit<AgentMessage, 'id' | 'timestamp'>): Promise<AgentMessage> {
         const fullMessage: AgentMessage = {
@@ -141,7 +156,7 @@ export class MessageBusImpl implements MessageBus {
                         try {
                             await sub.handler(message);
                         } catch (error) {
-                            console.error('Error handling message:', error);
+                            this.reportSubscriberError(error, message);
                         }
                     }
                 }
@@ -155,7 +170,7 @@ export class MessageBusImpl implements MessageBus {
                         try {
                             await sub.handler(message);
                         } catch (error) {
-                            console.error('Error handling message:', error);
+                            this.reportSubscriberError(error, message);
                         }
                     }
                 }

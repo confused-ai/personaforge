@@ -41,7 +41,7 @@ import { agent, defineAgent, compose, pipe, tool } from 'personaforge';
 | `personaforge/llm` | Provider classes and routing helpers |
 | `personaforge/model` | `openai()`, `anthropic()`, `ollama()` shorthand factories |
 | `personaforge/skills` | Pre-built skill bundles |
-| `personaforge/processors` | Mastra-style input/output/error processor pipeline |
+| `personaforge/processors` | Input/output/error processor pipeline |
 | `personaforge/durable` | Long-running, resumable agent execution with replay |
 | `personaforge/goals` | Durable, thread-scoped judge-scored objectives |
 | `personaforge/code-mode` | Sandboxed multi-tool computation |
@@ -50,6 +50,18 @@ import { agent, defineAgent, compose, pipe, tool } from 'personaforge';
 | `personaforge/events` | Typed event bus + core event vocabulary |
 | `personaforge/registry` | Agent registration, discovery, delegation toolkit |
 | `personaforge/harness` | `evaluate()` — A/B harness over agents/tasks/workflows |
+
+## Easily confused imports
+
+| You want | Import from | Not |
+|---|---|---|
+| Budgets, rate limits, circuit breakers, HITL | `personaforge/guard` | `personaforge/guardrails` (content safety: PII, injection, moderation). `src/guard/` retry/timeout helpers are internal engine utilities, not a public import |
+| PII redaction, injection detection, moderation | `personaforge/guardrails` | `personaforge/guard` (operational safety, not content safety) |
+| Serve agents over HTTP | `personaforge/serve` (facade) or `personaforge/runtime` (full surface) | `personaforge/serve` dir internals — import the subpath, not deep files |
+| Logs, traces, metrics | `personaforge/observe` (facade) or `personaforge/observability` (full surface) | — |
+| Model provider factories (`openai()`, …) | `personaforge/model` | `personaforge/models` (compat barrel + content/stream utilities), `personaforge/providers` (canonical provider classes + routing) |
+| Test doubles (`mockAgent`, `scenario`) | `personaforge/test` | `personaforge/testing` (runner utilities), `personaforge/test-utils` (conformance suites) |
+| One-call DX (`agent()`, `bare()`, `compose()`) | `personaforge/lite` or `personaforge/dx` | `personaforge/sdk` (builder-style `defineAgent()` + typed workflows) |
 
 ## Example imports
 

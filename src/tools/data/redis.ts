@@ -6,6 +6,8 @@
 import { z } from 'zod';
 import { BaseTool } from '../core/base-tool.js';
 import { ToolCategory, type ToolContext } from '../core/types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 export interface RedisToolConfig {
     url?: string;
@@ -26,12 +28,25 @@ interface RedisClient {
 }
 
 function makeClient(config: RedisToolConfig): RedisClient {
-    const Redis = require('ioredis') as new (url: string) => RedisClient;
+    const Redis = _require('ioredis') as new (url: string) => RedisClient;
     return new Redis(config.url ?? 'redis://localhost:6379');
 }
 
 function pk(key: string, prefix?: string): string {
     return prefix ? `${prefix}${key}` : key;
+}
+
+/**
+ * Run `fn` with a client that is always quit, even when the command throws.
+ * Without this, a failed command leaks the connection.
+ */
+async function withClient<T>(config: RedisToolConfig, fn: (client: RedisClient) => Promise<T>): Promise<T> {
+    const client = makeClient(config);
+    try {
+        return await fn(client);
+    } finally {
+        await client.quit().catch(() => undefined);
+    }
 }
 
 // ── Schemas ────────────────────────────────────────────────────────────────
@@ -57,10 +72,10 @@ export class RedisGetTool extends BaseTool<typeof GetSchema, { value: string | n
         super({ id: 'redis_get', name: 'Redis Get', description: 'Get a value from Redis by key.', category: ToolCategory.DATABASE, parameters: GetSchema });
     }
     protected async performExecute(input: z.infer<typeof GetSchema>, _ctx: ToolContext) {
-        const client = makeClient(this.config);
-        const value = await client.get(pk(input.key, this.config.keyPrefix));
-        await client.quit();
-        return { value, exists: value !== null };
+        return withClient(this.config, async (client) => {
+            const value = await client.get(pk(input.key, this.config.keyPrefix));
+            return { value, exists: value !== null };
+        });
     }
 }
 
@@ -69,16 +84,16 @@ export class RedisSetTool extends BaseTool<typeof SetSchema, { success: boolean 
         super({ id: 'redis_set', name: 'Redis Set', description: 'Set a key-value pair in Redis with optional TTL.', category: ToolCategory.DATABASE, parameters: SetSchema });
     }
     protected async performExecute(input: z.infer<typeof SetSchema>, _ctx: ToolContext) {
-        const client = makeClient(this.config);
         const ttl = input.ttl ?? this.config.defaultTtl;
         const k = pk(input.key, this.config.keyPrefix);
-        if (ttl) {
-            await client.set(k, input.value, 'EX', ttl);
-        } else {
-            await client.set(k, input.value);
-        }
-        await client.quit();
-        return { success: true };
+        return withClient(this.config, async (client) => {
+            if (ttl) {
+                await client.set(k, input.value, 'EX', ttl);
+            } else {
+                await client.set(k, input.value);
+            }
+            return { success: true };
+        });
     }
 }
 
@@ -87,10 +102,10 @@ export class RedisDeleteTool extends BaseTool<typeof DelSchema, { deleted: numbe
         super({ id: 'redis_delete', name: 'Redis Delete', description: 'Delete one or more keys from Redis.', category: ToolCategory.DATABASE, parameters: DelSchema });
     }
     protected async performExecute(input: z.infer<typeof DelSchema>, _ctx: ToolContext) {
-        const client = makeClient(this.config);
-        const deleted = await client.del(...input.keys.map((k) => pk(k, this.config.keyPrefix)));
-        await client.quit();
-        return { deleted };
+        return withClient(this.config, async (client) => {
+            const deleted = await client.del(...input.keys.map((k) => pk(k, this.config.keyPrefix)));
+            return { deleted };
+        });
     }
 }
 
@@ -99,11 +114,13 @@ export class RedisKeysTool extends BaseTool<typeof KeysSchema, { keys: string[];
         super({ id: 'redis_keys', name: 'Redis Keys', description: 'List Redis keys matching a glob pattern.', category: ToolCategory.DATABASE, parameters: KeysSchema });
     }
     protected async performExecute(input: z.infer<typeof KeysSchema>, _ctx: ToolContext) {
-        const client = makeClient(this.config);
-        const pat = this.config.keyPrefix ? `${this.config.keyPrefix}${input.pattern}` : input.pattern;
-        const keys = await client.keys(pat);
-        await client.quit();
-        return { keys, count: keys.length };
+        return withClient(this.config, async (client) => {
+            const pat = this.config.keyPrefix ? `${this.config.keyPrefix}${input.pattern}` : input.pattern;
+            // KEYS is O(N) server-side — cap what we return so a broad
+            // pattern can't blow up the result payload.
+            const keys = (await client.keys(pat)).slice(0, 1000);
+            return { keys, count: keys.length };
+        });
     }
 }
 
@@ -112,10 +129,10 @@ export class RedisHashGetTool extends BaseTool<typeof HashGetSchema, { fields: R
         super({ id: 'redis_hash_get', name: 'Redis Hash Get', description: 'Get all fields of a Redis hash (HGETALL).', category: ToolCategory.DATABASE, parameters: HashGetSchema });
     }
     protected async performExecute(input: z.infer<typeof HashGetSchema>, _ctx: ToolContext) {
-        const client = makeClient(this.config);
-        const fields = await client.hgetall(pk(input.key, this.config.keyPrefix));
-        await client.quit();
-        return { fields };
+        return withClient(this.config, async (client) => {
+            const fields = await client.hgetall(pk(input.key, this.config.keyPrefix));
+            return { fields };
+        });
     }
 }
 
@@ -124,11 +141,11 @@ export class RedisIncrTool extends BaseTool<typeof IncrSchema, { value: number }
         super({ id: 'redis_incr', name: 'Redis Increment', description: 'Increment a Redis counter key by a given amount (default 1).', category: ToolCategory.DATABASE, parameters: IncrSchema });
     }
     protected async performExecute(input: z.infer<typeof IncrSchema>, _ctx: ToolContext) {
-        const client = makeClient(this.config);
-        const k = pk(input.key, this.config.keyPrefix);
-        const value = (input.by ?? 1) === 1 ? await client.incr(k) : await client.incrby(k, input.by ?? 1);
-        await client.quit();
-        return { value };
+        return withClient(this.config, async (client) => {
+            const k = pk(input.key, this.config.keyPrefix);
+            const value = (input.by ?? 1) === 1 ? await client.incr(k) : await client.incrby(k, input.by ?? 1);
+            return { value };
+        });
     }
 }
 

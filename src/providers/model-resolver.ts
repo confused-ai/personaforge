@@ -1,5 +1,5 @@
 /**
- * Model string resolver: "provider:model_id" → provider config.
+ * Model string resolver: "provider:model_id" ("provider/model_id" alias) → provider config.
  *
  * Supported providers:
  *   openai, anthropic, google, groq, xai, together, fireworks,
@@ -182,7 +182,7 @@ function env(getEnv: EnvFn | undefined, key: string): string | undefined {
 }
 
 /**
- * Resolve "provider:model_id" → config.
+ * Resolve "provider:model_id" → config (`provider/model_id` also accepted).
  * Returns undefined when the string doesn't contain a recognised provider prefix.
  */
 export function resolveModelString(
@@ -191,10 +191,12 @@ export function resolveModelString(
 ): ResolvedModelConfig | undefined {
     const ge = getEnv ?? (typeof process !== 'undefined' ? (k: string) => process.env?.[k] : undefined);
     const colon = modelStr.indexOf(':');
-    if (colon <= 0) return undefined;
+    const slash = modelStr.indexOf('/');
+    const sep = colon > 0 ? colon : slash;
+    if (sep <= 0) return undefined;
 
-    const provider = modelStr.slice(0, colon).trim().toLowerCase() as ProviderName;
-    const modelId = modelStr.slice(colon + 1).trim();
+    const provider = modelStr.slice(0, sep).trim().toLowerCase() as ProviderName;
+    const modelId = modelStr.slice(sep + 1).trim();
     if (!modelId) return undefined;
 
     switch (provider) {
@@ -425,16 +427,18 @@ export function resolveModelString(
     }
 }
 
-/** Check if a string looks like "provider:model_id". */
+/** Check if a string looks like "provider:model_id" (`provider/model_id` also accepted). */
 export function isModelString(s: string): boolean {
     const colon = s.indexOf(':');
-    return colon > 0 && s.slice(colon + 1).trim().length > 0;
+    const sep = colon > 0 ? colon : s.indexOf('/');
+    return sep > 0 && s.slice(sep + 1).trim().length > 0;
 }
 
 /** Return the provider portion of a model string, or undefined. */
 export function getProviderFromModelString(s: string): ProviderName | undefined {
     const colon = s.indexOf(':');
-    if (colon <= 0) return undefined;
-    const p = s.slice(0, colon).trim().toLowerCase();
+    const sep = colon > 0 ? colon : s.indexOf('/');
+    if (sep <= 0) return undefined;
+    const p = s.slice(0, sep).trim().toLowerCase();
     return Object.values(PROVIDER).includes(p as ProviderName) ? (p as ProviderName) : undefined;
 }

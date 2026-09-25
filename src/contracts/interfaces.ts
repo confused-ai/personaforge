@@ -51,6 +51,8 @@ export interface GenerateOptions {
   temperature?: number;
   stop?: string[];
   onChunk?: (chunk: string) => void;
+  /** Emitted for each reasoning/thinking delta, separate from onChunk's plain text. */
+  onReasoning?: (delta: { text: string; title?: string }) => void;
   /** Abort signal forwarded to the provider SDK so in-flight calls cancel on run abort/timeout. */
   signal?: AbortSignal;
   /**
@@ -76,6 +78,8 @@ export interface GenerateResult {
   text: string;
   toolCalls?: ToolCall[];
   finishReason?: 'stop' | 'tool_calls' | 'max_tokens' | 'error';
+  /** Reasoning/thinking blocks produced alongside the text (when the provider and flag support it). */
+  reasoning?: { text: string; title?: string; signature?: string; redacted?: string }[];
   usage?: {
     promptTokens?: number;
     completionTokens?: number;

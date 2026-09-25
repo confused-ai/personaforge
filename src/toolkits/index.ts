@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import type { SchemaInput } from '../validation/index.js';
+import { assertSelectOnly } from '../tools/data/sql-guard.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,10 +67,7 @@ export function sqlToolkit(cfg: SqlToolkitConfig): PromptedToolkit {
       description: 'Execute a read-only SQL query and return the rows. Never run destructive DML/DDL.',
       parameters: z.object({ query: z.string() }),
       async execute({ query }: { query: string }) {
-        if (/\b(drop|delete|update|insert|alter|truncate)\b/i.test(query)) {
-          throw new Error('[sql_query] destructive statements are not permitted');
-        }
-        return { rows: await cfg.execute(query) };
+        return { rows: await cfg.execute(assertSelectOnly(query)) };
       },
     } as Tool,
   ];
@@ -96,6 +94,8 @@ export interface HttpToolkitConfig {
   headers?: Record<string, string>;
   /** Custom fetch override (for tests). */
   fetchImpl?: typeof fetch;
+  /** Request timeout in ms (default: 30000). */
+  timeoutMs?: number;
 }
 
 export function httpToolkit(cfg: HttpToolkitConfig = {}): PromptedToolkit {
@@ -112,7 +112,7 @@ export function httpToolkit(cfg: HttpToolkitConfig = {}): PromptedToolkit {
       parameters: z.object({ url: z.string().url() }),
       async execute({ url }: { url: string }) {
         guard(url);
-        const res = await f(url, { headers: cfg.headers });
+        const res = await f(url, { headers: cfg.headers, signal: AbortSignal.timeout(cfg.timeoutMs ?? 30000) });
         return { status: res.status, body: await res.text() };
       },
     } as Tool,
@@ -126,6 +126,7 @@ export function httpToolkit(cfg: HttpToolkitConfig = {}): PromptedToolkit {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...cfg.headers },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(cfg.timeoutMs ?? 30000),
         });
         return { status: res.status, body: await res.text() };
       },
@@ -172,8 +173,10 @@ export function fileToolkit(cfg: FileToolkitConfig): PromptedToolkit {
   };
   const guard = async (path: string): Promise<string> => {
     const pathMod = await import('node:path');
-    const abs = pathMod.resolve(cfg.root, path);
-    if (!abs.startsWith(pathMod.resolve(cfg.root))) {
+    const root = pathMod.resolve(cfg.root);
+    const abs = pathMod.resolve(root, path);
+    // Segment-boundary check: `/root2/x`.startsWith(`/root`) must not pass.
+    if (abs !== root && !abs.startsWith(root + pathMod.sep)) {
       throw new Error(`[file_toolkit] path escapes root: ${path}`);
     }
     return abs;

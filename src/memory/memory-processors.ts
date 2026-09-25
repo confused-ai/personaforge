@@ -267,13 +267,16 @@ export class SemanticRecallProcessor implements Processor {
 
     /** Embed + index stored messages for future recall (used by the processor and callers). */
     async embedAndIndex(messages: StorageMessage[], threadId: string, resourceId: string): Promise<void> {
-        const valid = messages.filter((m) => textOfContent(m.content).trim());
+        const valid = messages.filter((m) => textOfContent(m.content).trim() && typeof m.id === 'string' && m.id.length > 0);
         if (valid.length === 0) return;
         const vectors = await this.cfg.embedder.embedBatch(valid.map((m) => textOfContent(m.content)));
+        if (vectors.length !== valid.length) {
+            throw new Error(`Embedder returned ${vectors.length} vectors for ${valid.length} messages.`);
+        }
         await this.cfg.vectorStore.upsert(
             valid.map((m, i) => ({
-                id: m.id!,
-                vector: vectors[i]!,
+                id: m.id as string,
+                vector: vectors[i] as number[],
                 metadata: {
                     content: textOfContent(m.content),
                     threadId,

@@ -1,5 +1,5 @@
 /**
- * personaforge/serve — HTTP runtime for agents.
+ * personaforge/serve — HTTP runtime for agents (facade over `personaforge/runtime`).
  *
  * ```ts
  * import { serve, createRouter } from 'personaforge/serve'

@@ -72,6 +72,10 @@ describe('ThreadPool', () => {
     });
 
     it('parallel execution beats serial on multi-core machines', async () => {
+        // Real worker-thread CPU work; under heavy contention (this file's
+        // process competing with every other file in a large parallel test
+        // run) both the parallel and serial spins can slow down enough to
+        // miss the default 30s budget before the timing assertion even runs.
         const cores = availableParallelism();
         if (cores < 2) {
             // Single-core CI box — parallel speedup is not observable. Skip.
@@ -99,5 +103,5 @@ describe('ThreadPool', () => {
         // Expect at least a modest speedup. Loose factor to avoid CI flake:
         // parallel should be faster than 80% of serial when we have >=2 threads.
         expect(parMs).toBeLessThan(serMs * 0.8);
-    });
+    }, 60000);
 });

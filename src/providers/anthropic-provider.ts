@@ -19,6 +19,7 @@ import type {
 } from './types.js';
 import { normalizeFinishReason } from './types.js';
 import { DebugLogger, createDebugLogger } from '../shared/index.js';
+import { anthropicThinkingConfig, type AnthropicThinkingParam } from './anthropic-thinking.js';
 import { createRequire } from 'node:module';
 // ESM-safe require: tsup's ESM bundle turns bare require() into a shim that
 // throws "Dynamic require not supported". createRequire restores sync peer-dep loading.
@@ -46,6 +47,21 @@ function rethrowWithStatus(err: unknown): never {
     throw err;
 }
 
+/**
+ * True when the last assistant tool-use turn has no signed/redacted thinking
+ * (e.g. an approval/suspend resume rebuilt without reasoning). Sending thinking
+ * then 400s ("a final assistant message must start with a thinking block").
+ */
+function hasUnsignedToolTurn(messages: Message[]): boolean {
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]!;
+        const tc = m as { toolCalls?: unknown[]; tool_calls?: unknown[] };
+        if (m.role !== 'assistant' || !(tc.toolCalls?.length || tc.tool_calls?.length)) continue;
+        return !m.reasoning?.some((r) => r.signature || r.redacted);
+    }
+    return false;
+}
+
 interface AnthropicCreateParams {
     model: string;
     max_tokens: number;
@@ -54,6 +70,7 @@ interface AnthropicCreateParams {
     tools?: AnthropicTool[];
     temperature?: number;
     stream?: boolean;
+    thinking?: AnthropicThinkingParam;
 }
 
 type AnthropicContent = string | Array<{ type: string; text?: string; source?: { type: string; media_type?: string; data?: string } }>;
@@ -72,7 +89,7 @@ interface AnthropicResponse {
     id: string;
     type: string;
     role: string;
-    content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>;
+    content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown>; thinking?: string; signature?: string; data?: string }>;
     model: string;
     stop_reason: string;
     usage: { input_tokens: number; output_tokens: number };
@@ -82,8 +99,8 @@ interface AnthropicStreamEvent {
     type: string;
     index?: number;
     // content_block_start: block has type 'text' or 'tool_use' (with id, name)
-    content_block?: { type: string; text?: string; id?: string; name?: string };
-    delta?: { type: string; text?: string; partial_json?: string };
+    content_block?: { type: string; text?: string; id?: string; name?: string; data?: string };
+    delta?: { type: string; text?: string; partial_json?: string; thinking?: string; signature?: string };
     usage?: { input_tokens: number; output_tokens: number };
     message?: Partial<AnthropicResponse>;
     stop_reason?: string;
@@ -129,7 +146,13 @@ function toAnthropicMessages(messages: Message[]): { system?: string; messages: 
         // assistant with tool_calls → content blocks
         if (m.role === 'assistant') {
             const asst = m as AssistantMessage;
-            const blocks: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
+            const blocks: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown>; thinking?: string; signature?: string; data?: string }> = [];
+            // Prior thinking must round-trip unchanged and precede text/tool_use.
+            // Unsigned blocks (e.g. from another provider) would 400, so skip them.
+            for (const r of m.reasoning ?? []) {
+                if (r.redacted) blocks.push({ type: 'redacted_thinking', data: r.redacted });
+                else if (r.signature) blocks.push({ type: 'thinking', thinking: r.text, signature: r.signature });
+            }
             const textContent = typeof asst.content === 'string' ? asst.content : '';
             if (textContent) blocks.push({ type: 'text', text: textContent });
             if (asst.toolCalls?.length) {
@@ -207,12 +230,15 @@ export class AnthropicProvider implements LLMProvider {
         const { system, messages: anthropicMsgs } = toAnthropicMessages(messages);
         const tools = toAnthropicTools(options?.tools);
 
+        const maxTokens = options?.maxTokens ?? 4096;
+        const thinking = hasUnsignedToolTurn(messages) ? undefined : anthropicThinkingConfig(this.model, maxTokens);
         const reqParams = {
             model: this.model,
-            max_tokens: options?.maxTokens ?? 4096,
+            max_tokens: maxTokens,
             system,
             messages: anthropicMsgs,
-            temperature: options?.temperature ?? 0.7,
+            // temperature is rejected alongside thinking on current models
+            ...(thinking ? { thinking } : { temperature: options?.temperature ?? 0.7 }),
             ...(tools && { tools }),
         } as AnthropicCreateParams;
         const requestOpts = options?.signal || options?.headers
@@ -225,9 +251,14 @@ export class AnthropicProvider implements LLMProvider {
 
         let text = '';
         const toolCalls: ToolCall[] = [];
+        const reasoning: NonNullable<GenerateResult['reasoning']> = [];
 
         for (const block of response.content) {
-            if (block.type === 'text' && block.text) {
+            if (block.type === 'thinking') {
+                reasoning.push({ text: block.thinking ?? '', signature: block.signature });
+            } else if (block.type === 'redacted_thinking') {
+                reasoning.push({ text: '', redacted: block.data });
+            } else if (block.type === 'text' && block.text) {
                 text += block.text;
             } else if (block.type === 'tool_use' && block.id && block.name && block.input) {
                 toolCalls.push({
@@ -249,6 +280,7 @@ export class AnthropicProvider implements LLMProvider {
             text,
             toolCalls: toolCalls.length ? toolCalls : undefined,
             finishReason: normalizeFinishReason(response.stop_reason),
+            ...(reasoning.length ? { reasoning } : {}),
             usage: {
                 promptTokens: response.usage?.input_tokens,
                 completionTokens: response.usage?.output_tokens,
@@ -262,12 +294,15 @@ export class AnthropicProvider implements LLMProvider {
         const { system, messages: anthropicMsgs } = toAnthropicMessages(messages);
         const tools = toAnthropicTools(options?.tools);
 
+        const maxTokens = options?.maxTokens ?? 4096;
+        const thinking = hasUnsignedToolTurn(messages) ? undefined : anthropicThinkingConfig(this.model, maxTokens);
         const streamParams = {
             model: this.model,
-            max_tokens: options?.maxTokens ?? 4096,
+            max_tokens: maxTokens,
             system,
             messages: anthropicMsgs,
-            temperature: options?.temperature ?? 0.7,
+            // temperature is rejected alongside thinking on current models
+            ...(thinking ? { thinking } : { temperature: options?.temperature ?? 0.7 }),
             stream: true,
             ...(tools && { tools }),
         } as AnthropicCreateParams;
@@ -282,6 +317,8 @@ export class AnthropicProvider implements LLMProvider {
         let fullText = '';
         // index → {id, name, args} for in-flight tool blocks
         const toolBlocks = new Map<number, { id: string; name: string; args: string }>();
+        // index → thinking/redacted block; Map keeps insertion (= content) order
+        const thinkingBlocks = new Map<number, { text: string; signature?: string; redacted?: string }>();
         let finishReason: GenerateResult['finishReason'] = 'max_tokens';
         let usage: GenerateResult['usage'];
 
@@ -290,9 +327,23 @@ export class AnthropicProvider implements LLMProvider {
                 const block = event.content_block;
                 if (block.type === 'tool_use' && block.id && block.name) {
                     toolBlocks.set(event.index, { id: block.id, name: block.name, args: '' });
+                } else if (block.type === 'thinking') {
+                    thinkingBlocks.set(event.index, { text: '', signature: '' });
+                } else if (block.type === 'redacted_thinking') {
+                    // arrives whole; opaque data never goes to onReasoning
+                    thinkingBlocks.set(event.index, { text: '', redacted: block.data });
                 }
             } else if (event.type === 'content_block_delta' && event.index !== undefined && event.delta) {
-                if (event.delta.type === 'text_delta' && event.delta.text) {
+                if (event.delta.type === 'thinking_delta') {
+                    const tb = thinkingBlocks.get(event.index);
+                    if (tb && event.delta.thinking) {
+                        tb.text += event.delta.thinking;
+                        options?.onReasoning?.({ text: event.delta.thinking });
+                    }
+                } else if (event.delta.type === 'signature_delta') {
+                    const tb = thinkingBlocks.get(event.index);
+                    if (tb) tb.signature = event.delta.signature;
+                } else if (event.delta.type === 'text_delta' && event.delta.text) {
                     fullText += event.delta.text;
                     options?.onChunk?.(event.delta.text);
                 } else if (event.delta.type === 'input_json_delta' && event.delta.partial_json) {
@@ -329,10 +380,12 @@ export class AnthropicProvider implements LLMProvider {
             toolCallsCount: toolCalls.length,
         });
 
+        const reasoning = Array.from(thinkingBlocks.values());
         return {
             text: fullText,
             toolCalls: toolCalls.length ? toolCalls : undefined,
             finishReason,
+            ...(reasoning.length ? { reasoning } : {}),
             usage,
         };
     }

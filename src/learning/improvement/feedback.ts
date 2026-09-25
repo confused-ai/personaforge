@@ -13,6 +13,8 @@ import type {
     ExecutionSignal,
     FeedbackSource,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Signal extraction ─────────────────────────────────────────────────────────
 
@@ -124,7 +126,7 @@ type DbCtor = new (path: string) => Db;
 
 function loadSqlite(): DbCtor {
     try {
-        return require('better-sqlite3') as DbCtor;
+        return _require('better-sqlite3') as DbCtor;
     } catch {
         throw new Error(MISSING_SDK);
     }

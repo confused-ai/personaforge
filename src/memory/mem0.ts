@@ -95,7 +95,7 @@ export class InMemoryMem0Store implements Mem0Store {
             metadata: { ...fact.metadata },
             hash: fact.hash,
             createdAt: existing?.createdAt ?? now,
-            updatedAt: existing?.updatedAt ?? now,
+            updatedAt: now,
         };
         this.facts.set(id, row);
         await this.log?.({ action: existing ? 'UPDATE' : 'ADD', id, content: fact.content, createdAt: now });
@@ -194,7 +194,7 @@ export class Mem0Memory {
     async add(content: string, options: Mem0WriteOptions = {}): Promise<string> {
         const { userID, agentID, runID, metadata } = normalizeWriteOptions(options);
         const hash = contentHash(content);
-        const existing = this.store.findByHash ? await this.store.findByHash(hash) : null;
+        const existing = await this.findScopedByHash(hash, userID, agentID);
         const now = new Date().toISOString();
         let fact: Mem0Fact;
         if (existing) {
@@ -267,7 +267,7 @@ export class Mem0Memory {
                 continue;
             }
             const hash = contentHash(fact.content);
-            const existing = this.store.findByHash ? await this.store.findByHash(hash) : null;
+            const existing = await this.findScopedByHash(hash, options.userID, options.agentID);
             if (existing) {
                 await this.update(existing.id, fact.content, options);
                 ids.push(existing.id);
@@ -295,11 +295,10 @@ export class Mem0Memory {
     /** Audit history of ADD / UPDATE / DELETE operations, newest last. */
     async getHistory(options: { userID?: string; agentID?: string } = {}): Promise<Array<{ action: string; id?: string; content?: string; createdAt: string }>> {
         const store = this.store as InMemoryMem0Store;
-        if (typeof store.audit !== 'undefined') {
-            let entries = store.audit;
-            // in-memory store doesn't scope history by user; filter by resolving ids is overkill — return all
-            void options;
-            return entries;
+        // The in-memory audit trail isn't user-scoped — a scoped request must
+        // go through the fact filter, never the global trail.
+        if (typeof store.audit !== 'undefined' && !options.userID && !options.agentID) {
+            return store.audit;
         }
         return this.auditFromFacts(options);
     }
@@ -378,14 +377,20 @@ export class Mem0Memory {
                     break;
                 case 'UPDATE': {
                     const hash = contentHash(op.oldContent ?? '');
-                    const existing = (this.store.findByHash ? await this.store.findByHash(hash) : null) ?? (op.content ? await this.findByContent(op.content) : null);
+                    const byHash = await this.findScopedByHash(hash, options.userID, options.agentID);
+                    const byContent = op.content ? await this.findByContent(op.content) : null;
+                    const byContentScoped = byContent
+                        && (byContent.metadata ?? {})['userID'] === options.userID
+                        && (byContent.metadata ?? {})['agentID'] === options.agentID
+                        ? byContent : null;
+                    const existing = byHash ?? byContentScoped;
                     if (existing) await this.update(existing.id, op.content, options);
                     else await this.add(op.content, options);
                     break;
                 }
                 case 'DELETE': {
                     const hash = contentHash(op.oldContent ?? op.content);
-                    const existing = this.store.findByHash ? await this.store.findByHash(hash) : null;
+                    const existing = await this.findScopedByHash(hash, options.userID, options.agentID);
                     if (existing) await this.delete(existing.id);
                     break;
                 }
@@ -406,13 +411,20 @@ export class Mem0Memory {
         if (facts.length === 0) return [];
         if (this.embedder && this.vectorStore) {
             const vector = await this.embedder.embed(query);
-            const results = await this.vectorStore.search(vector, opts.limit, {});
+            const filter: Record<string, unknown> = {
+                ...(opts.userID !== undefined ? { userID: opts.userID } : {}),
+                ...(opts.agentID !== undefined ? { agentID: opts.agentID } : {}),
+            };
+            const results = await this.vectorStore.search(vector, opts.limit, filter);
             return results
                 .map((r) => {
                     const content = r.metadata['content'];
                     return { id: String(r.id), content: String(content ?? ''), metadata: (r.metadata ?? {}) as Record<string, unknown>, score: r.score } as Mem0Fact;
                 })
-                .filter((f) => f.content);
+                .filter((f) => f.content)
+                // Post-filter: adapters may ignore the filter — never leak cross-user facts.
+                .filter((f) => (opts.userID === undefined || f.metadata['userID'] === opts.userID)
+                    && (opts.agentID === undefined || f.metadata['agentID'] === opts.agentID));
         }
         // keyword scoring fallback
         const tokens = tokenize(query);
@@ -491,6 +503,19 @@ export class Mem0Memory {
         if (existing) return existing;
         const all = await this.store.list();
         return all.find((f) => f.content === content) ?? null;
+    }
+
+    /**
+     * Hash lookup scoped to a user+agent. Content hashes are global, so an
+     * unscoped hit can belong to a different user — reusing it would reassign
+     * (or delete) another user's fact. Returns null on scope mismatch.
+     */
+    private async findScopedByHash(hash: string, userID?: string, agentID?: string): Promise<Mem0Fact | null> {
+        const existing = this.store.findByHash ? await this.store.findByHash(hash) : null;
+        if (!existing) return null;
+        const meta = existing.metadata ?? {};
+        if (meta['userID'] !== userID || meta['agentID'] !== agentID) return null;
+        return existing;
     }
 }
 

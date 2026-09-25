@@ -5,24 +5,7 @@
 import { z } from 'zod';
 import { BaseTool, BaseToolConfig } from '../core/base-tool.js';
 import { ToolContext, ToolCategory } from '../core/types.js';
-
-/** Patterns matching private/internal network addresses (SSRF protection) */
-const PRIVATE_HOST_PATTERNS = [
-    /^localhost$/i,
-    /^127\./,
-    /^10\./,
-    /^172\.(1[6-9]|2[0-9]|3[01])\./,
-    /^192\.168\./,
-    /^0\.0\.0\.0$/,
-    /^\[::1\]$/,
-    /^169\.254\./,
-    /\.internal$/i,
-    /\.local$/i,
-];
-
-function isPrivateHost(hostname: string): boolean {
-    return PRIVATE_HOST_PATTERNS.some(p => p.test(hostname));
-}
+import { checkSsrf } from '../http-client.js';
 
 const BrowserToolParameters = z.object({
     url: z.string().url(),
@@ -114,7 +97,7 @@ export class BrowserTool extends BaseTool<typeof BrowserToolParameters, BrowserP
         this.blockPrivateNetworks = config?.blockPrivateNetworks ?? true;
     }
 
-    private validateUrl(urlStr: string): string | null {
+    private async validateUrl(urlStr: string): Promise<string | null> {
         let parsed: URL;
         try {
             parsed = new URL(urlStr);
@@ -122,8 +105,10 @@ export class BrowserTool extends BaseTool<typeof BrowserToolParameters, BrowserP
             return `Invalid URL: ${urlStr}`;
         }
 
-        if (this.blockPrivateNetworks && isPrivateHost(parsed.hostname)) {
-            return `Blocked: ${parsed.hostname} is a private/internal network address`;
+        // DNS-resolving SSRF check (catches DNS rebinding, not just literals).
+        if (this.blockPrivateNetworks) {
+            const ssrfErr = await checkSsrf(parsed.hostname);
+            if (ssrfErr) return ssrfErr;
         }
 
         if (this.allowedHosts && this.allowedHosts.length > 0) {
@@ -144,7 +129,7 @@ export class BrowserTool extends BaseTool<typeof BrowserToolParameters, BrowserP
     ): Promise<BrowserPageResult> {
         const { url, timeout, includeLinks } = params;
 
-        const urlError = this.validateUrl(url);
+        const urlError = await this.validateUrl(url);
         if (urlError) {
             throw new Error(urlError);
         }

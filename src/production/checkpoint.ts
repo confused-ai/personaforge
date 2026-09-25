@@ -22,6 +22,8 @@
  */
 
 import type { Message } from '../core/index.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -108,7 +110,7 @@ export class SqliteCheckpointStore implements AgentCheckpointStore {
 
         let Database: (p: string) => SqliteCheckpointStore['db'];
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error(
                 'SqliteCheckpointStore requires better-sqlite3. Install: npm install better-sqlite3'

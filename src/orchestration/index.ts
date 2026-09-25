@@ -109,6 +109,10 @@ export type {
     EventSubscription,
 } from './event-bus.js';
 
+// ── Orchestration mesh (team patterns compiled to replayable DAGs) ──────────
+export { compileMeshToGraph, topologicalOrder } from './mesh.js';
+export type { MeshCompileOptions, MeshCompiled, MeshConsensusStrategy, MeshPattern } from './mesh.js';
+
 // ── Team modes (route | coordinate | collaborate) ─────────────────────────────
 export { createModeTeam } from './team-modes.js';
 export type {

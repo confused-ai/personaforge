@@ -37,11 +37,16 @@ function encodeBase64Url(s: string): string {
     return Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/** Strip CR/LF so header fields cannot smuggle extra headers (header injection). */
+function cleanHeader(value: string): string {
+    return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
 function buildRawEmail(params: { from?: string; to: string; subject: string; body: string; cc?: string; isHtml?: boolean }): string {
     const lines = [
-        `To: ${params.to}`,
-        params.cc ? `Cc: ${params.cc}` : null,
-        `Subject: ${params.subject}`,
+        `To: ${cleanHeader(params.to)}`,
+        params.cc ? `Cc: ${cleanHeader(params.cc)}` : null,
+        `Subject: ${cleanHeader(params.subject)}`,
         `Content-Type: ${params.isHtml ? 'text/html' : 'text/plain'}; charset=utf-8`,
         '',
         params.body,

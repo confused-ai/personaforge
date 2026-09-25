@@ -21,6 +21,16 @@ function getKey(config: E2BToolConfig): string {
     return key;
 }
 
+/** Package specifiers for pip (`name[extra]`) and npm (`[@scope/]name`). */
+const PACKAGE_NAME = /^(@[A-Za-z0-9_.\-~]+\/)?[A-Za-z0-9_.\-~]+(\[[A-Za-z0-9_.\-,]+\])?$/;
+
+/** Throw unless `pkg` is a plain package specifier (no shell metacharacters). */
+function assertPackageName(pkg: string): void {
+    if (!PACKAGE_NAME.test(pkg)) {
+        throw new Error(`Invalid package name: ${JSON.stringify(pkg)}.`);
+    }
+}
+
 // ── Schemas ────────────────────────────────────────────────────────────────
 
 const RunCodeSchema = z.object({
@@ -152,6 +162,7 @@ export class E2BInstallPackagesTool extends BaseTool<typeof InstallPackagesSchem
 
     protected async performExecute(input: z.infer<typeof InstallPackagesSchema>, _ctx: ToolContext) {
         const key = getKey(this.config);
+        for (const pkg of input.packages) assertPackageName(pkg);
         const installCmd = input.language === 'python'
             ? `pip install ${input.packages.join(' ')}`
             : `npm install ${input.packages.join(' ')}`;

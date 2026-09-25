@@ -95,6 +95,213 @@ describe('providers/OpenAIProvider', () => {
         const result = await provider.streamText([{ role: 'user', content: 'x' }]);
         expect(result.toolCalls).toEqual([{ id: 't1', name: 'f', arguments: {} }]);
     });
+
+    // ── reasoning support ──
+    const chatOk = () => vi.fn().mockResolvedValue({ choices: [{ message: { content: 'chat' }, finish_reason: 'stop' }] });
+    const responsesOk = () => vi.fn().mockResolvedValue({
+        output_text: 'the answer',
+        output: [{ type: 'reasoning', summary: [{ type: 'summary_text', text: 'because X' }] }],
+        usage: { input_tokens: 3, output_tokens: 4 },
+    });
+
+    it('isReasoningModel matches o1/o3/o4/gpt-5 only', async () => {
+        const { isReasoningModel } = await import('../src/providers/openai-provider.js');
+        for (const m of ['o1', 'o3-mini', 'O4-mini', 'gpt-5', 'gpt-5-mini']) expect(isReasoningModel(m)).toBe(true);
+        for (const m of ['gpt-4o', 'gpt-4.1', 'gpt-4o-mini', 'deepseek-reasoner', 'openai/o3']) expect(isReasoningModel(m)).toBe(false);
+    });
+
+    it('gpt-4o body keeps temperature/max_tokens, no reasoning params', async () => {
+        const create = chatOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'gpt-4o' });
+        await provider.generateText([{ role: 'user', content: 'hi' }], { temperature: 0.2, maxTokens: 50 });
+        const body = create.mock.calls[0]![0];
+        expect(body.temperature).toBe(0.2);
+        expect(body.max_tokens).toBe(50);
+        expect('reasoning_effort' in body).toBe(false);
+        expect('max_completion_tokens' in body).toBe(false);
+    });
+
+    it('o4-mini with tools uses chat with reasoning body, not Responses', async () => {
+        const create = chatOk();
+        const responsesCreate = vi.fn();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        await provider.generateText([{ role: 'user', content: 'hi' }], { tools: [{ name: 'f', description: 'd', parameters: {} }], temperature: 0.2, maxTokens: 50 });
+        expect(create).toHaveBeenCalled();
+        expect(responsesCreate).not.toHaveBeenCalled();
+        const body = create.mock.calls[0]![0];
+        expect('temperature' in body).toBe(false);
+        expect('max_tokens' in body).toBe(false);
+        expect(body.max_completion_tokens).toBe(50);
+        expect('reasoning_effort' in body).toBe(false);
+    });
+
+    it('o4-mini without tools uses Responses API with reasoning summaries', async () => {
+        const create = chatOk();
+        const responsesCreate = responsesOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        const result = await provider.generateText([{ role: 'system', content: 'sys' }, { role: 'user', content: 'hi' }]);
+        expect(create).not.toHaveBeenCalled();
+        const params = responsesCreate.mock.calls[0]![0];
+        expect(params.instructions).toBe('sys');
+        expect(params.input).toEqual([{ role: 'user', content: 'hi' }]);
+        expect(params.reasoning).toEqual({ summary: 'auto' });
+        expect(params.store).toBe(false);
+        expect('temperature' in params).toBe(false);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(result.usage).toEqual({ promptTokens: 3, completionTokens: 4, totalTokens: 7 });
+    });
+
+    it('o4-mini without responses client falls back to chat', async () => {
+        const create = chatOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'o4-mini' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(create).toHaveBeenCalled();
+        expect(result.text).toBe('chat');
+    });
+
+    it('o4-mini with tool message in history uses chat', async () => {
+        const create = chatOk();
+        const responsesCreate = responsesOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        await provider.generateText([
+            { role: 'user', content: 'hi' },
+            { role: 'assistant', content: '', toolCalls: [{ id: 'x', name: 'f', arguments: {} }] },
+            { role: 'tool', content: 'out', toolCallId: 'x' },
+        ]);
+        expect(create).toHaveBeenCalled();
+        expect(responsesCreate).not.toHaveBeenCalled();
+    });
+
+    describe('Responses routing guards (o4-mini, otherwise eligible)', () => {
+        const route = async (
+            messages: Message[],
+            opts: { options?: Record<string, unknown>; extraBody?: Record<string, unknown>; baseURL?: string } = {},
+        ) => {
+            const create = chatOk();
+            const responsesCreate = responsesOk();
+            const client = { chat: { completions: { create } }, responses: { create: responsesCreate }, ...(opts.baseURL && { baseURL: opts.baseURL }) };
+            const provider = new OpenAIProvider({ client: client as never, model: 'o4-mini', ...(opts.extraBody && { extraBody: opts.extraBody }) });
+            await provider.generateText(messages, opts.options as never);
+            return { create, responsesCreate, path: responsesCreate.mock.calls.length ? 'responses' : 'chat' };
+        };
+        const hi: Message[] = [{ role: 'user', content: 'hi' }];
+
+        it('tools present -> chat', async () => {
+            expect((await route(hi, { options: { tools: [{ name: 'f', description: 'd', parameters: {} }] } })).path).toBe('chat');
+        });
+        it('role tool message only -> chat', async () => {
+            expect((await route([...hi, { role: 'tool', content: 'out', toolCallId: 'x' }])).path).toBe('chat');
+        });
+        it('assistant toolCalls only -> chat', async () => {
+            expect((await route([...hi, { role: 'assistant', content: '', toolCalls: [{ id: 'x', name: 'f', arguments: {} }] } as Message])).path).toBe('chat');
+        });
+        it('assistant snake_case tool_calls only -> chat', async () => {
+            expect((await route([...hi, { role: 'assistant', content: '', tool_calls: [{ id: 'x' }] } as unknown as Message])).path).toBe('chat');
+        });
+        it('extraBody -> chat and caller reasoning_effort wins', async () => {
+            const r = await route(hi, { extraBody: { reasoning_effort: 'high' } });
+            expect(r.path).toBe('chat');
+            expect(r.create.mock.calls[0]![0].reasoning_effort).toBe('high');
+        });
+        it('stop -> chat', async () => {
+            expect((await route(hi, { options: { stop: ['END'] } })).path).toBe('chat');
+        });
+        it('image_url part -> chat', async () => {
+            const msg = { role: 'user', content: [{ type: 'text', text: 'see' }, { type: 'image_url', image_url: { url: 'https://x/y.png' } }] } as Message;
+            expect((await route([msg])).path).toBe('chat');
+        });
+        it('Azure baseURL -> chat', async () => {
+            expect((await route(hi, { baseURL: 'https://my-res.openai.azure.com/openai/deployments/o4-mini' })).path).toBe('chat');
+        });
+        it('api.openai.com baseURL -> responses', async () => {
+            expect((await route(hi, { baseURL: 'https://api.openai.com/v1' })).path).toBe('responses');
+        });
+        it('no baseURL -> responses', async () => {
+            expect((await route(hi)).path).toBe('responses');
+        });
+        it('text-only array content -> responses', async () => {
+            expect((await route([{ role: 'user', content: [{ type: 'text', text: 'hi' }] } as Message])).path).toBe('responses');
+        });
+        it('null-content assistant message does not throw', async () => {
+            const r = await route([...hi, { role: 'assistant', content: null } as unknown as Message, { role: 'user', content: 'again' }]);
+            expect(r.path).toBe('responses');
+            expect(r.responsesCreate.mock.calls[0]![0].input[1]).toEqual({ role: 'assistant', content: '' });
+        });
+    });
+
+    it('kill switch: o4-mini uses chat, no reasoning_effort, keeps reasoning-model body fix', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            const create = chatOk();
+            const responsesCreate = responsesOk();
+            const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+            await provider.generateText([{ role: 'user', content: 'hi' }], { temperature: 0.2, maxTokens: 50 });
+            expect(responsesCreate).not.toHaveBeenCalled();
+            const body = create.mock.calls[0]![0];
+            expect('reasoning_effort' in body).toBe(false);
+            expect('temperature' in body).toBe(false);
+            expect(body.max_completion_tokens).toBe(50);
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
+
+    it('compat generateText surfaces reasoning_content separately', async () => {
+        const create = vi.fn().mockResolvedValue({ choices: [{ message: { content: 'answer', reasoning_content: 'because X' }, finish_reason: 'stop' }] });
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'deepseek-reasoner' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }], { temperature: 0.2 });
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(create.mock.calls[0]![0].temperature).toBe(0.2);
+    });
+
+    it('compat generateText: empty reasoning_content does not hide reasoning', async () => {
+        const create = vi.fn().mockResolvedValue({ choices: [{ message: { content: 'answer', reasoning_content: '', reasoning: 'x' }, finish_reason: 'stop' }] });
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'deepseek-reasoner' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(result.reasoning).toEqual([{ text: 'x' }]);
+    });
+
+    it('compat streamText routes reasoning deltas to onReasoning only', async () => {
+        async function* stream() {
+            yield { choices: [{ delta: { reasoning: 'think ' } }] };
+            yield { choices: [{ delta: { reasoning_content: 'more' } }] };
+            yield { choices: [{ delta: { content: 'answer' } }] };
+        }
+        const create = vi.fn().mockResolvedValue(stream());
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } } } as never, model: 'deepseek-reasoner' });
+        const reasoning: { text: string }[] = [];
+        const chunks: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'x' }], {
+            onReasoning: (d) => reasoning.push(d),
+            onChunk: (c) => chunks.push(c),
+        });
+        expect(reasoning).toEqual([{ text: 'think ' }, { text: 'more' }]);
+        expect(chunks).toEqual(['answer']);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'think more' }]);
+    });
+
+    it('o4-mini streamText without tools uses Responses and emits once', async () => {
+        const create = chatOk();
+        const responsesCreate = responsesOk();
+        const provider = new OpenAIProvider({ client: { chat: { completions: { create } }, responses: { create: responsesCreate } } as never, model: 'o4-mini' });
+        const reasoning: { text: string }[] = [];
+        const chunks: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'hi' }], {
+            onReasoning: (d) => reasoning.push(d),
+            onChunk: (c) => chunks.push(c),
+        });
+        expect(create).not.toHaveBeenCalled();
+        expect(reasoning).toEqual([{ text: 'because X' }]);
+        expect(chunks).toEqual(['the answer']);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(result.usage).toEqual({ promptTokens: 3, completionTokens: 4, totalTokens: 7 });
+    });
 });
 
 // ── AnthropicProvider ───────────────────────────────────────────────────────
@@ -161,6 +368,138 @@ describe('providers/AnthropicProvider', () => {
         const result = await provider.streamText([{ role: 'user', content: 'x' }], { onChunk: () => {} });
         expect(result.text).toBe('a');
         expect(result.usage).toEqual({ promptTokens: 5, completionTokens: 9, totalTokens: 14 });
+    });
+
+    it('streamText on an adaptive model sends thinking, omits temperature, streams + returns signed reasoning', async () => {
+        async function* gen() {
+            yield { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } };
+            yield { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'let me ' } };
+            yield { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'think' } };
+            yield { type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-1' } };
+            yield { type: 'content_block_start', index: 1, content_block: { type: 'text', text: '' } };
+            yield { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'answer' } };
+        }
+        const create = vi.fn().mockResolvedValue({ [Symbol.asyncIterator]: gen });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-opus-5' });
+        const deltas: { text: string }[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'x' }], {
+            temperature: 0.2,
+            onChunk: () => {},
+            onReasoning: (d) => deltas.push(d),
+        });
+        const body = create.mock.calls[0]![0];
+        expect(body.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
+        expect(body).not.toHaveProperty('temperature');
+        expect(deltas).toEqual([{ text: 'let me ' }, { text: 'think' }]);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'let me think', signature: 'sig-1' }]);
+    });
+
+    it('generateText on a budget model sends enabled thinking and returns thinking + redacted blocks', async () => {
+        const create = vi.fn().mockResolvedValue({
+            content: [
+                { type: 'thinking', thinking: 'hmm', signature: 'sig-2' },
+                { type: 'redacted_thinking', data: 'abc' },
+                { type: 'text', text: 'done' },
+            ],
+            stop_reason: 'end_turn',
+            usage: { input_tokens: 1, output_tokens: 1 },
+        });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-haiku-4-5' });
+        const result = await provider.generateText([{ role: 'user', content: 'x' }], { maxTokens: 8000, temperature: 0.3 });
+        const body = create.mock.calls[0]![0];
+        expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4000 });
+        expect(body).not.toHaveProperty('temperature');
+        expect(result.text).toBe('done');
+        expect(result.reasoning).toEqual([{ text: 'hmm', signature: 'sig-2' }, { text: '', redacted: 'abc' }]);
+    });
+
+    it('default model sends no thinking and keeps caller temperature', async () => {
+        const create = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never });
+        const result = await provider.generateText([{ role: 'user', content: 'x' }], { temperature: 0.2 });
+        const body = create.mock.calls[0]![0];
+        expect(body).not.toHaveProperty('thinking');
+        expect(body.temperature).toBe(0.2);
+        expect(result).not.toHaveProperty('reasoning');
+    });
+
+    it('ENABLE_REASONING_STREAM=false sends no thinking even on an adaptive model', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            const create = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-opus-5' });
+            await provider.generateText([{ role: 'user', content: 'x' }], { temperature: 0.2 });
+            const body = create.mock.calls[0]![0];
+            expect(body).not.toHaveProperty('thinking');
+            expect(body.temperature).toBe(0.2);
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
+
+    describe('skips thinking when the last assistant tool turn is unsigned (approval/suspend resume)', () => {
+        const okResponse = () => vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+        const toolTurn = (reasoning?: Message['reasoning']): Message[] => [
+            { role: 'assistant', content: '', toolCalls: [{ id: 't1', name: 'f', arguments: {} }], ...(reasoning && { reasoning }) } as unknown as Message,
+            { role: 'tool', content: 'out', toolCallId: 't1' } as unknown as Message,
+        ];
+        const user: Message = { role: 'user', content: 'go' };
+
+        it('generateText: unsigned tool turn → no thinking, caller temperature', async () => {
+            const create = okResponse();
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.generateText([user, ...toolTurn()], { temperature: 0.3 });
+            const body = create.mock.calls[0]![0];
+            expect(body).not.toHaveProperty('thinking');
+            expect(body.temperature).toBe(0.3);
+        });
+
+        it('generateText: signed tool turn → thinking, no temperature', async () => {
+            const create = okResponse();
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.generateText([user, ...toolTurn([{ text: 'x', signature: 's' }])], { temperature: 0.3 });
+            const body = create.mock.calls[0]![0];
+            expect(body).toHaveProperty('thinking');
+            expect(body).not.toHaveProperty('temperature');
+        });
+
+        it('streamText: unsigned tool turn → no thinking', async () => {
+            async function* gen() {
+                yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } };
+                yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'ok' } };
+            }
+            const create = vi.fn().mockResolvedValue({ [Symbol.asyncIterator]: gen });
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.streamText([user, ...toolTurn()], { temperature: 0.3, onChunk: () => {} });
+            const body = create.mock.calls[0]![0];
+            expect(body).not.toHaveProperty('thinking');
+            expect(body.temperature).toBe(0.3);
+        });
+
+        it('only the LAST assistant tool turn decides', async () => {
+            const create = okResponse();
+            const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-sonnet-4-5' });
+            await provider.generateText([user, ...toolTurn(), ...toolTurn([{ text: 'y', signature: 's2' }])], { temperature: 0.3 });
+            expect(create.mock.calls[0]![0]).toHaveProperty('thinking');
+        });
+    });
+
+    it('round-trips signed + redacted reasoning before assistant text and drops unsigned blocks', async () => {
+        const create = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } });
+        const provider = new AnthropicProvider({ client: { messages: { create } } as never, model: 'claude-opus-5' });
+        await provider.generateText([
+            { role: 'assistant', content: 'prev', reasoning: [{ text: 't', signature: 's' }, { text: '', redacted: 'r' }, { text: 'unsigned' }] },
+            { role: 'user', content: 'next' },
+        ]);
+        const body = create.mock.calls[0]![0];
+        expect(body.messages[0].content).toEqual([
+            { type: 'thinking', thinking: 't', signature: 's' },
+            { type: 'redacted_thinking', data: 'r' },
+            { type: 'text', text: 'prev' },
+        ]);
     });
 });
 
@@ -232,5 +571,145 @@ describe('providers/GoogleProvider', () => {
         expect(result.text).toBe('xy');
         expect(chunks).toEqual(['x', 'y']);
         expect(result.usage).toEqual({ promptTokens: 1, completionTokens: 2, totalTokens: 3 });
+    });
+
+    function mockGoogleClient(generateContent: unknown = vi.fn(), generateContentStream: unknown = vi.fn()) {
+        return { getGenerativeModel: vi.fn().mockReturnValue({ generateContent, generateContentStream }) };
+    }
+
+    it('generateText separates thought parts from answer and returns reasoning', async () => {
+        const generateContent = vi.fn().mockResolvedValue({
+            response: {
+                text: () => 'because Xthe answer',
+                candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'because X', thought: true }, { text: 'the answer' }] } }],
+            },
+        });
+        const client = mockGoogleClient(generateContent);
+        const provider = new GoogleProvider({ client: client as never, model: 'gemini-2.5-flash' });
+        const result = await provider.generateText([{ role: 'user', content: 'hi' }]);
+        expect(result.text).toBe('the answer');
+        expect(result.reasoning).toEqual([{ text: 'because X' }]);
+        expect(client.getGenerativeModel.mock.calls[0][0].generationConfig.thinkingConfig).toEqual({ includeThoughts: true });
+    });
+
+    it('streamText routes thought parts to onReasoning, not onChunk', async () => {
+        const mk = (parts: Array<{ text: string; thought?: boolean }>) => ({
+            text: () => parts.map((p) => p.text).join(''),
+            candidates: [{ content: { parts } }],
+        });
+        async function* stream() {
+            yield mk([{ text: 'think ', thought: true }]);
+            yield mk([{ text: 'more', thought: true }]);
+            yield mk([{ text: 'answer' }]);
+        }
+        const generateContentStream = vi.fn().mockResolvedValue({ stream: stream() });
+        const client = mockGoogleClient(vi.fn(), generateContentStream);
+        const provider = new GoogleProvider({ client: client as never, model: 'gemini-2.5-flash' });
+        const chunks: string[] = [];
+        const thoughts: string[] = [];
+        const result = await provider.streamText([{ role: 'user', content: 'hi' }], {
+            onChunk: (c) => chunks.push(c),
+            onReasoning: (d) => thoughts.push(d.text),
+        });
+        expect(thoughts).toEqual(['think ', 'more']);
+        expect(chunks).toEqual(['answer']);
+        expect(result.text).toBe('answer');
+        expect(result.reasoning).toEqual([{ text: 'think more' }]);
+        expect(client.getGenerativeModel.mock.calls[0][0].generationConfig.thinkingConfig).toEqual({ includeThoughts: true });
+    });
+
+    it('generateText still throws SDK block error when thought parts present', async () => {
+        const generateContent = vi.fn().mockResolvedValue({
+            response: {
+                text: () => { throw new Error('Candidate was blocked due to SAFETY'); },
+                candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'x', thought: true }, { text: 'y' }] } }],
+            },
+        });
+        const provider = new GoogleProvider({ client: mockGoogleClient(generateContent) as never, model: 'gemini-2.5-flash' });
+        await expect(provider.generateText([{ role: 'user', content: 'hi' }])).rejects.toThrow(/SAFETY/);
+    });
+
+    it('streamText still throws SDK block error on thought-containing chunk', async () => {
+        async function* stream() {
+            yield {
+                text: () => { throw new Error('Candidate was blocked due to SAFETY'); },
+                candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'x', thought: true }] } }],
+            };
+        }
+        const generateContentStream = vi.fn().mockResolvedValue({ stream: stream() });
+        const provider = new GoogleProvider({ client: mockGoogleClient(vi.fn(), generateContentStream) as never, model: 'gemini-2.5-flash' });
+        await expect(provider.streamText([{ role: 'user', content: 'hi' }])).rejects.toThrow(/SAFETY/);
+    });
+
+    it('no thinkingConfig for default model (gemini-2.0-flash)', async () => {
+        const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
+        const client = mockGoogleClient(generateContent);
+        await new GoogleProvider({ client: client as never }).generateText([{ role: 'user', content: 'hi' }]);
+        expect(client.getGenerativeModel.mock.calls[0][0].generationConfig).not.toHaveProperty('thinkingConfig');
+    });
+
+    it('no thinkingConfig when ENABLE_REASONING_STREAM=false', async () => {
+        const saved = process.env.ENABLE_REASONING_STREAM;
+        process.env.ENABLE_REASONING_STREAM = 'false';
+        try {
+            const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
+            const client = mockGoogleClient(generateContent);
+            await new GoogleProvider({ client: client as never, model: 'gemini-2.5-flash' }).generateText([{ role: 'user', content: 'hi' }]);
+            expect(client.getGenerativeModel.mock.calls[0][0].generationConfig).not.toHaveProperty('thinkingConfig');
+        } finally {
+            if (saved === undefined) delete process.env.ENABLE_REASONING_STREAM;
+            else process.env.ENABLE_REASONING_STREAM = saved;
+        }
+    });
+
+    it.each([
+        ['gemini-2.5-flash', true],
+        ['gemini-2.5-pro-preview-05-06', true],
+        ['models/gemini-2.5-pro', true],
+        ['gemini-3-pro-preview', true],
+        ['gemini-3.1-flash', true],
+        ['gemini-2.0-flash', false],
+        ['gemini-1.5-pro', false],
+        ['gemini-2.0-flash-thinking-exp', false],
+        ['not-a-gemini-model', false],
+        ['gemini-2.5-flash-image', false],
+        ['gemini-2.5-flash-preview-tts', false],
+        ['gemini-2.5-flash-native-audio-preview', false],
+        ['gemini-2.5-flash-live', false],
+        ['gemini-embedding-2.5', false],
+    ])('thinking gate: %s -> %s', async (model, expected) => {
+        const generateContent = vi.fn().mockResolvedValue({ response: { text: () => 'ok' } });
+        const client = mockGoogleClient(generateContent);
+        await new GoogleProvider({ client: client as never, model }).generateText([{ role: 'user', content: 'hi' }]);
+        expect('thinkingConfig' in client.getGenerativeModel.mock.calls[0][0].generationConfig).toBe(expected);
+    });
+
+    it('round-trips part-level thoughtSignature on functionCall parts', async () => {
+        const generateContent = vi.fn()
+            .mockResolvedValueOnce({
+                response: {
+                    text: () => '',
+                    candidates: [{
+                        finishReason: 'STOP',
+                        content: { parts: [{ functionCall: { name: 'fn', args: { a: 1 } }, thoughtSignature: 'sig-abc' }] },
+                    }],
+                },
+            })
+            .mockResolvedValueOnce({ response: { text: () => 'done' } });
+        const client = mockGoogleClient(generateContent);
+        const provider = new GoogleProvider({ client: client as never, model: 'gemini-3-pro-preview' });
+        const tools = [{ name: 'fn', description: 'd', parameters: {} }];
+        const first = await provider.generateText([{ role: 'user', content: 'hi' }], { tools });
+        const calls = first.toolCalls as Array<{ id: string; thoughtSignature?: string }>;
+        expect(calls[0].thoughtSignature).toBe('sig-abc');
+
+        await provider.generateText([
+            { role: 'user', content: 'hi' },
+            { role: 'assistant', content: '', toolCalls: first.toolCalls },
+            { role: 'tool', content: 'out', toolCallId: calls[0].id, toolName: 'fn' },
+        ] as Message[], { tools });
+        const contents = generateContent.mock.calls[1][0].contents as Array<{ role: string; parts: unknown[] }>;
+        const modelTurn = contents.find((c) => c.role === 'model');
+        expect(modelTurn?.parts).toContainEqual({ functionCall: { name: 'fn', args: { a: 1 } }, thoughtSignature: 'sig-abc' });
     });
 });

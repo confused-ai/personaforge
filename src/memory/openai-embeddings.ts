@@ -65,6 +65,7 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
                 'Authorization': `Bearer ${this.apiKey}`,
             },
             body: JSON.stringify(body),
+            signal: AbortSignal.timeout(30_000),
         });
 
         if (!response.ok) {
@@ -75,6 +76,9 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         const json = await response.json() as {
             data: Array<{ embedding: number[]; index: number }>;
         };
+        if (!Array.isArray(json.data) || json.data.length === 0) {
+            throw new Error('OpenAI Embedding API returned no embeddings.');
+        }
 
         // Sort by index to preserve input order
         return json.data

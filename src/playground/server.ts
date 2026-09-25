@@ -20,6 +20,8 @@
 
 import http from 'node:http';
 import { getPlaygroundHtml } from './_ui.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -135,7 +137,7 @@ function buildWsCloseFrame(): Buffer {
 function parseWsHandshake(req: http.IncomingMessage): string | null {
     const key = req.headers['sec-websocket-key'];
     if (!key) return null;
-    const { createHash } = require('node:crypto') as typeof import('node:crypto');
+    const { createHash } = _require('node:crypto') as typeof import('node:crypto');
     return createHash('sha1')
         .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
         .digest('base64');

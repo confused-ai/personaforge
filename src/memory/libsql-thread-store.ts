@@ -337,6 +337,9 @@ export class LibSqlThreadStore implements ThreadStore {
         this._client?.close();
         this._client = null;
         this._ready = false;
+        // Reset the cached init so post-close use re-initializes instead of
+        // reusing the closed client.
+        this._init = null;
     }
 
     /** Monotonically increasing timestamp keeps within-thread ordering deterministic. */

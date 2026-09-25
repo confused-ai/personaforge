@@ -19,6 +19,8 @@
 
 import { randomUUID } from 'node:crypto';
 import type { UserProfileStore, UserProfile, UserProfileQuery } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── SQLite implementation ──────────────────────────────────────────────────
 
@@ -55,7 +57,7 @@ export class SqliteUserProfileStore implements UserProfileStore {
 
         let Database: (p: string) => SqliteUserProfileStore['db'];
         try {
-            Database = require('better-sqlite3') as typeof Database;
+            Database = _require('better-sqlite3') as typeof Database;
         } catch {
             throw new Error(
                 'SqliteUserProfileStore requires better-sqlite3. Install: npm install better-sqlite3'

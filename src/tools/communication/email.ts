@@ -8,6 +8,8 @@
 import { z } from 'zod';
 import { BaseTool } from '../core/base-tool.js';
 import { ToolCategory, type ToolContext } from '../core/types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Shared schema ──────────────────────────────────────────────────────────
 
@@ -45,7 +47,7 @@ export class SmtpEmailTool extends BaseTool<typeof EmailSchema, EmailResult> {
         });
     }
     protected async performExecute(input: z.infer<typeof EmailSchema>, _ctx: ToolContext): Promise<EmailResult> {
-        const nodemailer = require('nodemailer') as {
+        const nodemailer = _require('nodemailer') as {
             createTransport(o: object): { sendMail(o: object): Promise<{ messageId: string; accepted: string[] }> };
         };
         const transporter = nodemailer.createTransport({
@@ -84,7 +86,7 @@ export class SendGridEmailTool extends BaseTool<typeof EmailSchema, EmailResult>
         });
     }
     protected async performExecute(input: z.infer<typeof EmailSchema>, _ctx: ToolContext): Promise<EmailResult> {
-        const sgMail = require('@sendgrid/mail') as {
+        const sgMail = _require('@sendgrid/mail') as {
             setApiKey(k: string): void;
             send(m: object): Promise<unknown>;
         };

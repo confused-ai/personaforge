@@ -23,6 +23,20 @@ export interface CodeExecResult {
     error?: string;
 }
 
+// ── Output cap ─────────────────────────────────────────────────────────────
+
+/** Max captured bytes per stream — runaway output can't OOM the host. */
+const MAX_STREAM_BYTES = 1_000_000;
+
+/** Append a chunk, truncating with a marker once over the cap. */
+function appendCapped(current: string, chunk: string): string {
+    if (current.length >= MAX_STREAM_BYTES) return current;
+    const next = current + chunk;
+    return next.length > MAX_STREAM_BYTES
+        ? `${next.slice(0, MAX_STREAM_BYTES)}\n…[truncated at 1 MB]`
+        : next;
+}
+
 // ── Schemas ────────────────────────────────────────────────────────────────
 
 const JsSchema = z.object({
@@ -45,7 +59,7 @@ export class JavaScriptExecTool extends BaseTool<typeof JsSchema, CodeExecResult
         super({
             id: 'js_exec',
             name: 'JavaScript Exec',
-            description: 'Execute a JavaScript snippet in a sandboxed vm context. Use console.log() to capture output.',
+            description: 'Execute a JavaScript snippet in a vm context with a timeout. node:vm is NOT a security boundary — run only trusted code, never untrusted model output. Use console.log() to capture output.',
             category: ToolCategory.UTILITY,
             parameters: JsSchema,
         });
@@ -57,13 +71,21 @@ export class JavaScriptExecTool extends BaseTool<typeof JsSchema, CodeExecResult
         const start = Date.now();
         const logs: string[] = [];
         const errors: string[] = [];
+        // Bounded capture: a `while(true) console.log()` loop can't OOM the host.
+        const pushCapped = (arr: string[], line: string): void => {
+            if (arr.length >= 10_000) {
+                if (arr[arr.length - 1] !== '…[truncated at 10,000 lines]') arr.push('…[truncated at 10,000 lines]');
+                return;
+            }
+            arr.push(line.length > 10_000 ? `${line.slice(0, 10_000)}…[truncated]` : line);
+        };
 
         const sandbox = {
             console: {
-                log: (...a: unknown[]) => logs.push(a.map(String).join(' ')),
-                error: (...a: unknown[]) => errors.push(a.map(String).join(' ')),
-                warn: (...a: unknown[]) => errors.push('[warn] ' + a.map(String).join(' ')),
-                info: (...a: unknown[]) => logs.push('[info] ' + a.map(String).join(' ')),
+                log: (...a: unknown[]) => pushCapped(logs, a.map(String).join(' ')),
+                error: (...a: unknown[]) => pushCapped(errors, a.map(String).join(' ')),
+                warn: (...a: unknown[]) => pushCapped(errors, '[warn] ' + a.map(String).join(' ')),
+                info: (...a: unknown[]) => pushCapped(logs, '[info] ' + a.map(String).join(' ')),
             },
             Math, JSON, Date, Array, Object, String, Number, Boolean,
             parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent,
@@ -113,8 +135,8 @@ export class PythonExecTool extends BaseTool<typeof PySchema, CodeExecResult> {
             });
             let stdout = '';
             let stderr = '';
-            proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-            proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+            proc.stdout.on('data', (d: Buffer) => { stdout = appendCapped(stdout, d.toString()); });
+            proc.stderr.on('data', (d: Buffer) => { stderr = appendCapped(stderr, d.toString()); });
             proc.on('close', (code) => {
                 resolve({
                     stdout: stdout.trim(), stderr: stderr.trim(), returnValue: null,
@@ -160,8 +182,8 @@ export class ShellCommandTool extends BaseTool<typeof ShellSchema, CodeExecResul
             const proc = spawn(input.command, input.args ?? [], { timeout: this.config.timeoutMs ?? 10_000 });
             let stdout = '';
             let stderr = '';
-            proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-            proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+            proc.stdout.on('data', (d: Buffer) => { stdout = appendCapped(stdout, d.toString()); });
+            proc.stderr.on('data', (d: Buffer) => { stderr = appendCapped(stderr, d.toString()); });
             proc.on('close', (code) => {
                 resolve({
                     stdout: stdout.trim(), stderr: stderr.trim(), returnValue: null,

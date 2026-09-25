@@ -55,12 +55,12 @@ function toCsv(rows: Array<Record<string, unknown>>, delim = ','): string {
 // ── Schemas ────────────────────────────────────────────────────────────────
 
 const ParseSchema = z.object({
-    csv: z.string().describe('CSV content'),
+    csv: z.string().max(5_000_000).describe('CSV content (max 5 MB)'),
     delimiter: z.string().max(1).optional().default(',').describe('Column delimiter'),
 });
 
 const FilterSchema = z.object({
-    csv: z.string().describe('CSV content'),
+    csv: z.string().max(5_000_000).describe('CSV content (max 5 MB)'),
     column: z.string().describe('Column name to filter on'),
     operator: z.enum(['eq', 'ne', 'gt', 'lt', 'gte', 'lte', 'contains', 'startsWith', 'endsWith']).describe('Comparison operator'),
     value: z.string().describe('Value to compare against'),
@@ -68,27 +68,27 @@ const FilterSchema = z.object({
 });
 
 const SelectSchema = z.object({
-    csv: z.string().describe('CSV content'),
+    csv: z.string().max(5_000_000).describe('CSV content (max 5 MB)'),
     columns: z.array(z.string()).min(1).describe('Column names to keep'),
     delimiter: z.string().max(1).optional().default(','),
 });
 
 const SortSchema = z.object({
-    csv: z.string().describe('CSV content'),
+    csv: z.string().max(5_000_000).describe('CSV content (max 5 MB)'),
     column: z.string().describe('Column to sort by'),
     order: z.enum(['asc', 'desc']).optional().default('asc'),
     delimiter: z.string().max(1).optional().default(','),
 });
 
 const AggSchema = z.object({
-    csv: z.string().describe('CSV content'),
+    csv: z.string().max(5_000_000).describe('CSV content (max 5 MB)'),
     column: z.string().describe('Numeric column name'),
     operation: z.enum(['sum', 'avg', 'min', 'max', 'count']).describe('Aggregation function'),
     delimiter: z.string().max(1).optional().default(','),
 });
 
 const ToJsonSchema = z.object({
-    csv: z.string().describe('CSV content'),
+    csv: z.string().max(5_000_000).describe('CSV content (max 5 MB)'),
     delimiter: z.string().max(1).optional().default(','),
 });
 
@@ -174,8 +174,8 @@ export class CsvAggregateTool extends BaseTool<typeof AggSchema, { result: numbe
         switch (input.operation) {
             case 'sum': result = nums.reduce((s, n) => s + n, 0); break;
             case 'avg': result = nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : 0; break;
-            case 'min': result = Math.min(...nums); break;
-            case 'max': result = Math.max(...nums); break;
+            case 'min': result = nums.length ? Math.min(...nums) : 0; break;
+            case 'max': result = nums.length ? Math.max(...nums) : 0; break;
             case 'count': result = nums.length; break;
             default: result = 0;
         }

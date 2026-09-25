@@ -8,13 +8,15 @@
 
 import { AgentDb, validateTableNames } from './base.js';
 import { DEFAULT_TABLE_NAMES } from './types.js';
-import { uuid, now } from './utils.js';
+import { uuid, now, assertScheduleColumn } from './utils.js';
 import type {
   SessionRow, MemoryRow, LearningRow, KnowledgeRow, TraceRow, ScheduleRow,
   SessionQuery, MemoryQuery, LearningQuery, KnowledgeQuery,
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] SqliteAgentDb requires better-sqlite3.\n' +
@@ -54,7 +56,7 @@ export class SqliteAgentDb extends AgentDb {
   private _getDb(): Db {
     if (this._db) return this._db;
     let Ctor: DbCtor;
-    try { Ctor = require('better-sqlite3') as DbCtor; }
+    try { Ctor = _require('better-sqlite3') as DbCtor; }
     catch { throw new Error(MISSING); }
     this._db = new Ctor(this.opts.path);
     return this._db;
@@ -583,7 +585,7 @@ export class SqliteAgentDb extends AgentDb {
     const params: unknown[] = [now()];
     for (const [k, v] of Object.entries(updates)) {
       if (k === 'created_at' || k === 'id') continue;
-      sets.push(`${k} = ?`);
+      sets.push(`${assertScheduleColumn(k)} = ?`);
       params.push(k === 'enabled' ? (v ? 1 : 0) : v);
     }
     params.push(id);

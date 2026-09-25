@@ -1,5 +1,5 @@
 /**
- * personaforge/observe — Telemetry, logging, tracing, metrics.
+ * personaforge/observe — Telemetry, logging, tracing, metrics (facade over `personaforge/observability`).
  *
  * ```ts
  * import { logger, tracer, metrics } from 'personaforge/observe'

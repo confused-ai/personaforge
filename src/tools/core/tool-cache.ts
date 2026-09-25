@@ -170,6 +170,14 @@ export class ToolCache {
     }
 
     private static _defaultKey(this: void, toolName: string, params: unknown): string {
-        return `${toolName}::${JSON.stringify(params)}`;
+        let serialized: string;
+        try {
+            serialized = JSON.stringify(params) ?? 'undefined';
+        } catch {
+            // BigInt / circular params aren't JSON-serializable — fall back to
+            // a String() key so caching degrades instead of throwing.
+            serialized = String(params);
+        }
+        return `${toolName}::${serialized}`;
     }
 }

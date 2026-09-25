@@ -22,6 +22,7 @@ import { BudgetEnforcer, type BudgetConfig, BudgetExceededError } from '../produ
 import type { IdempotencyStore } from '../production/idempotency.js';
 import { InMemoryIdempotencyStore } from '../production/idempotency.js';
 import type { AuditStore } from '../production/audit-store.js';
+import { createRunJournal, type RunJournal } from './journal.js';
 import { TimeoutError, CancellationError } from '../shared/errors.js';
 
 // ── Public types ───────────────────────────────────────────────────────────
@@ -74,6 +75,8 @@ export interface HarnessConfig {
     readonly idempotencyTtlMs?: number;
     /** Append every run to an audit store (agent name, latency, error, cost). */
     readonly audit?: AuditStore;
+    /** Durable hash-chained run journal. Provide one or `true` for in-memory. */
+    readonly journal?: RunJournal | true;
 }
 
 export interface AgentHarness {
@@ -83,6 +86,7 @@ export interface AgentHarness {
     asTool<TOutput = unknown>(options: HarnessAsToolOptions<TOutput>): LightweightTool<ToolObjectSchemaLike<Record<string, unknown>>, TOutput>;
     health(): HealthReport | undefined;
     readonly maxDepth: number;
+    readonly journal?: RunJournal;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -143,6 +147,7 @@ export function createHarness(config: HarnessConfig): AgentHarness {
         idempotency,
         idempotencyTtlMs = 24 * 60 * 60 * 1_000,
         audit,
+        journal,
     } = config;
 
     const maxDepth = nesting?.maxDepth ?? 5;
@@ -159,6 +164,8 @@ export function createHarness(config: HarnessConfig): AgentHarness {
     const budgetEnforcer = budget ? new BudgetEnforcer(budget) : null;
     const idempotencyStore: IdempotencyStore | null =
         idempotency === true ? new InMemoryIdempotencyStore() : (idempotency ?? null);
+    const runJournal: RunJournal | null =
+        journal === true ? createRunJournal() : (journal ?? null);
 
     // Inner attempt: unified hooks + provider signal are attached HERE so they
     // execute on every retry / circuit-breaker attempt, not once around.
@@ -256,6 +263,18 @@ export function createHarness(config: HarnessConfig): AgentHarness {
                 } as unknown as Parameters<AuditStore['append']>[0];
                 void audit.append(entry).catch(() => undefined);
             }
+            if (runJournal) {
+                void runJournal.record({
+                    harness: name,
+                    input,
+                    outcome,
+                    latencyMs: Date.now() - startedAt,
+                    ...(outcome === 'success' ? { result } : { error: errorMessage ?? 'unknown error' }),
+                    ...(options?.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+                    ...(options?.userId !== undefined ? { userId: options.userId } : {}),
+                    ...(options?.metadata !== undefined ? { metadata: options.metadata } : {}),
+                }).catch(() => undefined);
+            }
         }
     };
 
@@ -291,6 +310,7 @@ export function createHarness(config: HarnessConfig): AgentHarness {
         maxDepth,
         run,
         health: () => healthFn?.(),
+        ...(runJournal ? { journal: runJournal } : {}),
         asTool<TOutput = unknown>(options: HarnessAsToolOptions<TOutput>) {
             return agentAsTool({
                 name: options.name,

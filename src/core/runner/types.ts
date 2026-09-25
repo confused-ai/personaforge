@@ -20,6 +20,7 @@ export type ToolCallResult = ToolCall;
 /** Low-level streaming callbacks threaded through the runner. */
 export interface RunnerStreamHooks {
     onChunk?: (text: string) => void;
+    onReasoning?: (delta: { text: string; title?: string }) => void;
     onToolCall?: (name: string, args: Record<string, unknown>) => void;
     onToolResult?: (name: string, result: unknown) => void;
     onStep?: (step: number) => void;

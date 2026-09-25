@@ -64,10 +64,21 @@ export function createMockToolResponse(
 }
 
 /**
- * Sleep for a given number of milliseconds
+ * Sleep for a given number of milliseconds. Rejects early when `signal` aborts.
  */
-export async function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+export async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) throw new Error('Sleep aborted.');
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+        }, ms);
+        const onAbort = (): void => {
+            clearTimeout(timer);
+            reject(new Error('Sleep aborted.'));
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+    });
 }
 
 /**

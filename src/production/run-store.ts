@@ -14,6 +14,8 @@
  */
 
 import type { Message } from '../core/types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 // ── Run Status ──────────────────────────────────────────────────────────────
 
@@ -202,7 +204,7 @@ export class SqliteRunStore implements RunStore {
     static create(filePath: string): SqliteRunStore {
         let Database: Sqlite3Ctor;
         try {
-            Database = require('better-sqlite3') as Sqlite3Ctor;
+            Database = _require('better-sqlite3') as Sqlite3Ctor;
         } catch {
             throw new Error(MISSING_BETTER_SQLITE3);
         }

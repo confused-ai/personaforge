@@ -7,6 +7,8 @@
 import { z } from 'zod';
 import { BaseTool } from '../core/base-tool.js';
 import { ToolCategory, type ToolContext } from '../core/types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 export interface TwilioToolConfig {
     accountSid?: string;
@@ -30,7 +32,7 @@ function getClient(config: TwilioToolConfig): { client: TwilioClient; from: stri
     const from = config.fromNumber ?? process.env['TWILIO_FROM_NUMBER'] ?? '';
     if (!accountSid) throw new Error('TwilioTools require TWILIO_ACCOUNT_SID');
     if (!authToken) throw new Error('TwilioTools require TWILIO_AUTH_TOKEN');
-    const twilio = require('twilio') as (sid: string, token: string) => TwilioClient;
+    const twilio = _require('twilio') as (sid: string, token: string) => TwilioClient;
     return { client: twilio(accountSid, authToken), from };
 }
 

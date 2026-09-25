@@ -52,7 +52,7 @@ export class InMemoryServerCache implements ServerCache {
     /** Expose a Redis-backed adapter for multi-process durable runs. */
     static fromRedis(url: string): ServerCache {
         // Lazily require ioredis (peer dep) — optional Redis support.
-        const Redis = require('ioredis') as new (u: string) => {
+        const Redis = _require('ioredis') as new (u: string) => {
             get(k: string): Promise<string | null>;
             set(k: string, v: string, mode: 'EX', ttl: number): Promise<unknown>;
             del(...keys: string[]): Promise<unknown>;
@@ -83,6 +83,8 @@ const EVENT_TTL_SECONDS = 7 * 86_400; // 7 days of replay retention
 export type DurableRunStatus = 'running' | 'suspended' | 'done' | 'error';
 
 import type { DurableRunEvent } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 export interface DurableRunHandle {
     readonly runId: string;

@@ -10,10 +10,7 @@
  *   await app.register(personaforgePlugin, { agents: [myAgent] });
  */
 
-import { createRequire } from 'node:module';
 import type { Agent } from '../../core/types.js';
-
-const _require = createRequire(import.meta.url);
 
 export interface PersonaForgePluginOptions {
   agents: Agent[];

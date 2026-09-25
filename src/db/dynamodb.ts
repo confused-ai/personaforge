@@ -18,6 +18,8 @@ import type {
   UpsertSessionInput, UpsertMemoryInput, UpsertLearningInput, UpsertKnowledgeInput,
   AgentDbTableNames,
 } from './types.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 const MISSING =
   '[personaforge/db] DynamoDbAgentDb requires @aws-sdk/client-dynamodb and @aws-sdk/lib-dynamodb.\n' +
@@ -67,8 +69,8 @@ export class DynamoDbAgentDb extends AgentDb {
 
     let ddbLib: any, docLib: any;
     try {
-      ddbLib = require('@aws-sdk/client-dynamodb');
-      docLib = require('@aws-sdk/lib-dynamodb');
+      ddbLib = _require('@aws-sdk/client-dynamodb');
+      docLib = _require('@aws-sdk/lib-dynamodb');
     } catch { throw new Error(MISSING); }
     const clientOpts: Record<string, unknown> = { region: this.region };
     if (this.endpoint) clientOpts['endpoint'] = this.endpoint;
@@ -88,7 +90,7 @@ export class DynamoDbAgentDb extends AgentDb {
   private async _doInit(): Promise<void> {
 
     let ddbLib: any;
-    try { ddbLib = require('@aws-sdk/client-dynamodb'); } catch { throw new Error(MISSING); }
+    try { ddbLib = _require('@aws-sdk/client-dynamodb'); } catch { throw new Error(MISSING); }
     // Try to create the table; ignore ResourceInUseException (already exists)
     try {
       const client = this.doc();
@@ -145,7 +147,7 @@ export class DynamoDbAgentDb extends AgentDb {
   private async _put(entity: string, id: string, data: Record<string, unknown>, gsi?: { key: string; value: string }): Promise<void> {
 
     let docLib: any;
-    try { docLib = require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
+    try { docLib = _require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
     const item: Record<string, unknown> = {
       pk: this.pk(entity, id),
       sk: 'ROW',
@@ -165,7 +167,7 @@ export class DynamoDbAgentDb extends AgentDb {
   private async _get(entity: string, id: string): Promise<Record<string, unknown> | null> {
 
     let docLib: any;
-    try { docLib = require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
+    try { docLib = _require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
     const result = await this.doc().send(new docLib.GetCommand({
       TableName: this.tableName,
       Key: { pk: this.pk(entity, id), sk: 'ROW' },
@@ -176,7 +178,7 @@ export class DynamoDbAgentDb extends AgentDb {
   private async _del(entity: string, id: string): Promise<boolean> {
 
     let docLib: any;
-    try { docLib = require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
+    try { docLib = _require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
     const existing = await this._get(entity, id);
     if (!existing) return false;
     await this.doc().send(new docLib.DeleteCommand({
@@ -189,7 +191,7 @@ export class DynamoDbAgentDb extends AgentDb {
   private async _scan(entity: string, limit?: number): Promise<Record<string, unknown>[]> {
 
     let docLib: any;
-    try { docLib = require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
+    try { docLib = _require('@aws-sdk/lib-dynamodb'); } catch { throw new Error(MISSING); }
     const result = await this.doc().send(new docLib.ScanCommand({
       TableName: this.tableName,
       FilterExpression: '#e = :entity',

@@ -40,6 +40,15 @@ export class BatchingEventStore implements EventStore {
 
   async append(events: GraphEvent[]): Promise<void> {
     this.buffer.push(...events);
+    // Bound the buffer: if the inner store is permanently down, retries
+    // re-queue forever. Oldest events drop (reported via onError) rather
+    // than growing memory without limit.
+    const cap = this.maxBatch * 16;
+    if (this.buffer.length > cap) {
+      const dropped = this.buffer.length - cap;
+      this.buffer.splice(0, dropped);
+      this.onError?.(new Error(`BatchingEventStore dropped ${dropped} oldest events: inner store not draining`));
+    }
     if (this.buffer.length >= this.maxBatch) await this.flush();
   }
 

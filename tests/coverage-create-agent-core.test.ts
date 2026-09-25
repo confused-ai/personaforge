@@ -24,6 +24,19 @@ const toolCallResult = (name: string, args: Record<string, unknown>): GenerateRe
     finishReason: 'tool_calls',
 });
 
+function reasoningLLM(title?: string): LLMProvider {
+    return {
+        async generateText(): Promise<GenerateResult> {
+            return textResult('answer');
+        },
+        async streamText(_messages: Message[], options?: { onChunk?: (chunk: string) => void; onReasoning?: (delta: { text: string; title?: string }) => void }): Promise<GenerateResult> {
+            options?.onReasoning?.({ text: 'thinking...', ...(title && { title }) });
+            options?.onChunk?.('answer');
+            return textResult('answer');
+        },
+    };
+}
+
 function echoTool() {
     return {
         name: 'echo',
@@ -88,6 +101,45 @@ describe('createAgent core', () => {
         }
         expect(types).toContain('text-delta');
         expect(types).toContain('run-finish');
+    });
+
+    it('streamEvents() yields reasoning-delta chunks and includes reasoningText in run-finish', async () => {
+        const agent = createAgent({
+            name: 'reasoner',
+            instructions: 'i',
+            llm: reasoningLLM('Step 1'),
+        });
+        const events: unknown[] = [];
+        for await (const evt of agent.streamEvents('hi')) events.push(evt);
+        expect(events).toContainEqual(
+            expect.objectContaining({ type: 'reasoning-delta', reasoningDelta: 'thinking...', reasoningTitle: 'Step 1' }),
+        );
+        const finish = events.find((e) => (e as { type: string }).type === 'run-finish') as { run: { reasoningText?: string } } | undefined;
+        expect(finish?.run.reasoningText).toBe('thinking...');
+    });
+
+    it('streamEvents() omits reasoningTitle when the provider gives no title', async () => {
+        const agent = createAgent({
+            name: 'reasoner-no-title',
+            instructions: 'i',
+            llm: reasoningLLM(),
+        });
+        const events: unknown[] = [];
+        for await (const evt of agent.streamEvents('hi')) events.push(evt);
+        const reasoningEvt = events.find((e) => (e as { type: string }).type === 'reasoning-delta') as Record<string, unknown> | undefined;
+        expect(reasoningEvt).toBeDefined();
+        expect(reasoningEvt).not.toHaveProperty('reasoningTitle');
+    });
+
+    it('run() invokes the caller onReasoning hook during a streamed run', async () => {
+        const agent = createAgent({
+            name: 'reasoner-run',
+            instructions: 'i',
+            llm: reasoningLLM('Step 1'),
+        });
+        const onReasoning = vi.fn();
+        await agent.run('hi', { onChunk: () => {}, onReasoning });
+        expect(onReasoning).toHaveBeenCalledWith({ text: 'thinking...', title: 'Step 1' });
     });
 
     it('createSession / getSessionMessages / resume with session store', async () => {
@@ -265,5 +317,68 @@ describe('createAgent core', () => {
         });
         const result = await agent.run('x');
         expect(result.debug?.enabled).toBe(true);
+    });
+});
+
+describe('reasoning end-to-end', () => {
+    it('flows from provider through streamEvents, SSE, and durable replay', async () => {
+        const { encodeSSE } = await import('../src/serve/data-stream.js');
+        const { DurableRunRegistry, InMemoryServerCache, registryOutput } = await import('@personaforge/durable');
+
+        const agent = createAgent({
+            name: 'reasoning-e2e',
+            instructions: 'i',
+            llm: {
+                generateText: vi.fn(),
+                streamText: vi.fn(async (_messages: Message[], options?: { onChunk?: (chunk: string) => void; onReasoning?: (delta: { text: string; title?: string }) => void }) => {
+                    options?.onReasoning?.({ text: 'thi' });
+                    options?.onReasoning?.({ text: 'nking' });
+                    options?.onChunk?.('final answer');
+                    return {
+                        text: 'final answer',
+                        finishReason: 'stop',
+                        reasoning: [{ text: 'thinking', signature: 'sig-1' }],
+                    };
+                }) as never,
+            } as never,
+        });
+
+        const events: unknown[] = [];
+        for await (const evt of agent.streamEvents('hi')) events.push(evt);
+
+        // 1. Two ordered reasoning-delta events carrying the raw streamed deltas.
+        const reasoningEvents = events.filter((e) => (e as { type: string }).type === 'reasoning-delta') as { reasoningDelta: string }[];
+        expect(reasoningEvents.map((e) => e.reasoningDelta)).toEqual(['thi', 'nking']);
+
+        // 2. A text-delta event with the final answer.
+        expect(events).toContainEqual(expect.objectContaining({ type: 'text-delta', delta: 'final answer' }));
+
+        // 3. run-finish: provider-returned signed reasoning wins over streamed deltas.
+        const runFinish = events.find((e) => (e as { type: string }).type === 'run-finish') as {
+            run: { reasoningText?: string; messages: { role: string; reasoning?: unknown }[] };
+        };
+        expect(runFinish.run.reasoningText).toBe('thinking');
+        expect(runFinish.run.messages.find((m) => m.role === 'assistant')?.reasoning).toEqual([
+            { text: 'thinking', signature: 'sig-1' },
+        ]);
+
+        // 4. SSE wire format carries the reasoning delta.
+        expect(encodeSSE(reasoningEvents[0] as never)).toContain('"reasoningDelta":"thi"');
+
+        // 5. Durable replay: publishing the collected events into a fresh registry
+        // and reading them back preserves both reasoning-delta events.
+        const cache = new InMemoryServerCache();
+        const registry = new DurableRunRegistry(cache);
+        const runId = 'run-reasoning-e2e';
+        const handle = registry.create({ runId, input: 'hi' });
+        for (const ev of events) await registry.publish(runId, ev as never);
+        handle.closed = true;
+        handle.notify();
+
+        const output = registryOutput(registry, runId, Promise.resolve(runFinish.run as never));
+        const replayed: unknown[] = [];
+        for await (const e of output.fullStream) replayed.push(e);
+        const replayedReasoning = replayed.filter((e) => (e as { type: string }).type === 'reasoning-delta') as { reasoningDelta: string }[];
+        expect(replayedReasoning.map((e) => e.reasoningDelta)).toEqual(['thi', 'nking']);
     });
 });

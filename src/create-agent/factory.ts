@@ -40,6 +40,8 @@ import { InMemorySuspendedRunStore, createSqliteSuspendedRunStore, type Suspende
 import type { Memory } from '../memory/index.js';
 import type { StructuredOutputConfig, GoalRunConfig } from '../agentic/index.js';
 import { createLlmProviderFromModelString } from '../providers/from-model.js';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
 
 /**
  * Resolves the tools option to a ToolRegistry.
@@ -438,7 +440,7 @@ function getFrameworkConfig(): AppConfig | null {
     if (_cachedConfig === undefined) {
         try {
             // Dynamic import to avoid circular dependency at module load time
-            const { loadConfig } = require('../config/index.js') as typeof import('../config/index.js');
+            const { loadConfig } = _require('../config/index.js') as typeof import('../config/index.js');
             _cachedConfig = loadConfig();
         } catch {
             _cachedConfig = null;
@@ -519,7 +521,7 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 ?? (agentDbPath
                     ? (() => {
                           try {
-                              const { createSqliteStore } = require('../session/index.js') as typeof import('../session/index.js');
+                              const { createSqliteStore } = _require('../session/index.js') as typeof import('../session/index.js');
                               return createSqliteStore({ path: agentDbPath });
                           } catch {
                               return new InMemorySessionStore();
@@ -850,6 +852,10 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                 onStep: (step: number) => {
                     runLogger?.debug('agent.run: step', { agentId: name }, { step });
                     runOptions?.onStep?.(step);
+                },
+                onReasoning: (delta: { text: string; title?: string }) => {
+                    runLogger?.debug('agent.run: reasoning', { agentId: name }, { length: delta.text.length });
+                    runOptions?.onReasoning?.(delta);
                 },
                 onApproval: (req) => { runOptions?.onApproval?.(req); },
                 onSuspended: (req) => { runOptions?.onSuspended?.(req); },
@@ -1289,6 +1295,17 @@ export function createAgent(options: CreateAgentOptions): CreateAgentResult {
                     },
                     onStep: (stepNumber: number) => {
                         const evt: StreamChunk = { type: 'step-finish', stepNumber };
+                        queue.push(evt);
+                        publish(evt);
+                        notify?.();
+                        notify = null;
+                    },
+                    onReasoning: (delta: { text: string; title?: string }) => {
+                        const evt: StreamChunk = {
+                            type: 'reasoning-delta',
+                            reasoningDelta: delta.text,
+                            ...(delta.title && { reasoningTitle: delta.title }),
+                        };
                         queue.push(evt);
                         publish(evt);
                         notify?.();

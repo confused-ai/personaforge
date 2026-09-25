@@ -22,7 +22,20 @@ export interface GithubLoaderOptions {
   metadata?: Record<string, unknown>;
 }
 
-const DEFAULT_EXT = ['.md', '.ts', '.js', '.py', '.txt', '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.env'];
+const DEFAULT_EXT = ['.md', '.ts', '.js', '.py', '.txt', '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg'];
+
+/** Basenames never ingested — secrets/credentials regardless of extension. */
+const SECRET_BASENAMES = new Set([
+  '.env', '.env.local', '.env.production', 'id_rsa', 'id_ed25519', 'id_ecdsa',
+]);
+
+/** True when a repo path looks like a secret (.pem/.key, secret basenames). */
+function isSecretPath(path: string): boolean {
+  const base = path.split('/').pop() ?? path;
+  if (SECRET_BASENAMES.has(base)) return true;
+  const lower = base.toLowerCase();
+  return lower.endsWith('.pem') || lower.endsWith('.key');
+}
 
 export async function loadGithubRepo(opts: GithubLoaderOptions): Promise<Document[]> {
   const branch = opts.branch ?? 'main';
@@ -37,6 +50,7 @@ export async function loadGithubRepo(opts: GithubLoaderOptions): Promise<Documen
   const json = (await res.json()) as { tree: Array<{ path: string; type: string }> };
   const files = json.tree
     .filter((e) => e.type === 'blob')
+    .filter((e) => !isSecretPath(e.path))
     .filter((e) => exts.some((ext) => e.path.endsWith(ext)))
     .filter((e) => !opts.path || e.path.startsWith(opts.path))
     .slice(0, maxFiles);
